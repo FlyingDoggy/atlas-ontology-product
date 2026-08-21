@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ontology Reviewer closed output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "request_digest", "findings", "done"],
+  "properties": {
+    "contract": {"const": "reviewer-output/v1"},
+    "request_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "findings": {"type": "array", "maxItems": 256},
+    "done": {"const": true}
+  }
+}

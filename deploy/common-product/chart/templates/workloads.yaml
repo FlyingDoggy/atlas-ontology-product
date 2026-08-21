@@ -200,6 +200,10 @@ spec:
               value: "true"
             - name: ONTOLOGY_BUILDER_MODEL
               value: qwen3.8-max
+            - name: ONTOLOGY_REVIEWER_LLM_ENABLED
+              value: "true"
+            - name: ONTOLOGY_REVIEWER_MODEL
+              value: qwen3.8-max
             - name: ONTOLOGY_SKILL_ROOT
               value: /app/skills
             - name: ONTOLOGY_QWEN_API_KEY

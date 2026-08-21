@@ -93,7 +93,12 @@ from .studio.construction import (
     PostgresConstructionRunStore,
     StudioConstructionService,
 )
-from .studio.builder import BoundedBuilderOrchestrator, HttpBuilderModel
+from .studio.builder import BoundedBuilderOrchestrator, BuilderError, HttpBuilderModel
+from .studio.reviewer import (
+    BoundedReviewerOrchestrator,
+    HttpReviewerModel,
+    ReviewerError,
+)
 from .studio.skill_packages import SkillPackageError, load_skill_package
 from .studio.construction_jobs import (
     ConstructionJobConflict,
@@ -830,8 +835,35 @@ def _studio_construction(
             if builder_enabled and model_gateway_url
             else None
         )
-    except (SkillPackageError, ValueError) as exc:
+    except (BuilderError, SkillPackageError, ValueError) as exc:
         raise ConstructionError("Ontology Build Skill is unavailable") from exc
+    reviewer_enabled = os.environ.get(
+        "ONTOLOGY_REVIEWER_ENABLED", "true"
+    ).strip().lower() in {"1", "true", "yes"}
+    try:
+        reviewer = (
+            BoundedReviewerOrchestrator(
+                model=HttpReviewerModel(
+                    model_gateway_url,
+                    timeout_seconds=float(
+                        os.environ.get("ONTOLOGY_REVIEWER_TIMEOUT_SECONDS", "75")
+                    ),
+                ),
+                skill=load_skill_package(
+                    "ontology-review",
+                    os.environ.get("ONTOLOGY_REVIEW_SKILL_VERSION", "1.0.0"),
+                    root=(
+                        Path(os.environ["ONTOLOGY_SKILL_ROOT"])
+                        if os.environ.get("ONTOLOGY_SKILL_ROOT")
+                        else None
+                    ),
+                ),
+            )
+            if reviewer_enabled and model_gateway_url
+            else None
+        )
+    except (ReviewerError, SkillPackageError, ValueError) as exc:
+        raise ConstructionError("Ontology Review Skill is unavailable") from exc
     try:
         settings = ProductInfrastructureSettings.from_env()
         run_store = (
@@ -854,6 +886,7 @@ def _studio_construction(
             scenario_dir=workspace.scenario_dir,
         ),
         builder=builder,
+        reviewer=reviewer,
         engine=engine,
         review_drafts=(
             _review_draft_store() if settings.mode == "postgresql-s3" else None

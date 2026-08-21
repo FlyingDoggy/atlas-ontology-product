@@ -41,6 +41,7 @@ const stageLabels: Record<string, string> = {
   PACKAGED_CASE_COMPILATION: "兼容资产编译",
   SEMANTICA_PROPOSAL: "语义候选生成",
   CANDIDATE_PRECHECK: "候选预检",
+  REVIEWER_AGENT: "机器复核",
 };
 
 const candidateTypeLabels: Record<ConstructionCandidate["candidate_type"], string> = {
@@ -168,6 +169,7 @@ export function ConstructionRunsView({
             <div><span>运行状态</span><strong>{latest.status === "NEEDS_REVIEW" ? "等待人工复核" : latest.status}</strong></div>
             <div><span>来源结算</span><strong>{latest.selected_sources.length} 个来源已结算</strong></div>
             <div><span>候选集合</span><strong>{counts.total} 个候选待复核</strong></div>
+            <div><span>机器复核</span><strong>{latest.machine_findings.length} 个发现</strong></div>
             <div><span>可编译 / 待补能力</span><strong>{counts.compilable} / {counts.unsupported}</strong></div>
             <div><span>耗时</span><strong>{elapsed(latest.started_at, latest.completed_at)}</strong></div>
           </div>
@@ -272,6 +274,13 @@ export function ConstructionReviewCenter({
   const [editTexts, setEditTexts] = useState<Record<string, string>>({});
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const selected = run?.candidates.find((item) => item.candidate_id === selectedId) ?? run?.candidates[0] ?? null;
+  const findingsByCandidate = useMemo(() => Object.fromEntries(
+    (run?.candidates ?? []).map((candidate) => [
+      candidate.candidate_id,
+      (run?.machine_findings ?? []).filter((finding) => finding.candidate_ids.includes(candidate.candidate_id)),
+    ]),
+  ), [run]);
+  const selectedFindings = selected ? findingsByCandidate[selected.candidate_id] ?? [] : [];
 
   useEffect(() => {
     setSelectedId(run?.candidates[0]?.candidate_id ?? null);
@@ -345,7 +354,11 @@ export function ConstructionReviewCenter({
     if (!run || Boolean(activeRecord?.decision)) return;
     setActions((current) => ({ ...current, ...Object.fromEntries(visible.map((candidate) => [
       candidate.candidate_id,
-      candidate.compile_eligible && ["DIRECT_EXACT", "DERIVED_DETERMINISTIC"].includes(candidate.support_class) ? "ACCEPT" : "DEFER",
+      candidate.compile_eligible
+        && ["DIRECT_EXACT", "DERIVED_DETERMINISTIC"].includes(candidate.support_class)
+        && !(findingsByCandidate[candidate.candidate_id] ?? []).some((finding) => finding.blocks_release)
+        ? "ACCEPT"
+        : "DEFER",
     ])) }));
   }
 
@@ -375,7 +388,10 @@ export function ConstructionReviewCenter({
         candidate_id: candidate.candidate_id,
         action,
         note: action === "ACCEPT" ? "已核对来源、定义与影响，接受 typed proposal。" : action === "EDIT" ? "Reviewer 已修改 typed proposal；修改值属于 REVIEWER_AUTHORED。" : action === "DEFER" ? "暂缓，等待补齐编译能力或业务确认。" : "当前证据不足或候选不适用。",
-        blocks_release: action === "DEFER" && candidate.risk_class === "HIGH",
+        blocks_release: action !== "REJECT" && (
+          (action === "DEFER" && candidate.risk_class === "HIGH")
+          || (findingsByCandidate[candidate.candidate_id] ?? []).some((finding) => finding.blocks_release)
+        ),
         edited_operation: action === "EDIT" ? edits[candidate.candidate_id] : null,
       }];
     });
@@ -431,6 +447,7 @@ export function ConstructionReviewCenter({
                 <button type="button" className="review-candidate-main" onClick={() => setSelectedId(candidate.candidate_id)}>
                   <span>{String((currentPage - 1) * pageSize + index + 1).padStart(2, "0")}</span>
                   <div><strong>{candidate.label}</strong><small>{candidateTypeLabels[candidate.candidate_type]} · {supportLabels[candidate.support_class]}</small></div>
+                  {(findingsByCandidate[candidate.candidate_id] ?? []).length ? <b className={(findingsByCandidate[candidate.candidate_id] ?? []).some((finding) => finding.severity === "ERROR") ? "finding-error" : "finding-warn"}>{(findingsByCandidate[candidate.candidate_id] ?? []).length} 个发现</b> : null}
                   <em className={`risk-${candidate.risk_class.toLowerCase()}`}>{candidate.risk_class}</em>
                 </button>
                 <label>复核动作 {candidate.label}
@@ -462,7 +479,17 @@ export function ConstructionReviewCenter({
                 <div><dt>证据等级</dt><dd>{supportLabels[selected.support_class]}</dd></div>
                 <div><dt>Canonical target</dt><dd>{selected.canonical_target ?? "尚未映射"}</dd></div>
                 <div><dt>可编译</dt><dd>{selected.compile_eligible ? "是；已生成 typed operation" : "否；不能接受"}</dd></div>
+                <div><dt>相对 Draft</dt><dd>{selected.draft_diff.change_type === "CREATE" ? "新增" : selected.draft_diff.change_type === "UPDATE" ? "修改" : selected.draft_diff.change_type === "NO_CHANGE" ? "无变化" : selected.draft_diff.change_type === "NON_COMPILABLE" ? "不可编译" : "旧运行未计算"}</dd></div>
               </dl>
+              <section className="machine-findings" aria-label="机器复核发现">
+                <header><strong>机器复核发现</strong><span>{selectedFindings.length}</span></header>
+                {selectedFindings.length ? selectedFindings.map((finding) => <article key={finding.finding_id} className={`is-${finding.severity.toLowerCase()}`}><div><b>{finding.summary}</b><em>{finding.severity}{finding.blocks_release ? " · 阻断发布" : ""}</em></div><p>{finding.detail}</p><small>{finding.recommendation}</small></article>) : <p>本候选暂无机器复核发现；这不等于业务批准。</p>}
+              </section>
+              <section className="candidate-draft-diff" aria-label="Candidate 与 Draft 对比">
+                <header><strong>Candidate 与当前 Draft</strong><span>{selected.draft_diff.changed_paths.length ? `${selected.draft_diff.changed_paths.length} 处变化` : "无字段变化"}</span></header>
+                {selected.draft_diff.changed_paths.length ? <p>{selected.draft_diff.changed_paths.join(" · ")}</p> : null}
+                {selected.compile_eligible ? <div><section><b>当前 Draft</b><pre>{selected.draft_diff.before ? JSON.stringify(selected.draft_diff.before, null, 2) : "尚不存在"}</pre></section><section><b>候选结果</b><pre>{selected.draft_diff.after ? JSON.stringify(selected.draft_diff.after, null, 2) : "—"}</pre></section></div> : <p>该候选没有可应用的类型化变更。</p>}
+              </section>
               {(actions[selected.candidate_id] ?? "UNREVIEWED") === "EDIT" && selected.proposed_operation?.payload ? <section className="typed-candidate-editor"><span>REVIEWER-AUTHORED TYPED EDIT</span><label>完整 typed operation<textarea aria-label={`修改 typed operation ${selected.label}`} rows={16} spellCheck={false} value={editTexts[selected.candidate_id] ?? JSON.stringify(edits[selected.candidate_id] ?? selected.proposed_operation, null, 2)} onChange={(event) => updateEditedOperation(selected, event.target.value)} /></label>{editErrors[selected.candidate_id] ? <p className="operator-error" role="alert">{editErrors[selected.candidate_id]}</p> : <p>允许修改 payload 中的定义、公式、查询与映射字段；action、collection 与 object_id 被锁定，服务端仍会执行完整 typed validation。</p>}</section> : null}
               {selected.source_anchors.map((anchor) => <div className="source-anchor-card" key={anchor.snippet_checksum}><strong>{anchor.source_id}</strong><code>{anchor.locator}</code><small>{anchor.sheet_name && anchor.cell_range ? `${anchor.sheet_name}!${anchor.cell_range}` : `line ${anchor.line_number}`} · {shortId(anchor.snippet_checksum)}</small></div>)}
               {selected.limitations.length ? <div className="candidate-limitations"><strong>限制 / 缺口</strong>{selected.limitations.map((item) => <p key={item}>{item}</p>)}</div> : null}

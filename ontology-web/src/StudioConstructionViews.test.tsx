@@ -87,6 +87,13 @@ function runList(): ConstructionRunList {
             }],
             impact_refs: ["metric.average_daily_turnover"],
             limitations: [],
+            draft_diff: {
+              contract: "candidate-draft-diff/v1",
+              change_type: "UPDATE",
+              before: { id: "metric.average_daily_turnover", definition: "Old" },
+              after: { id: "metric.average_daily_turnover", definition: "New" },
+              changed_paths: ["definition"],
+            },
           },
           {
             contract: "construction-candidate/v1",
@@ -106,8 +113,27 @@ function runList(): ConstructionRunList {
             source_anchors: [],
             impact_refs: [],
             limitations: ["No supported Formula/Query compiler mapping exists yet."],
+            draft_diff: {
+              contract: "candidate-draft-diff/v1",
+              change_type: "NON_COMPILABLE",
+              before: null,
+              after: null,
+              changed_paths: [],
+            },
           },
         ],
+        machine_findings: [{
+          contract: "reviewer-finding/v1",
+          finding_id: "finding.model.missing_formula",
+          finding_type: "MISSING_COVERAGE",
+          severity: "ERROR",
+          summary: "缺少公式合同",
+          detail: "候选没有可编译公式。",
+          candidate_ids: [`candidate.${"e".repeat(32)}`],
+          evidence_fragment_ids: [],
+          blocks_release: true,
+          recommendation: "补齐公式后重新构建。",
+        }],
         started_at: "2026-08-21T01:00:00Z",
         completed_at: "2026-08-21T01:00:01Z",
         run_checksum: digest,
@@ -158,6 +184,17 @@ describe("Studio construction product views", () => {
     expect(onSave).toHaveBeenCalledOnce();
     expect(onSave.mock.calls[0][1].map((item: { action: string }) => item.action)).toEqual(["ACCEPT", "DEFER"]);
     expect(onReview).not.toHaveBeenCalled();
+  });
+
+  it("shows machine findings and a Candidate-to-Draft comparison without auto-deciding", () => {
+    render(<ConstructionReviewCenter runs={runList()} reviewDraft={null} currentRevision={4} busy={false} error={null} onSave={vi.fn().mockResolvedValue(null)} onReview={vi.fn()} />);
+
+    expect(screen.getByText("Candidate 与当前 Draft")).toBeTruthy();
+    expect(screen.getByText("1 处变化")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /订单取消率/ }));
+    expect(screen.getByText("缺少公式合同")).toBeTruthy();
+    expect(screen.getByText("ERROR · 阻断发布")).toBeTruthy();
+    expect((screen.getAllByLabelText(/复核动作/)[1] as HTMLSelectElement).value).toBe("UNREVIEWED");
   });
 
   it("can fill a conservative batch disposition without submitting a human decision", () => {

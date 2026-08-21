@@ -832,13 +832,38 @@ const constructionSourceSettlementSchema = z.object({
 
 const constructionStageReceiptSchema = z.object({
   contract: z.literal("construction-stage-receipt/v1"),
-  stage: z.enum(["SOURCE_SETTLEMENT", "STRUCTURED_EXTRACTION", "BUILDER_AGENT", "PACKAGED_CASE_COMPILATION", "SEMANTICA_PROPOSAL", "CANDIDATE_PRECHECK"]),
+  stage: z.enum(["SOURCE_SETTLEMENT", "STRUCTURED_EXTRACTION", "BUILDER_AGENT", "PACKAGED_CASE_COMPILATION", "SEMANTICA_PROPOSAL", "CANDIDATE_PRECHECK", "REVIEWER_AGENT"]),
   status: z.enum(["PASS", "WARN", "SKIPPED", "FAIL"]),
   input_digest: sha256,
   output_digest: sha256,
   item_count: z.number().int().nonnegative(),
   implementation: z.string().min(1),
   detail: z.string().min(1),
+}).strict();
+
+const candidateDraftDiffSchema = z.object({
+  contract: z.literal("candidate-draft-diff/v1"),
+  change_type: z.enum(["CREATE", "UPDATE", "NO_CHANGE", "NON_COMPILABLE", "UNKNOWN"]),
+  before: z.record(z.string(), z.unknown()).nullable(),
+  after: z.record(z.string(), z.unknown()).nullable(),
+  changed_paths: z.array(z.string()),
+}).strict();
+
+const reviewerFindingSchema = z.object({
+  contract: z.literal("reviewer-finding/v1"),
+  finding_id: z.string().regex(/^finding\.[A-Za-z0-9][A-Za-z0-9._-]*$/),
+  finding_type: z.enum([
+    "UNSUPPORTED_CLAIM", "EVIDENCE_CONFLICT", "DUPLICATE_CANDIDATE",
+    "BROKEN_REFERENCE", "INCONSISTENT_CONTRACT", "MISSING_COVERAGE",
+    "MERGE_SUGGESTION", "DEPRECATION_SUGGESTION", "RELEASE_BLOCKER",
+  ]),
+  severity: z.enum(["INFO", "WARN", "ERROR"]),
+  summary: z.string().min(1),
+  detail: z.string().min(1),
+  candidate_ids: z.array(z.string().regex(/^candidate\.[0-9a-f]{32}$/)).min(1),
+  evidence_fragment_ids: z.array(z.string()),
+  blocks_release: z.boolean(),
+  recommendation: z.string().min(1),
 }).strict();
 
 export const constructionCandidateSchema = z.object({
@@ -863,6 +888,7 @@ export const constructionCandidateSchema = z.object({
   source_anchors: z.array(sourceProjectionAnchorSchema),
   impact_refs: z.array(z.string()),
   limitations: z.array(z.string()),
+  draft_diff: candidateDraftDiffSchema,
 }).strict().superRefine((value, context) => {
   if (value.compile_eligible !== Boolean(value.proposed_operation)) {
     context.addIssue({ code: "custom", message: "Compile eligibility and operation disagree" });
@@ -885,6 +911,7 @@ export const constructionRunSchema = z.object({
   selected_sources: z.array(constructionSourceSettlementSchema).min(1),
   stage_receipts: z.array(constructionStageReceiptSchema).min(1),
   candidates: z.array(constructionCandidateSchema).min(1),
+  machine_findings: z.array(reviewerFindingSchema),
   started_at: z.string().min(1),
   completed_at: z.string().nullable(),
   run_checksum: sha256,
@@ -925,6 +952,7 @@ const constructionReviewResultSchema = z.object({
 }).strict();
 
 export type ConstructionCandidate = z.infer<typeof constructionCandidateSchema>;
+export type ReviewerFinding = z.infer<typeof reviewerFindingSchema>;
 export type ConstructionRun = z.infer<typeof constructionRunSchema>;
 export type ConstructionRunList = z.infer<typeof constructionRunListSchema>;
 export type ConstructionDisposition = {

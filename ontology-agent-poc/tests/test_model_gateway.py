@@ -44,7 +44,12 @@ from ontology_agent.studio.llm import (
 from ontology_agent.studio.workspace import DraftWorkspaceService
 from ontology_agent.models import OntologyPackage
 from ontology_agent.studio.builder import _phase_request
+from ontology_agent.studio.construction import (
+    CandidateDraftDiffV1,
+    ConstructionCandidateV1,
+)
 from ontology_agent.studio.evidence import normalize_evidence
+from ontology_agent.studio.reviewer import reviewer_request
 from ontology_agent.studio.skill_packages import load_skill_package
 
 
@@ -123,6 +128,91 @@ def test_ontology_builder_gateway_executes_one_closed_versioned_skill_phase(
     assert request.evidence_fragments[0].fragment_id in serialized
     assert "test-only-builder-secret" not in serialized
     assert provider_body["model"] == "qwen3.8-max"
+    assert provider_body["enable_thinking"] is False
+
+
+def test_ontology_reviewer_gateway_uses_a_fresh_findings_only_context(
+    monkeypatch: pytest.MonkeyPatch,
+    package: OntologyPackage,
+) -> None:
+    text = "A service request receives a unique identifier."
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.request",
+                "kind": "requirement_transcription",
+                "locator": "source-library:source-version.00000000000000000000000000000000",
+                "source_version_id": "source-version.00000000000000000000000000000000",
+                "checksum": hashlib.sha256(text.encode()).hexdigest(),
+                "content_text": text,
+            }
+        ]
+    }
+    skill = load_skill_package("ontology-review", "1.0.0")
+    bundle = normalize_evidence(intake, workspace_id="workspace.generic")
+    candidate = ConstructionCandidateV1(
+        candidate_id="candidate." + "8" * 32,
+        occurrence_key="7" * 64,
+        revision_digest="6" * 64,
+        candidate_type="GAP",
+        label="Missing contract",
+        definition="A required contract is missing.",
+        support_class="MISSING",
+        risk_class="HIGH",
+        compile_eligible=False,
+        proposal={"rationale": "PRIVATE BUILDER RATIONALE"},
+        draft_diff=CandidateDraftDiffV1(change_type="NON_COMPILABLE"),
+    )
+    request = reviewer_request(
+        run_id="construction-run." + "9" * 32,
+        workspace_id="workspace.generic",
+        base_draft_checksum="5" * 64,
+        skill=skill,
+        package=package,
+        candidates=(candidate,),
+        evidence_bundle=bundle,
+        deterministic_findings=(),
+    )
+    captured: dict[str, object] = {}
+
+    def fake_transport(
+        url: str, headers: dict[str, str], body: dict[str, object], timeout: float
+    ) -> dict[str, object]:
+        captured.update(url=url, headers=headers, body=body, timeout=timeout)
+        return {
+            "id": "provider-request.reviewer-1",
+            "model": "qwen3.8-max",
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "contract": "reviewer-output/v1",
+                                "request_digest": request.request_digest,
+                                "findings": [],
+                                "done": True,
+                            }
+                        )
+                    }
+                }
+            ],
+        }
+
+    monkeypatch.setattr(gateway_module, "_provider_transport", fake_transport)
+    monkeypatch.setenv("ONTOLOGY_REVIEWER_LLM_ENABLED", "true")
+    monkeypatch.setenv("ONTOLOGY_QWEN_API_KEY", "test-only-reviewer-secret")
+    monkeypatch.setenv("ONTOLOGY_QWEN_BASE_URL", "https://provider.example/v1")
+
+    response = client.post(
+        "/model/v1/ontology-review", json=request.model_dump(mode="json")
+    )
+
+    assert response.status_code == 200
+    provider_body = captured["body"]
+    serialized = json.dumps(provider_body)
+    assert "Ontology Review Skill" in serialized
+    assert "PRIVATE BUILDER RATIONALE" not in serialized
+    assert "test-only-reviewer-secret" not in serialized
     assert provider_body["enable_thinking"] is False
 
 

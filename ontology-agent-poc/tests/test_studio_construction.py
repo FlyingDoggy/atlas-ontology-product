@@ -36,6 +36,12 @@ from ontology_agent.studio.builder import (
 )
 from ontology_agent.studio.skill_packages import load_skill_package
 from ontology_agent.studio.source_projection import StudioAuthoringProjectionV1
+from ontology_agent.studio.reviewer import (
+    BoundedReviewerOrchestrator,
+    ReviewerFindingV1,
+    ReviewerOutputV1,
+    ReviewerResponseV1,
+)
 
 
 control_client = TestClient(control_app)
@@ -88,6 +94,36 @@ class _ConstructionBuilderModel:
             requested_model="qwen3.8-max",
             response_model="qwen3.8-max",
             provider_request_id=f"provider-{request.phase.lower()}",
+            output=output,
+            output_digest=sha256_value(output),
+        )
+
+
+class _ConstructionReviewerModel:
+    def review(self, request):
+        target = next(
+            item for item in request.candidates if item.candidate_type == "OBJECT"
+        )
+        finding = ReviewerFindingV1(
+            finding_id="finding.model.confirm_owner",
+            finding_type="MISSING_COVERAGE",
+            severity="WARN",
+            summary="对象负责人需要确认",
+            detail="材料未明确说明该对象的最终业务负责人。",
+            candidate_ids=(target.candidate_id,),
+            evidence_fragment_ids=target.evidence_fragment_ids,
+            blocks_release=False,
+            recommendation="由业务负责人在人工复核时确认 owner。",
+        )
+        output = ReviewerOutputV1(
+            request_digest=request.request_digest,
+            findings=(finding,),
+            done=True,
+        )
+        return ReviewerResponseV1(
+            requested_model="qwen3.8-max",
+            response_model="qwen3.8-max",
+            provider_request_id="provider-review",
             output=output,
             output_digest=sha256_value(output),
         )
@@ -184,6 +220,10 @@ def test_generic_builder_candidates_enter_review_without_writing_draft(
             model=_ConstructionBuilderModel(),
             skill=load_skill_package("ontology-build", "1.0.0"),
         ),
+        reviewer=BoundedReviewerOrchestrator(
+            model=_ConstructionReviewerModel(),
+            skill=load_skill_package("ontology-review", "1.0.0"),
+        ),
         engine=None,
     )
 
@@ -194,6 +234,9 @@ def test_generic_builder_candidates_enter_review_without_writing_draft(
     assert {item.candidate_type for item in run.candidates} == {"SOURCE", "OBJECT"}
     builder_stage = next(item for item in run.stage_receipts if item.stage == "BUILDER_AGENT")
     assert builder_stage.status == "PASS"
+    reviewer_stage = next(item for item in run.stage_receipts if item.stage == "REVIEWER_AGENT")
+    assert reviewer_stage.status == "PASS"
+    assert run.machine_findings[0].finding_id == "finding.model.confirm_owner"
     assert all(item.review_status == "UNREVIEWED" for item in run.candidates)
 
 

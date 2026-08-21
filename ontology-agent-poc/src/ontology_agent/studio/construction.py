@@ -34,6 +34,7 @@ from .builder import (
     BuilderRunResultV1,
 )
 from .construction_jobs import ConstructionJobInputV1
+from .evidence import EvidenceNormalizationError, normalize_evidence
 from .source_projection import (
     SourceProjectionAnchorV1,
     StudioAuthoringProjectionV1,
@@ -44,6 +45,13 @@ from .source_observations import (
 )
 from .workspace import WorkspaceConflictError
 from .workspace_store import StudioWorkspaceHeadRow, WorkspaceStateSubjectV1
+from .reviewer import (
+    BoundedReviewerOrchestrator,
+    ReviewerError,
+    ReviewerFindingV1,
+    ReviewerRunResultV1,
+    deterministic_candidate_findings,
+)
 
 
 class ConstructionError(RuntimeError):
@@ -98,6 +106,7 @@ class ConstructionStageReceiptV1(StrictModel):
         "PACKAGED_CASE_COMPILATION",
         "SEMANTICA_PROPOSAL",
         "CANDIDATE_PRECHECK",
+        "REVIEWER_AGENT",
     ]
     status: Literal["PASS", "WARN", "SKIPPED", "FAIL"]
     input_digest: Sha256
@@ -200,6 +209,16 @@ class HttpSemanticaConstructionEngine:
             raise ConstructionError("Semantica worker violated the closed response") from exc
 
 
+class CandidateDraftDiffV1(StrictModel):
+    contract: Literal["candidate-draft-diff/v1"] = "candidate-draft-diff/v1"
+    change_type: Literal[
+        "CREATE", "UPDATE", "NO_CHANGE", "NON_COMPILABLE", "UNKNOWN"
+    ]
+    before: dict[str, Any] | None = None
+    after: dict[str, Any] | None = None
+    changed_paths: tuple[str, ...] = Field(default=(), max_length=128)
+
+
 class ConstructionCandidateV1(StrictModel):
     contract: Literal["construction-candidate/v1"] = "construction-candidate/v1"
     candidate_id: str = Field(pattern=r"^candidate\.[0-9a-f]{32}$")
@@ -226,11 +245,19 @@ class ConstructionCandidateV1(StrictModel):
     source_anchors: tuple[SourceProjectionAnchorV1, ...] = ()
     impact_refs: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
+    draft_diff: CandidateDraftDiffV1 = Field(
+        default_factory=lambda: CandidateDraftDiffV1(change_type="UNKNOWN")
+    )
 
     @model_validator(mode="after")
     def compile_flag_matches_operation(self) -> ConstructionCandidateV1:
         if self.compile_eligible != (self.proposed_operation is not None):
             raise ValueError("Compile eligibility must match the typed operation")
+        if not self.compile_eligible and self.draft_diff.change_type not in {
+            "NON_COMPILABLE",
+            "UNKNOWN",
+        }:
+            raise ValueError("A non-compilable candidate cannot have a Draft mutation")
         return self
 
 
@@ -258,6 +285,7 @@ class ConstructionRunV1(StrictModel):
     selected_sources: tuple[ConstructionSourceSettlementV1, ...]
     stage_receipts: tuple[ConstructionStageReceiptV1, ...]
     candidates: tuple[ConstructionCandidateV1, ...]
+    machine_findings: tuple[ReviewerFindingV1, ...] = ()
     started_at: datetime
     completed_at: datetime | None
     run_checksum: Sha256
@@ -782,6 +810,70 @@ def _candidate(
         source_anchors=source_anchors,
         impact_refs=(canonical_target,) if canonical_target else (),
         limitations=limitations,
+        draft_diff=CandidateDraftDiffV1(
+            change_type="UNKNOWN" if operation is not None else "NON_COMPILABLE"
+        ),
+    )
+
+
+def _changed_paths(before: Any, after: Any, prefix: str = "") -> tuple[str, ...]:
+    if before == after:
+        return ()
+    if isinstance(before, dict) and isinstance(after, dict):
+        output: list[str] = []
+        for key in sorted(set(before) | set(after)):
+            path = f"{prefix}.{key}" if prefix else str(key)
+            output.extend(_changed_paths(before.get(key), after.get(key), path))
+            if len(output) >= 128:
+                break
+        return tuple(output[:128])
+    if isinstance(before, (list, tuple)) and isinstance(after, (list, tuple)):
+        if len(before) != len(after):
+            return (prefix or "$",)
+        output = []
+        for index, (left, right) in enumerate(zip(before, after, strict=True)):
+            output.extend(_changed_paths(left, right, f"{prefix}[{index}]"))
+            if len(output) >= 128:
+                break
+        return tuple(output[:128])
+    return (prefix or "$",)
+
+
+def _with_draft_diff(
+    candidate: ConstructionCandidateV1,
+    package: OntologyPackage,
+) -> ConstructionCandidateV1:
+    operation = candidate.proposed_operation
+    if operation is None:
+        return candidate.model_copy(
+            update={"draft_diff": CandidateDraftDiffV1(change_type="NON_COMPILABLE")}
+        )
+    current = next(
+        (
+            item.model_dump(mode="json")
+            for item in getattr(package, operation.collection)
+            if item.id == operation.object_id
+        ),
+        None,
+    )
+    if operation.action == "UPSERT":
+        after = operation.payload
+    elif operation.action == "DEPRECATE":
+        after = {**(current or {}), "status": "deprecated"}
+    else:
+        after = current
+    change_type: Literal["CREATE", "UPDATE", "NO_CHANGE"] = (
+        "CREATE" if current is None else "NO_CHANGE" if current == after else "UPDATE"
+    )
+    return candidate.model_copy(
+        update={
+            "draft_diff": CandidateDraftDiffV1(
+                change_type=change_type,
+                before=current,
+                after=after,
+                changed_paths=_changed_paths(current, after),
+            )
+        }
     )
 
 
@@ -816,6 +908,7 @@ class StudioConstructionService:
         authoring: StudioAuthoringProjectionV1,
         engine: ConstructionEngine | None,
         builder: BoundedBuilderOrchestrator | None = None,
+        reviewer: BoundedReviewerOrchestrator | None = None,
         review_drafts: Any | None = None,
         selected_source_version_ids: tuple[str, ...] = (),
     ) -> None:
@@ -825,6 +918,7 @@ class StudioConstructionService:
         self.intake = intake
         self.authoring = authoring
         self.builder = builder
+        self.reviewer = reviewer
         self.engine = engine
         self.review_drafts = review_drafts
         self.selected_source_version_ids = selected_source_version_ids
@@ -1504,14 +1598,56 @@ class StudioConstructionService:
             except Exception as exc:
                 engine_error = exc
                 engine_result, engine_candidates = (None, ())
-            candidates = (
-                *direct,
-                *builder_candidates,
-                *packaged_candidates,
-                *engine_candidates,
+            candidates = tuple(
+                _with_draft_diff(candidate, self.package)
+                for candidate in (
+                    *direct,
+                    *builder_candidates,
+                    *packaged_candidates,
+                    *engine_candidates,
+                )
             )
             if not candidates:
                 raise ConstructionError("Construction produced no candidate denominator")
+            evidence_bundle = (
+                builder_result.evidence_bundle if builder_result is not None else None
+            )
+            if evidence_bundle is None:
+                try:
+                    evidence_bundle = normalize_evidence(
+                        self.intake, workspace_id=workspace.workspace_id
+                    )
+                except EvidenceNormalizationError:
+                    evidence_bundle = None
+            deterministic_findings = deterministic_candidate_findings(
+                candidates,
+                package=self.package,
+                evidence_bundle=evidence_bundle,
+            )
+            reviewer_result: ReviewerRunResultV1 | None = None
+            reviewer_error: ReviewerError | None = None
+            if self.reviewer is not None:
+                if evidence_bundle is None:
+                    reviewer_error = ReviewerError(
+                        "Reviewer has no normalized evidence bundle"
+                    )
+                else:
+                    try:
+                        reviewer_result = self.reviewer.review(
+                            run_id=run_id,
+                            workspace_id=workspace.workspace_id,
+                            base_draft_checksum=workspace.draft_checksum,
+                            package=self.package,
+                            candidates=candidates,
+                            evidence_bundle=evidence_bundle,
+                        )
+                    except ReviewerError as exc:
+                        reviewer_error = exc
+            machine_findings = (
+                reviewer_result.findings
+                if reviewer_result is not None
+                else deterministic_findings
+            )
             structured_digest = sha256_value(
                 [item.model_dump(mode="json") for item in direct]
             )
@@ -1541,6 +1677,20 @@ class StudioConstructionService:
                 engine_result.raw_result_digest
                 if engine_result is not None
                 else sha256_value({"status": "NOT_CONFIGURED"})
+            )
+            reviewer_digest = (
+                reviewer_result.result_digest
+                if reviewer_result is not None
+                else sha256_value(
+                    {
+                        "status": (
+                            "FAILED"
+                            if reviewer_error is not None
+                            else "NOT_CONFIGURED"
+                        ),
+                        "deterministic_findings": deterministic_findings,
+                    }
+                )
             )
             receipts = (
                 ConstructionStageReceiptV1(
@@ -1664,6 +1814,33 @@ class StudioConstructionService:
                     implementation="ontology-studio/candidate-precheck@1",
                     detail="Compile-ineligible items remain explicit and cannot be accepted.",
                 ),
+                ConstructionStageReceiptV1(
+                    stage="REVIEWER_AGENT",
+                    status=(
+                        "PASS"
+                        if reviewer_result is not None
+                        else "WARN"
+                        if reviewer_error is not None
+                        else "SKIPPED"
+                    ),
+                    input_digest=sha256_value(
+                        [item.revision_digest for item in candidates]
+                    ),
+                    output_digest=reviewer_digest,
+                    item_count=len(machine_findings),
+                    implementation=(
+                        f"{reviewer_result.skill_id}@{reviewer_result.skill_version}"
+                        if reviewer_result is not None
+                        else "deterministic-review-only"
+                    ),
+                    detail=(
+                        "The independent Review Skill produced machine findings; only a human can disposition Candidates."
+                        if reviewer_result is not None
+                        else "The Reviewer model was unavailable; deterministic findings remain visible."
+                        if reviewer_error is not None
+                        else "No Reviewer model is configured; deterministic findings remain visible."
+                    ),
+                ),
             )
             unsigned = {
                 "contract": "construction-run/v1",
@@ -1687,6 +1864,7 @@ class StudioConstructionService:
                 "selected_sources": settlements,
                 "stage_receipts": receipts,
                 "candidates": candidates,
+                "machine_findings": machine_findings,
                 "started_at": started,
                 "completed_at": datetime.now(timezone.utc),
             }

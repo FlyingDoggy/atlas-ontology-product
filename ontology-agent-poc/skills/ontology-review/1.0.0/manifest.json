@@ -1,0 +1,21 @@
+{
+  "contract": "agent-skill-package/v1",
+  "skill_id": "ontology-review",
+  "version": "1.0.0",
+  "role": "REVIEWER",
+  "entrypoint": "SKILL.md",
+  "output_schema": "schemas/reviewer-output.schema.json",
+  "references": ["references/review-rules.md"],
+  "evals": ["evals/README.md"],
+  "tool_ids": [
+    "evidence.list",
+    "evidence.read",
+    "candidate.inspect",
+    "draft.compare",
+    "finding.record"
+  ],
+  "max_iterations": 1,
+  "max_model_calls": 1,
+  "human_review_required": true,
+  "direct_draft_write": false
+}

@@ -79,6 +79,13 @@ const candidate = (overrides: Partial<ConstructionCandidate>): ConstructionCandi
   source_anchors: [],
   impact_refs: ["metric.average_daily_turnover"],
   limitations: [],
+  draft_diff: {
+    contract: "candidate-draft-diff/v1",
+    change_type: "NON_COMPILABLE",
+    before: null,
+    after: null,
+    changed_paths: [],
+  },
   ...overrides,
 });
 

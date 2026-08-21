@@ -44,6 +44,11 @@ from .studio.builder import (
     BuilderPhaseRequestV1,
     BuilderPhaseResponseV1,
 )
+from .studio.reviewer import (
+    ReviewerOutputV1,
+    ReviewerRequestV1,
+    ReviewerResponseV1,
+)
 from .studio.skill_packages import SkillPackageError, load_skill_package
 from .solution_llm import (
     SolutionBoundGoal,
@@ -177,6 +182,117 @@ def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
     except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
         raise HTTPException(status_code=502, detail="Ontology Builder provider request failed") from exc
     return BuilderPhaseResponseV1(
+        requested_model=requested_model,
+        response_model=response_model,
+        provider_request_id=provider_request_id,
+        output=output,
+        output_digest=sha256_value(output),
+    )
+
+
+@app.post("/model/v1/ontology-review", response_model=ReviewerResponseV1)
+def ontology_review(request: ReviewerRequestV1) -> ReviewerResponseV1:
+    """Run an independent Review Skill that can emit findings, never decisions."""
+    if os.environ.get("ONTOLOGY_REVIEWER_LLM_ENABLED", "").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+    }:
+        raise HTTPException(status_code=503, detail="Ontology Reviewer is disabled")
+    key = os.environ.get("ONTOLOGY_QWEN_API_KEY")
+    base_url = os.environ.get("ONTOLOGY_QWEN_BASE_URL")
+    if not key or not base_url:
+        raise HTTPException(status_code=503, detail="Ontology Reviewer model is not configured")
+    skill_root_raw = os.environ.get("ONTOLOGY_SKILL_ROOT")
+    try:
+        skill = load_skill_package(
+            request.skill_id,
+            request.skill_version,
+            root=Path(skill_root_raw) if skill_root_raw else None,
+        )
+    except SkillPackageError as exc:
+        raise HTTPException(status_code=503, detail="Ontology Review Skill is unavailable") from exc
+    if (
+        skill.manifest.role != "REVIEWER"
+        or skill.package_checksum != request.skill_checksum
+        or skill.manifest.direct_draft_write
+        or not skill.manifest.human_review_required
+    ):
+        raise HTTPException(status_code=409, detail="Ontology Reviewer authority mismatch")
+
+    requested_model = os.environ.get("ONTOLOGY_REVIEWER_MODEL", "qwen3.8-max").strip()
+    if not requested_model:
+        raise HTTPException(status_code=503, detail="Ontology Reviewer model is invalid")
+    schema = ReviewerOutputV1.model_json_schema()
+    schema["properties"]["request_digest"] = {
+        "const": request.request_digest,
+        "type": "string",
+    }
+    reference_rules = "\n\n".join(skill.reference_texts.values())
+    system_prompt = (
+        skill.instructions
+        + "\n\n"
+        + reference_rules
+        + "\n\nThis is a fresh review context. Candidate projections intentionally omit "
+        "Builder rationale and private reasoning. Return findings only; never return "
+        "approval, disposition, Draft operations, publication or activation actions."
+    )
+    provider_body: dict[str, Any] = {
+        "model": requested_model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            _closed_output_contract_message(schema),
+            {"role": "user", "content": canonical_bytes(request).decode("utf-8")},
+        ],
+        "temperature": 0,
+        "max_tokens": int(
+            os.environ.get("ONTOLOGY_REVIEWER_MAX_OUTPUT_TOKENS", "8000")
+        ),
+        "response_format": {"type": "json_object"},
+        "enable_thinking": False,
+        "stream": False,
+    }
+    timeout = float(
+        os.environ.get("ONTOLOGY_REVIEWER_PROVIDER_TIMEOUT_SECONDS", "60")
+    )
+    try:
+        raw = _provider_transport(
+            str(base_url).rstrip("/") + "/chat/completions",
+            {
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            provider_body,
+            timeout,
+        )
+        response_model = raw["model"]
+        provider_request_id = raw["id"]
+        content = raw["choices"][0]["message"]["content"]
+        if (
+            not isinstance(response_model, str)
+            or not response_model
+            or not isinstance(provider_request_id, str)
+            or not provider_request_id
+            or not isinstance(content, str)
+        ):
+            raise ValueError("Provider response identity is invalid")
+        output = ReviewerOutputV1.model_validate_json(content)
+        candidate_ids = {item.candidate_id for item in request.candidates}
+        evidence_ids = {item.fragment_id for item in request.evidence_fragments}
+        if (
+            output.request_digest != request.request_digest
+            or not output.done
+            or len(output.findings) > request.max_findings
+            or any(
+                not set(item.candidate_ids).issubset(candidate_ids)
+                or not set(item.evidence_fragment_ids).issubset(evidence_ids)
+                for item in output.findings
+            )
+        ):
+            raise ValueError("Reviewer output escaped its exact request")
+    except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=502, detail="Ontology Reviewer provider request failed") from exc
+    return ReviewerResponseV1(
         requested_model=requested_model,
         response_model=response_model,
         provider_request_id=provider_request_id,

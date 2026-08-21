@@ -139,6 +139,8 @@ services:
       ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
       ONTOLOGY_BUILDER_LLM_ENABLED: "true"
       ONTOLOGY_BUILDER_MODEL: qwen3.8-max
+      ONTOLOGY_REVIEWER_LLM_ENABLED: "true"
+      ONTOLOGY_REVIEWER_MODEL: qwen3.8-max
       ONTOLOGY_SKILL_ROOT: /app/skills
       ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
       ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
