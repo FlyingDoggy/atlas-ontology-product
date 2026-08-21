@@ -67,3 +67,30 @@ def test_solution_directory_rejects_duplicate_create(tmp_path: Path) -> None:
 
     with pytest.raises(SolutionManagementError, match="already exists"):
         service.create(**kwargs)
+
+
+def test_solution_directory_records_a_true_blank_creation(tmp_path: Path) -> None:
+    service = SolutionDirectoryService(
+        FileSolutionDirectoryStore(tmp_path / "solution-directory.json")
+    )
+
+    created = service.create(
+        solution_id="ontology.custom.blank_case",
+        display_name=SolutionDisplayName(en="Blank Case", zh="空白案例"),
+        description="A new case with no inherited domain semantics.",
+        owner="Ontology Team",
+        creation_mode="BLANK",
+    )
+
+    assert created.creation_mode == "BLANK"
+    assert created.template_solution_id is None
+
+    with pytest.raises(SolutionManagementError, match="Only template creation"):
+        service.create(
+            solution_id="ontology.custom.invalid_blank",
+            display_name=SolutionDisplayName(en="Invalid", zh="无效"),
+            description="Invalid blank request.",
+            owner="Ontology Team",
+            creation_mode="BLANK",
+            template_solution_id="ontology.exchange_analytics.adt",
+        )

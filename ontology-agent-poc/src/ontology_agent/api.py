@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .adt_scenario import (
     ADT_CERTIFICATION_PROFILE,
@@ -76,11 +76,14 @@ from .semantic_change import (
 from .solution_adapters import (
     ADT_STUDIO_ADAPTER_ID,
     CASH_TRADING_STUDIO_ADAPTER_ID,
+    GENERIC_STUDIO_ADAPTER_ID,
     ADTStudioAdapter,
     CashTradingStudioAdapter,
+    GenericStudioAdapter,
 )
 from .solution_llm import attempt_solution_grounding
 from .studio.cash_workspace import CashTradingDraftWorkspaceService
+from .studio.generic_workspace import GenericDraftWorkspaceService
 from .studio.construction import (
     ConstructionConflict,
     ConstructionError,
@@ -243,13 +246,22 @@ class SolutionQuestionFamily(BaseModel):
 class CreateStudioSolutionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     contract: Literal["studio-solution-create/v1"] = "studio-solution-create/v1"
-    creation_mode: Literal["TEMPLATE"] = "TEMPLATE"
-    template_solution_id: str = Field(
-        pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    creation_mode: Literal["TEMPLATE", "BLANK"]
+    template_solution_id: str | None = Field(
+        default=None,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$",
     )
     display_name: SolutionDisplayName
     description: str = Field(min_length=1, max_length=1000)
     owner: str = Field(min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def validate_creation_source(self) -> CreateStudioSolutionRequest:
+        if self.creation_mode == "TEMPLATE" and self.template_solution_id is None:
+            raise ValueError("Template creation requires a template solution")
+        if self.creation_mode == "BLANK" and self.template_solution_id is not None:
+            raise ValueError("Blank creation cannot reference a template solution")
+        return self
 
 
 def _public_solution_question_family(path: Path) -> dict[str, Any]:
@@ -457,6 +469,7 @@ def _draft_workspaces(
     if adapter_id not in {
         ADT_STUDIO_ADAPTER_ID,
         CASH_TRADING_STUDIO_ADAPTER_ID,
+        GENERIC_STUDIO_ADAPTER_ID,
     }:
         raise WorkspaceError("The registered Studio adapter is not installed")
     try:
@@ -484,11 +497,11 @@ def _draft_workspaces(
         if state_store is not None
         else None
     )
-    service_type = (
-        DraftWorkspaceService
-        if adapter_id == ADT_STUDIO_ADAPTER_ID
-        else CashTradingDraftWorkspaceService
-    )
+    service_type = {
+        ADT_STUDIO_ADAPTER_ID: DraftWorkspaceService,
+        CASH_TRADING_STUDIO_ADAPTER_ID: CashTradingDraftWorkspaceService,
+        GENERIC_STUDIO_ADAPTER_ID: GenericDraftWorkspaceService,
+    }[adapter_id]
     return service_type(
         DEFAULT_STUDIO_DIR / "workspaces",
         solution_root,
@@ -498,12 +511,15 @@ def _draft_workspaces(
     )
 
 
-def _studio_adapter(workspace_id: str) -> ADTStudioAdapter | CashTradingStudioAdapter:
+def _studio_adapter(
+    workspace_id: str,
+) -> ADTStudioAdapter | CashTradingStudioAdapter | GenericStudioAdapter:
     registration = _registration_for_workspace(workspace_id)
     adapter_id = registration.subject.studio_adapter_id
     if adapter_id not in {
         ADT_STUDIO_ADAPTER_ID,
         CASH_TRADING_STUDIO_ADAPTER_ID,
+        GENERIC_STUDIO_ADAPTER_ID,
     }:
         raise WorkspaceError("The registered Studio adapter is not installed")
     component = next(
@@ -522,11 +538,11 @@ def _studio_adapter(workspace_id: str) -> ADTStudioAdapter | CashTradingStudioAd
     if not descriptor_path.is_relative_to(root) or not descriptor_path.is_file():
         raise WorkspaceError("The registered authoring profile is unavailable")
     try:
-        adapter_type = (
-            ADTStudioAdapter
-            if adapter_id == ADT_STUDIO_ADAPTER_ID
-            else CashTradingStudioAdapter
-        )
+        adapter_type = {
+            ADT_STUDIO_ADAPTER_ID: ADTStudioAdapter,
+            CASH_TRADING_STUDIO_ADAPTER_ID: CashTradingStudioAdapter,
+            GENERIC_STUDIO_ADAPTER_ID: GenericStudioAdapter,
+        }[adapter_id]
         return adapter_type(
             workspace=_draft_workspaces(workspace_id),
             descriptor_path=descriptor_path,
@@ -1572,22 +1588,34 @@ def create_control_solution(request: CreateStudioSolutionRequest) -> dict[str, A
     scenario_id = f"scenario.custom.{suffix}"
     workspace_id = f"workspace.custom.{suffix}"
     try:
-        template = _latest_solution_registration(request.template_solution_id)
-        if _directory_entry(template).status != "ACTIVE":
-            raise SolutionManagementError("Archived solutions cannot be templates")
-        record = catalog.clone_template(
-            template,
-            solution_id=solution_id,
-            scenario_id=scenario_id,
-            workspace_id=workspace_id,
-            display_name=request.display_name,
-            description=request.description,
-        )
+        if request.creation_mode == "TEMPLATE":
+            assert request.template_solution_id is not None
+            template = _latest_solution_registration(request.template_solution_id)
+            if _directory_entry(template).status != "ACTIVE":
+                raise SolutionManagementError("Archived solutions cannot be templates")
+            record = catalog.clone_template(
+                template,
+                solution_id=solution_id,
+                scenario_id=scenario_id,
+                workspace_id=workspace_id,
+                display_name=request.display_name,
+                description=request.description,
+            )
+        else:
+            record = catalog.create_blank(
+                solution_id=solution_id,
+                scenario_id=scenario_id,
+                workspace_id=workspace_id,
+                display_name=request.display_name,
+                description=request.description,
+                owner=request.owner,
+            )
         directory = _solution_directory().create(
             solution_id=solution_id,
             display_name=request.display_name,
             description=request.description,
             owner=request.owner,
+            creation_mode=request.creation_mode,
             template_solution_id=request.template_solution_id,
         )
     except (SolutionCatalogError, SolutionManagementError) as exc:

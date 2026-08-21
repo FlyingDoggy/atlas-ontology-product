@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from ontology_agent.io import canonical_bytes
+from ontology_agent.io import canonical_bytes, load_package
 from ontology_agent.product_context import ExactStoredArtifactRef
 from ontology_agent.studio.solutions import (
     SolutionBundleRecordV1,
@@ -244,3 +244,61 @@ def test_template_clone_has_independent_solution_scenario_and_workspace_identity
     assert "id: scenario.custom.market_activity" in cloned_package
     assert '"workspace_id": "workspace.custom.market_activity"' in cloned_descriptor
     assert created.subject_checksum != template.subject_checksum
+
+
+def test_blank_solution_contains_only_a_generic_draft_envelope(
+    scenario_dir: Path, tmp_path: Path
+) -> None:
+    repository = MemorySolutionRepository()
+    artifacts = MemorySolutionArtifacts()
+    service = SolutionCatalogService(
+        repository,
+        artifacts,  # type: ignore[arg-type]
+        manifest_path=scenario_dir / "solution-registration.json",
+        component_root=scenario_dir,
+    )
+
+    created = service.create_blank(
+        solution_id="ontology.custom.blank_case",
+        scenario_id="scenario.custom.blank_case",
+        workspace_id="workspace.custom.blank_case",
+        display_name=SolutionDisplayName(en="Blank Case", zh="空白案例"),
+        description="Build a governed ontology from newly registered evidence.",
+        owner="ontology.author",
+    )
+    installed = service.materialize(created, tmp_path / "blank")
+    package = load_package(installed / "ontology" / "package.yaml")
+
+    assert created.subject.studio_adapter_id == "studio-adapter.generic@1"
+    assert created.subject.semantic_source_version == "0.1.0"
+    assert package.package_id == "ontology.custom.blank_case"
+    assert package.scenario.definition == (
+        "Build a governed ontology from newly registered evidence."
+    )
+    assert package.scenario.tags == ("solution:blank", "authority:draft")
+    assert package.sources[0].trust == "assumption"
+    assert all(
+        not getattr(package, collection)
+        for collection in (
+            "actors",
+            "processes",
+            "entities",
+            "properties",
+            "relationships",
+            "dimensions",
+            "rules",
+            "metrics",
+            "data_sources",
+            "bindings",
+            "joins",
+            "analysis_patterns",
+            "policies",
+            "questions",
+        )
+    )
+    assert not any(
+        token in (installed / "ontology" / "package.yaml").read_text(
+            encoding="utf-8"
+        ).casefold()
+        for token in ("average daily turnover", "cash trading")
+    )

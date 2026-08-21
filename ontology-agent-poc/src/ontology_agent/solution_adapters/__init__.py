@@ -9,6 +9,7 @@ from .cash_trading_studio import (
     CASH_TRADING_STUDIO_ADAPTER_ID,
     CashTradingStudioAdapter,
 )
+from .generic_studio import GENERIC_STUDIO_ADAPTER_ID, GenericStudioAdapter
 
 
 __all__ = [
@@ -16,4 +17,6 @@ __all__ = [
     "ADTStudioAdapter",
     "CASH_TRADING_STUDIO_ADAPTER_ID",
     "CashTradingStudioAdapter",
+    "GENERIC_STUDIO_ADAPTER_ID",
+    "GenericStudioAdapter",
 ]

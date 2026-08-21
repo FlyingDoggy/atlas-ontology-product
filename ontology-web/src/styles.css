@@ -1787,10 +1787,10 @@ a:focus-visible, button:focus-visible {
 .solution-dialog > header h2 { margin: 7px 0 0; color: #fff; font-size: var(--component-type-heading-sm); }
 .solution-dialog > header button { width: 34px; height: 34px; color: #b6c8c8; background: transparent; border: 1px solid #49616a; font-size: 19px; }
 .solution-dialog form { padding: 24px; }
-.creation-methods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 0 0 20px; padding: 0; border: 0; }
+.creation-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0 0 20px; padding: 0; border: 0; }
 .creation-methods legend { grid-column: 1 / -1; margin-bottom: 9px; color: #52696e; font-size: var(--semantic-type-meta); font-weight: 750; }
 .creation-methods label { position: relative; min-height: 86px; display: grid; align-content: center; gap: 6px; padding: 14px; color: #304e55; background: #fff; border: 1px solid #c1d0d1; cursor: pointer; }
-.creation-methods label.is-selected { color: #174e48; background: #e7f2ef; border-color: #4d938a; box-shadow: inset 0 -3px 0 var(--jade); }
+.creation-methods label.is-selected { color: #174e48; background: #e7f2ef; border-color: #4d938a; box-shadow: 0 0 0 1px #4d938a; }
 .creation-methods label.is-disabled { color: #8a9698; background: #f2f4f4; cursor: not-allowed; }
 .creation-methods input { position: absolute; top: 10px; right: 10px; }
 .creation-methods strong { font-size: var(--semantic-type-meta); }

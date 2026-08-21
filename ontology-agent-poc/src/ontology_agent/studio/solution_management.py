@@ -261,10 +261,17 @@ class SolutionDirectoryService:
         display_name: SolutionDisplayName,
         description: str,
         owner: str,
-        template_solution_id: str,
+        creation_mode: Literal["TEMPLATE", "IMPORT", "BLANK"] = "TEMPLATE",
+        template_solution_id: str | None = None,
     ) -> SolutionDirectoryEntryV1:
         if self.store.get(solution_id) is not None:
             raise SolutionManagementError("Solution directory entry already exists")
+        if creation_mode == "TEMPLATE" and template_solution_id is None:
+            raise SolutionManagementError("Template creation requires a template")
+        if creation_mode != "TEMPLATE" and template_solution_id is not None:
+            raise SolutionManagementError(
+                "Only template creation can retain a template identity"
+            )
         now = datetime.now(timezone.utc)
         return self.store.put(
             SolutionDirectoryEntryV1(
@@ -272,7 +279,7 @@ class SolutionDirectoryService:
                 display_name=display_name,
                 description=description,
                 owner=owner,
-                creation_mode="TEMPLATE",
+                creation_mode=creation_mode,
                 template_solution_id=template_solution_id,
                 created_at=now,
                 updated_at=now,

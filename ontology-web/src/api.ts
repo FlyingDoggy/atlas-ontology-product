@@ -1330,7 +1330,8 @@ export async function fetchSolutionCatalog(): Promise<SolutionCatalog> {
 }
 
 export type CreateStudioSolutionInput = {
-  template_solution_id: string;
+  creation_mode: "TEMPLATE" | "BLANK";
+  template_solution_id?: string | null;
   display_name: { en: string; zh: string };
   description: string;
   owner: string;
@@ -1349,7 +1350,6 @@ export async function createStudioSolution(
     method: "POST",
     body: JSON.stringify({
       contract: "studio-solution-create/v1",
-      creation_mode: "TEMPLATE",
       ...input,
     }),
   });

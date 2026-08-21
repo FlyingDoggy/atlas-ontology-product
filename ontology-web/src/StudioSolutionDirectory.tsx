@@ -10,12 +10,17 @@ import {
   restoreStudioSolution,
   updateStudioSolution,
   type SolutionCatalog,
+  type CreateStudioSolutionInput,
   type StudioSolution,
 } from "./api";
 import { studioPageHref } from "./StudioNavigation";
 
 type DialogState =
-  | { kind: "create"; template: StudioSolution }
+  | {
+      kind: "create";
+      initialMode: "BLANK" | "TEMPLATE";
+      template?: StudioSolution;
+    }
   | { kind: "edit"; solution: StudioSolution }
   | { kind: "delete"; solution: StudioSolution }
   | null;
@@ -65,12 +70,7 @@ function DirectoryDialog({
   busy: boolean;
   error: string | null;
   onClose: () => void;
-  onCreate: (input: {
-    template_solution_id: string;
-    display_name: { en: string; zh: string };
-    description: string;
-    owner: string;
-  }) => void;
+  onCreate: (input: CreateStudioSolutionInput) => void;
   onUpdate: (solution: StudioSolution, input: {
     display_name: { en: string; zh: string };
     description: string;
@@ -78,23 +78,32 @@ function DirectoryDialog({
   }) => void;
   onDelete: (solution: StudioSolution) => void;
 }) {
+  const [creationMode, setCreationMode] = useState<"BLANK" | "TEMPLATE">(
+    state?.kind === "create" ? state.initialMode : "BLANK",
+  );
   const [templateId, setTemplateId] = useState(
-    state?.kind === "create" ? state.template.solution_id : solutions[0]?.solution_id ?? "",
+    state?.kind === "create"
+      ? state.template?.solution_id ?? solutions[0]?.solution_id ?? ""
+      : solutions[0]?.solution_id ?? "",
   );
   const selectedTemplate = solutions.find((item) => item.solution_id === templateId)
     ?? (state?.kind === "create" ? state.template : solutions[0]);
   const editing = state?.kind === "edit" ? state.solution : null;
   const [nameZh, setNameZh] = useState(
     editing?.display_name.zh
-    ?? (state?.kind === "create" ? `${state.template.display_name.zh}副本` : ""),
+    ?? (state?.kind === "create" && state.initialMode === "TEMPLATE" && state.template
+      ? `${state.template.display_name.zh}副本`
+      : ""),
   );
   const [nameEn, setNameEn] = useState(
     editing?.display_name.en
-    ?? (state?.kind === "create" ? `${state.template.display_name.en} Copy` : ""),
+    ?? (state?.kind === "create" && state.initialMode === "TEMPLATE" && state.template
+      ? `${state.template.display_name.en} Copy`
+      : ""),
   );
   const [description, setDescription] = useState(
     editing?.directory?.description
-    ?? (state?.kind === "create"
+    ?? (state?.kind === "create" && state.initialMode === "TEMPLATE" && state.template
       ? `基于“${state.template.display_name.zh}”结构创建的独立本体解决方案。`
       : ""),
   );
@@ -116,7 +125,11 @@ function DirectoryDialog({
       owner: owner.trim(),
     };
     if (state.kind === "edit") onUpdate(state.solution, input);
-    else onCreate({ ...input, template_solution_id: templateId });
+    else onCreate({
+      ...input,
+      creation_mode: creationMode,
+      template_solution_id: creationMode === "TEMPLATE" ? templateId : null,
+    });
   };
   const title = state.kind === "create"
     ? "新建解决方案"
@@ -138,18 +151,43 @@ function DirectoryDialog({
             <>
               <fieldset className="creation-methods">
                 <legend>创建基础</legend>
-                <label className="is-selected"><input type="radio" checked readOnly /><strong>从模板创建</strong><small>当前通过已安装模板创建独立解决方案；源材料、运行记录和发布历史不会继承。</small></label>
+                <label className={creationMode === "BLANK" ? "is-selected" : ""}>
+                  <input
+                    type="radio"
+                    name="creation-mode"
+                    value="BLANK"
+                    checked={creationMode === "BLANK"}
+                    onChange={() => setCreationMode("BLANK")}
+                  />
+                  <strong>空白创建</strong>
+                  <small>创建不含任何业务对象、指标或规则的独立 Draft。</small>
+                </label>
+                <label className={creationMode === "TEMPLATE" ? "is-selected" : ""}>
+                  <input
+                    type="radio"
+                    name="creation-mode"
+                    value="TEMPLATE"
+                    checked={creationMode === "TEMPLATE"}
+                    onChange={() => setCreationMode("TEMPLATE")}
+                    disabled={!solutions.some((item) => solutionStatus(item) === "ACTIVE")}
+                  />
+                  <strong>从模板创建</strong>
+                  <small>复制已安装模板的结构；源材料、运行记录和发布历史不会继承。</small>
+                </label>
               </fieldset>
-              <label className="solution-form-field">
-                <span>模板</span>
-                <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
-                  {solutions.filter((item) => solutionStatus(item) === "ACTIVE").map((item) => (
-                    <option value={item.solution_id} key={item.solution_id}>{item.display_name.zh}</option>
-                  ))}
-                </select>
-                <small>选择最接近目标业务场景的模板，创建后再替换源材料并重新构建。</small>
-              </label>
-              {selectedTemplate ? <p className="template-contract">模板版本 v{selectedTemplate.solution_version} · {selectedTemplate.resource_count ?? 0} 项资源 · {selectedTemplate.components.length} 个核心组件</p> : null}
+              {creationMode === "TEMPLATE" ? (
+                <>
+                  <label className="solution-form-field">
+                    <span>模板</span>
+                    <select value={templateId} onChange={(event) => setTemplateId(event.target.value)} required>
+                      {solutions.filter((item) => solutionStatus(item) === "ACTIVE").map((item) => (
+                        <option value={item.solution_id} key={item.solution_id}>{item.display_name.zh}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {selectedTemplate ? <p className="template-contract">模板版本 v{selectedTemplate.solution_version} · {selectedTemplate.resource_count ?? 0} 项资源 · {selectedTemplate.components.length} 个核心组件</p> : null}
+                </>
+              ) : null}
             </>
           ) : null}
           {state.kind !== "delete" ? (
@@ -197,7 +235,9 @@ export function StudioSolutionDirectory({
   const solutions = useMemo(() => latestSolutions(catalog), [catalog]);
   const selected = solutions.find((item) => item.solution_id === selectedSolutionId) ?? solutions[0];
   const [dialog, setDialog] = useState<DialogState>(
-    openCreateOnLoad && selected ? { kind: "create", template: selected } : null,
+    openCreateOnLoad
+      ? { kind: "create", initialMode: "BLANK", template: selected }
+      : null,
   );
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
   const [search, setSearch] = useState("");
@@ -254,7 +294,7 @@ export function StudioSolutionDirectory({
           <h1>全部解决方案</h1>
           <p>在一个目录中切换业务场景、创建独立 Draft，并管理每个本体解决方案的生命周期。</p>
         </div>
-        <button type="button" className="primary" onClick={() => selected && setDialog({ kind: "create", template: selected })}>新建解决方案</button>
+        <button type="button" className="primary" onClick={() => setDialog({ kind: "create", initialMode: "BLANK", template: selected })}>新建解决方案</button>
       </header>
       <section className="solution-directory-toolbar" aria-label="解决方案筛选">
         <div className="solution-directory-tabs">
@@ -281,7 +321,7 @@ export function StudioSolutionDirectory({
                 <code>{solution.solution_id}</code>
               </div>
               <div><span className={`directory-status is-${status.toLowerCase()}`}>{status === "ACTIVE" ? "使用中" : "已归档"}</span></div>
-              <div><strong>v{solution.solution_version}</strong><small>{solution.directory?.creation_mode === "TEMPLATE" ? "模板创建" : "已安装"}</small></div>
+              <div><strong>v{solution.solution_version}</strong><small>{solution.directory?.creation_mode === "TEMPLATE" ? "模板创建" : solution.directory?.creation_mode === "BLANK" ? "空白创建" : solution.directory?.creation_mode === "IMPORT" ? "导入创建" : "已安装"}</small></div>
               <div><strong>{runtime?.state === "ACTIVE" ? "Active" : "未激活"}</strong><small>{runtime?.environment_id ?? "—"}</small></div>
               <div><strong>{dateLabel(solution.directory?.updated_at)}</strong><small>{solution.directory?.owner ?? "Ontology Product Team"}</small></div>
               <div className="directory-row-actions">
@@ -292,7 +332,7 @@ export function StudioSolutionDirectory({
                     {status === "ACTIVE" ? (
                       <>
                         <button type="button" onClick={() => setDialog({ kind: "edit", solution })}>编辑信息</button>
-                        <button type="button" onClick={() => setDialog({ kind: "create", template: solution })}>复制为新方案</button>
+                        <button type="button" onClick={() => setDialog({ kind: "create", initialMode: "TEMPLATE", template: solution })}>复制为新方案</button>
                         {runtime?.state === "ACTIVE" ? <a href={`/ontology-agent/?solution=${encodeURIComponent(solution.solution_id)}`}>在 Agent 中打开</a> : null}
                         <button type="button" onClick={() => archive.mutate(solution.solution_id)} disabled={isBusy}>归档</button>
                       </>
@@ -315,7 +355,7 @@ export function StudioSolutionDirectory({
         <p>编辑发生在 Draft；归档只隐藏日常工作入口。永久移除不会擦除依法需要保留的发布与审计工件。</p>
       </aside>
       <DirectoryDialog
-        key={dialog ? `${dialog.kind}-${dialog.kind === "create" ? dialog.template.solution_id : dialog.solution.solution_id}` : "closed"}
+        key={dialog ? `${dialog.kind}-${dialog.kind === "create" ? `${dialog.initialMode}-${dialog.template?.solution_id ?? "blank"}` : dialog.solution.solution_id}` : "closed"}
         state={dialog}
         solutions={solutions}
         busy={isBusy}

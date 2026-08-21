@@ -55,7 +55,7 @@ const solution = {
 afterEach(cleanup);
 
 describe("StudioSolutionDirectory", () => {
-  it("renders the global solution layer and opens the real template workflow", () => {
+  it("opens a real blank workflow and keeps template creation explicit", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
     queryClient.setQueryData(["agent-solution-catalog", "directory"], {
       contract: "agent-solution-catalog/v1",
@@ -77,10 +77,13 @@ describe("StudioSolutionDirectory", () => {
     expect(screen.getByRole("link", { name: "打开" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "新建解决方案" }));
     expect(screen.getByRole("dialog", { name: "新建解决方案" })).toBeTruthy();
+    expect(screen.getByText("空白创建")).toBeTruthy();
     expect(screen.getByText("从模板创建")).toBeTruthy();
     expect(screen.queryByText("导入 Ontology Package")).toBeNull();
-    expect(screen.queryByText("空白创建")).toBeNull();
-    expect(screen.getByText("当前通过已安装模板创建独立解决方案；源材料、运行记录和发布历史不会继承。")).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /空白创建/ })).toHaveProperty("checked", true);
+    expect(screen.queryByText(/模板版本 v1.4.0/)).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: /从模板创建/ }));
+    expect(screen.getByText(/模板版本 v1.4.0/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "创建 Draft Solution" })).toBeTruthy();
   });
 });

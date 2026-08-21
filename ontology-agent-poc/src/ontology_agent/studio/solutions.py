@@ -6,7 +6,7 @@ import json
 import os
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import date, datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Literal, Protocol
 
@@ -19,7 +19,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from ..contracts import Sha256
 from ..io import canonical_bytes, file_checksum, load_package, sha256_value
-from ..models import StrictModel
+from ..models import OntologyPackage, StrictModel
 from ..product_context import (
     Base,
     ExactStoredArtifactRef,
@@ -51,6 +51,7 @@ _RESOURCE_MEDIA_TYPES = {
     ".yml": "application/yaml",
 }
 _REGISTRATION_LOCATOR = "solution-registration.json"
+_GENERIC_STUDIO_ADAPTER_ID = "studio-adapter.generic@1"
 
 
 class SolutionCatalogError(RuntimeError):
@@ -451,6 +452,205 @@ def _resource_paths(root: Path) -> dict[str, Path]:
     return resources
 
 
+def _write_blank_solution_files(
+    root: Path,
+    *,
+    solution_id: str,
+    scenario_id: str,
+    workspace_id: str,
+    display_name: SolutionDisplayName,
+    description: str,
+    owner: str,
+) -> None:
+    """Create the minimum real package envelope without copying domain semantics."""
+
+    now = datetime.now(timezone.utc)
+    source_id = "source.solution_brief"
+    package = OntologyPackage.model_validate(
+        {
+            "package_id": solution_id,
+            "version": "0.1.0",
+            "status": "proposed",
+            "created_at": now,
+            "scenario": {
+                "id": scenario_id,
+                "version": "0.1.0",
+                "status": "proposed",
+                "name": display_name.model_dump(mode="json"),
+                "definition": description,
+                "owner": owner,
+                "sources": [source_id],
+                "decisions": [],
+                "tags": ["solution:blank", "authority:draft"],
+                "timezone": "UTC",
+                "market_id": "UNSPECIFIED",
+                "data_window_start": "1970-01-01",
+                "data_window_end": "1970-01-01",
+                "periods": [],
+                "default_role": "ontology_author",
+            },
+            "actors": [],
+            "processes": [],
+            "sources": [
+                {
+                    "id": source_id,
+                    "source_type": "assumption_register",
+                    "title": "Solution brief",
+                    "locator": "input/solution-brief.md",
+                    "owner": owner,
+                    "captured_on": date.today(),
+                    "trust": "assumption",
+                    "notes": (
+                        "System-created bootstrap context only; it is not evidence "
+                        "for any domain fact."
+                    ),
+                }
+            ],
+            "decisions": [],
+            "entities": [],
+            "properties": [],
+            "relationships": [],
+            "dimensions": [],
+            "rules": [],
+            "metrics": [],
+            "data_sources": [],
+            "bindings": [],
+            "joins": [],
+            "analysis_patterns": [],
+            "policies": [],
+            "questions": [],
+        }
+    )
+
+    brief_path = root / "input" / "solution-brief.md"
+    brief_path.parent.mkdir(parents=True, exist_ok=True)
+    brief_path.write_text(
+        "\n".join(
+            (
+                f"# {display_name.en}",
+                "",
+                description,
+                "",
+                "This file initializes the Draft. It is not source evidence for domain semantics.",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    package_path = root / "ontology" / "package.yaml"
+    package_path.parent.mkdir(parents=True, exist_ok=True)
+    package_path.write_text(
+        yaml.safe_dump(
+            package.model_dump(mode="json"),
+            allow_unicode=True,
+            sort_keys=False,
+            width=120,
+        ),
+        encoding="utf-8",
+    )
+
+    slot_path = root / "authoring" / "semantic-slot-manifest.json"
+    slot_path.parent.mkdir(parents=True, exist_ok=True)
+    slot_path.write_text(
+        json.dumps(
+            {
+                "contract": "generic-semantic-slot-manifest/v1",
+                "slots": [
+                    {
+                        "draft_path": "solution_intent",
+                        "value_kind": "STRING",
+                        "authority": "HUMAN_REVIEWED_DRAFT",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    descriptor_path = root / "authoring" / "editor-descriptor.json"
+    descriptor_path.write_text(
+        json.dumps(
+            {
+                "contract": "studio-editor-descriptor/v1",
+                "descriptor_id": f"editor.{solution_id}",
+                "version": "1.0.0",
+                "workspace_id": workspace_id,
+                "studio_adapter_id": _GENERIC_STUDIO_ADAPTER_ID,
+                "draft_schema_version": "generic-draft-workspace/v1",
+                "operations_contract": "studio-draft-operations/v1",
+                "title": {
+                    "en": f"{display_name.en} Draft",
+                    "zh": f"{display_name.zh} Draft",
+                },
+                "description": {"en": description, "zh": description},
+                "semantic_slot_manifest": {
+                    "locator": "authoring/semantic-slot-manifest.json",
+                    "sha256": file_checksum(slot_path),
+                },
+                "fields": [
+                    {
+                        "path": "solution_intent",
+                        "label": {"en": "Solution intent", "zh": "解决方案目标"},
+                        "help": {
+                            "en": "The business outcome this ontology should support.",
+                            "zh": "这套本体需要支持的业务结果。",
+                        },
+                        "control": "TEXTAREA",
+                        "value_kind": "STRING",
+                        "required": True,
+                        "options": [],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    agent_path = root / "agent" / "experience.json"
+    agent_path.parent.mkdir(parents=True, exist_ok=True)
+    agent_path.write_text(
+        json.dumps(
+            {
+                "contract": "agent-experience/v1",
+                "solution_id": solution_id,
+                "status": "NOT_CONFIGURED",
+                "question_families": [],
+                "tools": [],
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    evaluation_path = root / "evaluation" / "reference-evaluation.json"
+    evaluation_path.parent.mkdir(parents=True, exist_ok=True)
+    evaluation_path.write_text(
+        json.dumps(
+            {
+                "contract": "reference-evaluation/v1",
+                "solution_id": solution_id,
+                "status": "NOT_CONFIGURED",
+                "cases": [],
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def verify_solution_components(
     subject: SolutionRegistrationSubjectV1, component_root: Path
 ) -> None:
@@ -669,6 +869,7 @@ class SolutionCatalogService:
         if template.subject.studio_adapter_id not in {
             "studio-adapter.adt.reference@1",
             "studio-adapter.cash-trading.reference@1",
+            _GENERIC_STUDIO_ADAPTER_ID,
         }:
             raise SolutionCatalogError("The selected template adapter is not clonable")
         template_root = self.materialize(template, Path(tempfile.gettempdir()) / "ontology-template-cache")
@@ -770,6 +971,81 @@ class SolutionCatalogService:
                             f"Created from template {template.subject.solution_id}",
                         )
                     )
+                ),
+            )
+            return self.install(subject, root)
+
+    def create_blank(
+        self,
+        *,
+        solution_id: str,
+        scenario_id: str,
+        workspace_id: str,
+        display_name: SolutionDisplayName,
+        description: str,
+        owner: str,
+    ) -> SolutionRegistrationRecordV1:
+        """Install a genuinely empty, case-neutral Draft package.
+
+        Only the lifecycle envelope and a clearly labelled bootstrap brief exist.
+        No ADT, Cash Trading, template, metric or model-generated fact is copied.
+        """
+
+        if self.artifacts is None:
+            raise SolutionCatalogError(
+                "Creating solutions requires the durable PostgreSQL/S3 catalog"
+            )
+        with tempfile.TemporaryDirectory(prefix="ontology-solution-blank-") as temporary:
+            root = Path(temporary) / "solution"
+            _write_blank_solution_files(
+                root,
+                solution_id=solution_id,
+                scenario_id=scenario_id,
+                workspace_id=workspace_id,
+                display_name=display_name,
+                description=description,
+                owner=owner,
+            )
+            paths = _resource_paths(root)
+            resources = tuple(
+                SolutionResourceDescriptor(
+                    locator=locator,
+                    media_type=_RESOURCE_MEDIA_TYPES[path.suffix.lower()],
+                    sha256=file_checksum(path),
+                    size_bytes=path.stat().st_size,
+                )
+                for locator, path in sorted(paths.items())
+            )
+            resources_by_locator = {item.locator: item for item in resources}
+            component_locators = {
+                "authoring_profile": "authoring/editor-descriptor.json",
+                "semantic_source": "ontology/package.yaml",
+                "agent_experience": "agent/experience.json",
+                "reference_evaluation": "evaluation/reference-evaluation.json",
+            }
+            components = tuple(
+                SolutionComponentDescriptor(
+                    component_id=f"component.{solution_id}.{kind}",
+                    kind=kind,  # type: ignore[arg-type]
+                    locator=locator,
+                    media_type=resources_by_locator[locator].media_type,  # type: ignore[arg-type]
+                    sha256=resources_by_locator[locator].sha256,
+                )
+                for kind, locator in component_locators.items()
+            )
+            subject = SolutionRegistrationSubjectV1(
+                solution_id=solution_id,
+                solution_version="1.0.0",
+                semantic_source_version="0.1.0",
+                scenario_id=scenario_id,
+                workspace_id=workspace_id,
+                studio_adapter_id=_GENERIC_STUDIO_ADAPTER_ID,
+                authoring_root_id=f"solution-root.{solution_id}",
+                display_name=display_name,
+                components=components,
+                resources=resources,
+                limitations=(
+                    "Blank Draft: no domain semantics or Agent runtime are configured.",
                 ),
             )
             return self.install(subject, root)
