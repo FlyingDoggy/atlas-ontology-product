@@ -66,6 +66,14 @@ class FileResourceResolver:
             raise RuntimePreparationError("Agent-local resource escapes its configured root")
         return path
 
+    def root(self, root_id: str) -> Path:
+        try:
+            return self._roots[root_id]
+        except KeyError as exc:
+            raise RuntimePreparationError(
+                f"Unknown Agent-local resource root: {root_id}"
+            ) from exc
+
 
 def _checks_payload(checks: tuple[ValidationCheck, ...] | list[ValidationCheck]) -> list[dict[str, Any]]:
     return [
@@ -186,7 +194,7 @@ class AgentRuntime:
             package=package,
             manifest=manifest,
             snapshot_dir=snapshot_dir.resolve(),
-            scenario_dir=next(iter(resource_paths.values())).parents[1],
+            scenario_dir=self.resources.root(binding.resource_root_id),
             resource_paths=dict(resource_paths),
             dataset_manifest_path=dataset_manifest_path.resolve(),
             control_dir=control_dir.resolve() if control_dir is not None else None,
@@ -220,9 +228,16 @@ class AgentRuntime:
 
         resource_paths = self._resolve_resources(binding)
         expected_sources = {source.id for source in bundle.package.data_sources}
-        if set(resource_paths) != expected_sources:
+        if (
+            descriptor.data_binding_policy == "EXACT_PACKAGE_SOURCES"
+            and set(resource_paths) != expected_sources
+        ):
             raise RuntimePreparationError(
                 "Runtime data binding must cover every release source exactly once"
+            )
+        if descriptor.data_binding_policy == "NONE" and resource_paths:
+            raise RuntimePreparationError(
+                "Semantic-only runtime cannot accept data resource bindings"
             )
         dataset_manifest_path = self.resources.resolve(
             binding.resource_root_id, binding.dataset_manifest_ref

@@ -1,6 +1,6 @@
 # Ontology Product Group 通用产品重置方案 v3
 
-状态：候选方案，待 Product Owner 确认  
+状态：已批准并完成实现候选，待 Product Owner 本地验收
 日期：2026-08-22  
 范围：Ontology Studio、Ontology Analytic Agent，以及二者之间的 Solution Package 合同  
 上一版：`ontology-studio-product-reset-v2.md`
@@ -629,7 +629,7 @@ S3 存储：
 - 真正 Template 能力是否值得在完成第三案例后产品化。
 - Runtime Snapshot 中证据引用的精确粒度，以及 Agent 回溯证据的访问方式。
 
-## 15. 本方案批准后的下一步
+## 15. 本方案批准后的执行顺序
 
 1. 将本文档标记为产品与技术候选基线，保留 v2 作为历史版本。
 2. 把现有开发工作按 Slice 1–6 重新归类：保留、重构、移除或延后。
@@ -637,4 +637,37 @@ S3 存储：
 4. 同时开展一个严格限界的 Builder Runtime 技术验证，对比 Deep Agents 与轻量方案，不阻塞 Slice 1 的产品主链。
 5. 从 Slice 1 开始，每个切片必须形成可在 ARM64 K8s 环境部署、可通过 UI 验收的结果。
 
-本文档在 Product Owner 明确批准前仍为 Candidate，不自动变成开发授权。
+## 16. 实现记录与当前边界（2026-08-22）
+
+### 16.1 已完成的纵向切片
+
+| Slice | 已实现的可验证结果 | 分支提交 |
+|---|---|---|
+| 1 | 真正的零业务资产 Blank Solution；材料登记、手工资产、验证、发布与 Runtime 合同贯通 | `9975674` |
+| 2 | Builder 从精确 Source Version / Evidence Fragment 产出 Candidate；保留证据、假设、Gap 和失败状态 | `d3ceb1d` |
+| 3 | 独立 Reviewer、结构化 Finding、逐项人工处置和 Draft CAS 写入 | `480fd9c` |
+| 4 | 通用对象、属性、关系、指标、规则、问题、数据源、Schema、映射及图影响合同 | `4594af6` |
+| 5 | 六模块 Studio 信息架构、统一编辑器、ADT/Cash Reference Solution 迁移及全局产品化 UI 收敛 | `fd9f780` |
+| 6 | 未在产品代码中注册的 Service Request 第三案例，从 Blank Solution 贯通 Build、Review、HITL、Validate、Release、Activate 和 Ask | 本次提交 |
+
+### 16.2 第三案例证明了什么
+
+- 第三案例没有新增案例专属 Adapter、Profile、Workspace 分支或前端页面。
+- 它复用了与 ADT/Cash 相同的 Solution、Source、Builder Skill、Reviewer Skill、Candidate、HITL、Draft、Validation、Release、Activation 和 Agent API。
+- Builder Candidate 在人工处置前不会修改 Draft；Reviewer 不能发布，也不能绕过人工确认。
+- Agent 只消费已激活的不可变 Runtime Snapshot，不读取 Draft、Candidate 或构建中间状态。
+- 同一已激活 Package 同时验证了三类边界：可回答的语义定义、缺少受控数据执行能力时的澄清、超出已声明能力时的拒答。
+
+### 16.3 刻意保留的产品边界
+
+通用 Agent Runtime 当前提供的是 **Ontology-backed semantic runtime**：它可以依据已发布资产、证据和策略回答定义类问题。对于需要真实数据计算的问题，若 Solution 尚未安装经过验证的数据工具与 Runtime Binding，系统返回 `RUNTIME_DATA_BINDING_REQUIRED`，不会用 LLM 编造数值，也不会把未经审批的 SQL 当作运行能力。
+
+ADT 和 Cash Trading 已有经过验证的确定性分析 Adapter，因此继续支持数值计算。未来新案例的数值分析扩展点是通用 Tool Harness + Runtime Binding 合同，而不是在通用产品代码里加入案例 `if/else`。这一区分是发布安全边界，不是案例定制入口。
+
+### 16.4 自动化证据
+
+- 后端：完整 pytest 回归覆盖 Solution、Source、Builder、Reviewer、HITL、Draft、Validation、Release、Activation、ADT/Cash 兼容及第三案例闭环。
+- 前端：Vitest 覆盖通用路由、六模块导航、编辑器、材料详情、构建复核和产品交互；Vite production build 可生成部署产物。
+- 最终本地 Docker 重建、健康检查和浏览器级验收完成后，本文档状态才可由 Product Owner 更新为“验收通过”。
+
+本实现只发布到私有 GitHub 的开发分支并部署到本地。未经 Product Owner 明确审批，不部署 EC2，也不合并到 `main`。

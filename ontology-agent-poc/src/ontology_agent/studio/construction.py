@@ -913,6 +913,7 @@ class StudioConstructionService:
         reviewer: BoundedReviewerOrchestrator | None = None,
         review_drafts: Any | None = None,
         selected_source_version_ids: tuple[str, ...] = (),
+        workspace_id: str | None = None,
     ) -> None:
         self.store = store
         self.workspace = workspace
@@ -924,6 +925,17 @@ class StudioConstructionService:
         self.engine = engine
         self.review_drafts = review_drafts
         self.selected_source_version_ids = selected_source_version_ids
+        self.workspace_id = workspace_id
+
+    def _workspace(self) -> Any:
+        """Open the one Draft authority bound to this construction service.
+
+        Legacy adapters own a single implicit workspace. Generic adapters require
+        an explicit identity because one service implementation can host any number
+        of independently-created Solutions.
+        """
+
+        return self.workspace.get(self.workspace_id)
 
     def _source_settlements(self) -> tuple[ConstructionSourceSettlementV1, ...]:
         assets = tuple(_as_record(item) for item in _as_record(self.intake).get("assets", ()))
@@ -1428,7 +1440,7 @@ class StudioConstructionService:
             }
         request = SemanticaConstructionRequestV1(
             run_id=run_id,
-            workspace_id=self.workspace.get().workspace_id,
+            workspace_id=self._workspace().workspace_id,
             source_set_digest=source_set_digest,
             requirements=tuple(
                 item.model_dump(mode="json") for item in self.authoring.requirements
@@ -1475,7 +1487,7 @@ class StudioConstructionService:
         return result, projected
 
     def job_input(self, *, expected_revision: int) -> ConstructionJobInputV1:
-        workspace = self.workspace.get()
+        workspace = self._workspace()
         if workspace.revision != expected_revision:
             raise WorkspaceConflictError("Draft revision conflict")
         settlements = self._source_settlements()
@@ -1501,7 +1513,7 @@ class StudioConstructionService:
         lease_epoch: int = 1,
         commit_fence: Callable[[], None] | None = None,
     ) -> ConstructionRunV1:
-        workspace = self.workspace.get()
+        workspace = self._workspace()
         if workspace.revision != expected_revision:
             raise WorkspaceConflictError("Draft revision conflict")
         settlements = self._source_settlements()
@@ -1897,7 +1909,7 @@ class StudioConstructionService:
         return self.store.get_run(run_id)
 
     def list(self) -> tuple[tuple[ConstructionRunV1, ConstructionReviewDecisionV1 | None], ...]:
-        workspace_id = self.workspace.get().workspace_id
+        workspace_id = self._workspace().workspace_id
         return tuple(
             (run, self.store.get_decision(run.run_id))
             for run in self.store.list_runs(workspace_id)

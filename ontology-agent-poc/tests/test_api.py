@@ -880,7 +880,7 @@ def test_operator_rollback_is_an_explicit_expected_head_activation(
                 idempotent=False,
             )
 
-    monkeypatch.setattr(api_module, "_agent_runtime", lambda: RuntimeStub())
+    monkeypatch.setattr(api_module, "_agent_runtime", lambda _config=None: RuntimeStub())
     response = agent_control_client.post(
         "/agent-control/runtime/rollback",
         json={

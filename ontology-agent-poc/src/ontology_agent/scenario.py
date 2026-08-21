@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Protocol
+from typing import Literal, Mapping, Protocol
 
 from .contracts import RuntimeBindingSpec, VerifiedSnapshot
 from .models import AnalysisResponse, OntologyPackage, ValidationCheck
@@ -30,6 +30,9 @@ class ScenarioAdapterDescriptor:
     certification_profiles: Mapping[str, str]
     evaluation_suite_id: str
     evaluation_case_ids: tuple[str, ...]
+    data_binding_policy: Literal["EXACT_PACKAGE_SOURCES", "NONE"] = (
+        "EXACT_PACKAGE_SOURCES"
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,8 +153,13 @@ def default_scenario_adapters() -> ScenarioAdapterRegistry:
     if _DEFAULT_REGISTRY is None:
         from .adt_scenario import AdtScenarioAdapter
         from .cash_trading_scenario import CashTradingScenarioAdapter
+        from .generic_scenario import GenericAnalyticScenarioAdapter
 
         _DEFAULT_REGISTRY = ScenarioAdapterRegistry(
-            (AdtScenarioAdapter(), CashTradingScenarioAdapter())
+            (
+                AdtScenarioAdapter(),
+                CashTradingScenarioAdapter(),
+                GenericAnalyticScenarioAdapter(),
+            )
         )
     return _DEFAULT_REGISTRY

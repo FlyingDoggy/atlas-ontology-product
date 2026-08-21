@@ -109,9 +109,15 @@ def verify_snapshot_handle(snapshot: VerifiedSnapshot) -> None:
     if snapshot.release_checksum != release_ref.checksum:
         raise PublicationError("Runtime snapshot release checksum mismatch")
 
+    descriptor = snapshot.scenario_adapter.descriptor
     expected_sources = {source.id for source in bundle.package.data_sources}
-    if set(snapshot.resource_paths) != expected_sources:
+    if (
+        descriptor.data_binding_policy == "EXACT_PACKAGE_SOURCES"
+        and set(snapshot.resource_paths) != expected_sources
+    ):
         raise PublicationError("Runtime dataset bindings do not cover the release sources")
+    if descriptor.data_binding_policy == "NONE" and snapshot.resource_paths:
+        raise PublicationError("Semantic-only runtime contains data resource bindings")
     for path in snapshot.resource_paths.values():
         if not path.is_file():
             raise PublicationError("Runtime dataset resource is missing")
@@ -136,7 +142,6 @@ def verify_snapshot_handle(snapshot: VerifiedSnapshot) -> None:
         binding = RuntimeBindingSpec.model_validate(manifest.get("binding"))
     except Exception as exc:
         raise PublicationError("Runtime snapshot adapter binding is invalid") from exc
-    descriptor = snapshot.scenario_adapter.descriptor
     if (
         binding.adapter_id != descriptor.adapter_id
         or binding.adapter_version != descriptor.adapter_version

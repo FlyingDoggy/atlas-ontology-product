@@ -22,6 +22,11 @@ from .cash_trading_scenario import (
     cash_trading_synthetic_binding,
 )
 from .contracts import ReleaseRef, RuntimeSnapshotRef
+from .generic_scenario import (
+    generic_bound_goal,
+    generic_question_family,
+    generic_semantic_binding,
+)
 from .durable_lifecycle import DurableLifecycleSettings
 from .io import (
     DEFAULT_CASH_TRADING_SCENARIO_DIR,
@@ -81,7 +86,7 @@ from .solution_adapters import (
     CashTradingStudioAdapter,
     GenericStudioAdapter,
 )
-from .solution_llm import attempt_solution_grounding
+from .solution_llm import attempt_solution_grounding, deterministic_only
 from .studio.cash_workspace import CashTradingDraftWorkspaceService
 from .studio.generic_workspace import GenericDraftWorkspaceService
 from .studio.construction import (
@@ -355,16 +360,19 @@ def _studio_releases() -> StudioReleases:
     return StudioReleases(DEFAULT_PUBLISHED_DIR / "releases")
 
 
-def _agent_runtime() -> AgentRuntime:
+def _agent_runtime(config: dict[str, Any] | None = None) -> AgentRuntime:
+    resource_roots = {
+        "adt-scenario": DEFAULT_SCENARIO_DIR,
+        "cash-trading-scenario": DEFAULT_CASH_TRADING_SCENARIO_DIR,
+    }
+    if config is not None:
+        resource_roots[str(config["resource_root_id"])] = Path(
+            config["scenario_dir"]
+        )
     return AgentRuntime(
         release_root=DEFAULT_PUBLISHED_DIR / "releases",
         runtime_root=DEFAULT_PUBLISHED_DIR / "runtime",
-        resources=FileResourceResolver(
-            {
-                "adt-scenario": DEFAULT_SCENARIO_DIR,
-                "cash-trading-scenario": DEFAULT_CASH_TRADING_SCENARIO_DIR,
-            }
-        ),
+        resources=FileResourceResolver(resource_roots),
     )
 
 
@@ -623,6 +631,20 @@ def _runtime_configuration(package_id: str) -> dict[str, Any]:
             ),
             "certification_profile": CASH_CERTIFICATION_PROFILE,
         }
+    if registration.subject.studio_adapter_id == GENERIC_STUDIO_ADAPTER_ID:
+        environment_id = "solution-" + sha256_value(package_id)[:16]
+        return {
+            "generic": True,
+            "environment_id": environment_id,
+            "resource_root_id": resource_root_id,
+            "scenario_dir": scenario_dir,
+            "binding": generic_semantic_binding(
+                environment_id=environment_id,
+                resource_root_id=resource_root_id,
+            ),
+            "certification": None,
+            "certification_profile": None,
+        }
     raise PublicationError("No installed runtime adapter matches the package")
 
 
@@ -653,6 +675,20 @@ def _runtime_role_catalog(package: Any) -> list[dict[str, Any]]:
             )
             seen.add(role)
     return catalog
+
+
+def _default_runtime_role(package: Any) -> str | None:
+    if package.scenario.default_role:
+        return package.scenario.default_role
+    return next(
+        (
+            role
+            for policy in package.policies
+            for role in policy.allowed_roles
+            if role not in policy.denied_roles
+        ),
+        None,
+    )
 
 
 def _studio_observations() -> StudioObservationService:
@@ -892,6 +928,7 @@ def _studio_construction(
             _review_draft_store() if settings.mode == "postgresql-s3" else None
         ),
         selected_source_version_ids=selection,
+        workspace_id=workspace_id,
     )
 
 
@@ -1073,12 +1110,13 @@ def list_agent_solutions() -> dict[str, Any]:
     except (SolutionCatalogError, SolutionManagementError) as exc:
         raise HTTPException(status_code=503, detail="Solution catalog is unavailable") from exc
     solutions: list[dict[str, Any]] = []
-    agent = _agent_runtime()
     for record, directory in visible:
         subject = record.subject
         try:
             config = _runtime_configuration(subject.solution_id)
-            active = agent.active_ref(config["environment_id"], subject.solution_id)
+            active = _agent_runtime(config).active_ref(
+                config["environment_id"], subject.solution_id
+            )
         except PublicationError:
             active = None
         solutions.append(
@@ -1100,6 +1138,11 @@ def list_agent_solutions() -> dict[str, Any]:
 def solution_questions(solution_id: str) -> dict[str, Any]:
     try:
         config = _runtime_configuration(solution_id)
+        if config.get("generic") is True:
+            snapshot = _agent_runtime(config).open_active(
+                config["environment_id"], solution_id
+            ).snapshot
+            return generic_question_family(snapshot.package)
         return _public_solution_question_family(
             config["scenario_dir"] / "llm" / "question-family.json"
         )
@@ -1113,35 +1156,54 @@ def analyze_solution(
 ) -> dict[str, Any]:
     try:
         config = _runtime_configuration(solution_id)
-        snapshot = _agent_runtime().open_active(
+        snapshot = _agent_runtime(config).open_active(
             config["environment_id"], solution_id
         ).snapshot
     except PublicationError as exc:
         raise HTTPException(
             status_code=503, detail="No compatible active solution runtime is ready"
         ) from exc
-    role = request.role or snapshot.package.scenario.default_role
+    role = request.role or _default_runtime_role(snapshot.package)
+    if role is None:
+        raise HTTPException(
+            status_code=409,
+            detail="The active solution has no allowed runtime role",
+        )
     role_allowed = any(
         role in policy.allowed_roles and role not in policy.denied_roles
         for policy in snapshot.package.policies
     )
-    grounding = attempt_solution_grounding(
-        solution_id=solution_id,
-        scenario_dir=config["scenario_dir"],
-        snapshot_checksum=snapshot.snapshot_checksum,
-        question_case_id=request.question_case_id,
-        question=request.question,
-        role_allowed=role_allowed,
-    )
+    if config.get("generic") is True:
+        bound_goal = generic_bound_goal(
+            snapshot.package,
+            case_id=request.question_case_id,
+            question=request.question,
+        )
+        grounding_execution = deterministic_only(
+            "GENERIC_ACTIVE_ONTOLOGY_BOUNDARY"
+            if role_allowed
+            else "ROLE_NOT_ELIGIBLE_FOR_MODEL"
+        )
+    else:
+        grounding = attempt_solution_grounding(
+            solution_id=solution_id,
+            scenario_dir=config["scenario_dir"],
+            snapshot_checksum=snapshot.snapshot_checksum,
+            question_case_id=request.question_case_id,
+            question=request.question,
+            role_allowed=role_allowed,
+        )
+        bound_goal = grounding.bound_goal
+        grounding_execution = grounding.execution
     response = analyze_snapshot(
         snapshot,
         question=request.question,
         role=role,
         execution_dir=DEFAULT_EXECUTION_DIR,
-        bound_goal=grounding.bound_goal,
+        bound_goal=bound_goal,
     )
     payload = _runtime_payload(response.model_dump(mode="json"))
-    payload["llm"] = grounding.execution.model_dump(mode="json")
+    payload["llm"] = grounding_execution.model_dump(mode="json")
     return payload
 
 
@@ -1152,7 +1214,7 @@ def create_solution_semantic_change_request(
 ) -> dict[str, Any]:
     try:
         config = _runtime_configuration(solution_id)
-        snapshot = _agent_runtime().open_active(
+        snapshot = _agent_runtime(config).open_active(
             config["environment_id"], solution_id
         ).snapshot
         execution = load_execution(request.execution_id, DEFAULT_EXECUTION_DIR)
@@ -1181,7 +1243,7 @@ def create_solution_semantic_change_request(
 def solution_ontology(solution_id: str) -> dict[str, Any]:
     try:
         config = _runtime_configuration(solution_id)
-        snapshot = _agent_runtime().open_active(
+        snapshot = _agent_runtime(config).open_active(
             config["environment_id"], solution_id
         ).snapshot
     except PublicationError as exc:
@@ -1219,7 +1281,7 @@ def solution_ontology(solution_id: str) -> dict[str, Any]:
 def solution_active_runtime(solution_id: str) -> dict[str, Any]:
     try:
         config = _runtime_configuration(solution_id)
-        snapshot = _agent_runtime().open_active(
+        snapshot = _agent_runtime(config).open_active(
             config["environment_id"], solution_id
         ).snapshot
     except PublicationError as exc:
@@ -1233,7 +1295,7 @@ def solution_active_runtime(solution_id: str) -> dict[str, Any]:
         "certification_profile": (
             snapshot.manifest.get("certification") or {}
         ).get("profile_id"),
-        "default_role": snapshot.package.scenario.default_role,
+        "default_role": _default_runtime_role(snapshot.package),
         "roles": _runtime_role_catalog(snapshot.package),
     }
 
@@ -1711,7 +1773,7 @@ def _solution_has_active_runtime(solution_id: str) -> bool:
     try:
         config = _runtime_configuration(solution_id)
         return (
-            _agent_runtime().active_ref(config["environment_id"], solution_id)
+            _agent_runtime(config).active_ref(config["environment_id"], solution_id)
             is not None
         )
     except PublicationError:
@@ -2501,7 +2563,7 @@ def prepare_runtime(request: PrepareRuntimeRequest) -> dict[str, Any]:
             if request.certify_reference is not None
             else request.certify_adt
         )
-        prepared = _agent_runtime().prepare(
+        prepared = _agent_runtime(config).prepare(
             request.release,
             binding=config["binding"],
             certification=config["certification"] if certify else None,
@@ -2538,7 +2600,7 @@ def agent_control_readiness() -> dict[str, str]:
 def agent_runtime_status(package_id: str) -> dict[str, Any]:
     try:
         config = _runtime_configuration(package_id)
-        runtime = _agent_runtime()
+        runtime = _agent_runtime(config)
         active = runtime.active_ref(config["environment_id"], package_id)
         rollback_target = runtime.rollback_target(
             config["environment_id"], package_id
@@ -2562,7 +2624,7 @@ def agent_runtime_status(package_id: str) -> dict[str, Any]:
 def activate_runtime(request: ActivateRuntimeRequest) -> dict[str, Any]:
     try:
         config = _runtime_configuration(request.snapshot.release.package_id)
-        receipt = _agent_runtime().activate(
+        receipt = _agent_runtime(config).activate(
             request.snapshot,
             expected_current=request.expected_current,
             require_certification=(
@@ -2580,7 +2642,7 @@ def activate_runtime(request: ActivateRuntimeRequest) -> dict[str, Any]:
 def rollback_runtime(request: RollbackRuntimeRequest) -> dict[str, Any]:
     try:
         config = _runtime_configuration(request.target_snapshot.release.package_id)
-        receipt = _agent_runtime().activate(
+        receipt = _agent_runtime(config).activate(
             request.target_snapshot,
             expected_current=request.expected_current,
             require_certification=(
@@ -2598,7 +2660,7 @@ def rollback_runtime(request: RollbackRuntimeRequest) -> dict[str, Any]:
 def verify_active_runtime(request: VerifyActiveRequest) -> dict[str, Any]:
     try:
         config = _runtime_configuration(request.expected_snapshot.release.package_id)
-        verification = _agent_runtime().verify_active(
+        verification = _agent_runtime(config).verify_active(
             config["environment_id"],
             request.expected_snapshot.release.package_id,
             expected_snapshot=request.expected_snapshot,
