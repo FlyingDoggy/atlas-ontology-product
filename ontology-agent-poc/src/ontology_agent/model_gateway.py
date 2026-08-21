@@ -39,6 +39,12 @@ from .studio.llm import (
     load_studio_egress_decision,
     load_studio_run_profile,
 )
+from .studio.builder import (
+    BuilderPhaseOutputV1,
+    BuilderPhaseRequestV1,
+    BuilderPhaseResponseV1,
+)
+from .studio.skill_packages import SkillPackageError, load_skill_package
 from .solution_llm import (
     SolutionBoundGoal,
     SolutionLlmActivation,
@@ -66,6 +72,117 @@ def health() -> dict[str, str]:
         "provider": DEMO_PROVIDER,
         "requested_model": DEMO_REQUESTED_MODEL,
     }
+
+
+@app.post("/model/v1/ontology-build", response_model=BuilderPhaseResponseV1)
+def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
+    """Execute one bounded Build Skill phase through the internal model gateway."""
+    if os.environ.get("ONTOLOGY_BUILDER_LLM_ENABLED", "").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+    }:
+        raise HTTPException(status_code=503, detail="Ontology Builder is disabled")
+    key = os.environ.get("ONTOLOGY_QWEN_API_KEY")
+    base_url = os.environ.get("ONTOLOGY_QWEN_BASE_URL")
+    if not key or not base_url:
+        raise HTTPException(status_code=503, detail="Ontology Builder model is not configured")
+    skill_root_raw = os.environ.get("ONTOLOGY_SKILL_ROOT")
+    try:
+        skill = load_skill_package(
+            request.skill_id,
+            request.skill_version,
+            root=Path(skill_root_raw) if skill_root_raw else None,
+        )
+    except SkillPackageError as exc:
+        raise HTTPException(status_code=503, detail="Ontology Build Skill is unavailable") from exc
+    if (
+        skill.manifest.role != "BUILDER"
+        or skill.package_checksum != request.skill_checksum
+        or request.allowed_collections
+        != tuple(
+            {
+                "SEMANTIC": ("actors", "processes", "entities", "properties", "relationships"),
+                "ANALYTICS": (
+                    "dimensions", "rules", "metrics", "analysis_patterns", "policies", "questions"
+                ),
+                "DATA": ("data_sources", "bindings", "joins"),
+            }[request.phase]
+        )
+    ):
+        raise HTTPException(status_code=409, detail="Ontology Builder authority mismatch")
+
+    requested_model = os.environ.get("ONTOLOGY_BUILDER_MODEL", "qwen3.8-max").strip()
+    if not requested_model:
+        raise HTTPException(status_code=503, detail="Ontology Builder model is invalid")
+    schema = BuilderPhaseOutputV1.model_json_schema()
+    schema["properties"]["phase"] = {"const": request.phase, "type": "string"}
+    schema["properties"]["request_digest"] = {
+        "const": request.request_digest,
+        "type": "string",
+    }
+    reference_rules = "\n\n".join(skill.reference_texts.values())
+    system_prompt = (
+        skill.instructions
+        + "\n\n"
+        + reference_rules
+        + "\n\nThe request contains the only allowed evidence and exact typed asset schemas. "
+        "Return one closed phase result."
+    )
+    provider_body: dict[str, Any] = {
+        "model": requested_model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            _closed_output_contract_message(schema),
+            {
+                "role": "user",
+                "content": canonical_bytes(request).decode("utf-8"),
+            },
+        ],
+        "temperature": 0,
+        "max_tokens": int(os.environ.get("ONTOLOGY_BUILDER_MAX_OUTPUT_TOKENS", "8000")),
+        "response_format": {"type": "json_object"},
+        "enable_thinking": False,
+        "stream": False,
+    }
+    timeout = float(os.environ.get("ONTOLOGY_BUILDER_PROVIDER_TIMEOUT_SECONDS", "60"))
+    try:
+        raw = _provider_transport(
+            str(base_url).rstrip("/") + "/chat/completions",
+            {
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            provider_body,
+            timeout,
+        )
+        response_model = raw["model"]
+        provider_request_id = raw["id"]
+        content = raw["choices"][0]["message"]["content"]
+        if (
+            not isinstance(response_model, str)
+            or not response_model
+            or not isinstance(provider_request_id, str)
+            or not provider_request_id
+            or not isinstance(content, str)
+        ):
+            raise ValueError("Provider response identity is invalid")
+        output = BuilderPhaseOutputV1.model_validate_json(content)
+        if (
+            output.phase != request.phase
+            or output.request_digest != request.request_digest
+            or len(output.proposals) > request.max_proposals
+        ):
+            raise ValueError("Builder output escaped its exact request")
+    except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=502, detail="Ontology Builder provider request failed") from exc
+    return BuilderPhaseResponseV1(
+        requested_model=requested_model,
+        response_model=response_model,
+        provider_request_id=provider_request_id,
+        output=output,
+        output_digest=sha256_value(output),
+    )
 
 
 def _solution_scenario_dir(solution_id: str) -> Path:

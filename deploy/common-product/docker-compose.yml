@@ -137,6 +137,9 @@ services:
     environment:
       ONTOLOGY_AGENT_PROJECT_ROOT: /app
       ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+      ONTOLOGY_BUILDER_LLM_ENABLED: "true"
+      ONTOLOGY_BUILDER_MODEL: qwen3.8-max
+      ONTOLOGY_SKILL_ROOT: /app/skills
       ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
       ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
       ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/adt/llm/studio/engineering-profile.json
@@ -221,6 +224,7 @@ services:
       disable: true
     environment:
       <<: *backend-env
+      ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
       ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795
       ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS: "20"
     volumes:
@@ -229,6 +233,8 @@ services:
     depends_on:
       bootstrap-solution-catalog:
         condition: service_completed_successfully
+      model-gateway:
+        condition: service_healthy
       semantica-worker:
         condition: service_healthy
     networks: [product]

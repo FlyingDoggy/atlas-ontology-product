@@ -71,3 +71,29 @@ def test_worker_rejects_empty_semantic_context_instead_of_reporting_success() ->
     response = client.post("/v1/proposals", json=request)
 
     assert response.status_code == 422
+
+
+def test_worker_uses_source_supported_builder_context_for_a_blank_solution() -> None:
+    request = _request()
+    request["canonical_context"] = {"entities": [], "relationships": []}
+    request["proposed_context"] = {
+        "entities": [
+            {
+                "id": "entity.service_request",
+                "name": {"en": "Service Request", "zh": "服务请求"},
+                "definition": "A request submitted for service.",
+            }
+        ],
+        "relationships": [],
+        "properties": [],
+        "source_anchor_ids": ["evidence." + "1" * 32],
+    }
+
+    response = client.post("/v1/proposals", json=request)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["candidates"][0]["label"].replace(" ", "").casefold() == "servicerequest"
+    assert payload["candidates"][0]["source_anchor_ids"] == [
+        "evidence." + "1" * 32
+    ]

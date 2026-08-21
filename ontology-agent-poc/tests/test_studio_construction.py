@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from io import BytesIO
+import hashlib
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,7 +10,7 @@ from openpyxl import Workbook
 
 from ontology_agent import api as api_module
 from ontology_agent.api import control_app
-from ontology_agent.io import DEFAULT_CASH_TRADING_SCENARIO_DIR, load_package
+from ontology_agent.io import DEFAULT_CASH_TRADING_SCENARIO_DIR, load_package, sha256_value
 from ontology_agent.release import StudioReleases
 from ontology_agent.studio.construction import (
     ConstructionDispositionV1,
@@ -28,9 +29,68 @@ from ontology_agent.studio.source_library import (
     StudioSourceLibraryService,
 )
 from ontology_agent.studio.workspace import DraftWorkspaceService, WorkspaceConflictError
+from ontology_agent.studio.builder import (
+    BoundedBuilderOrchestrator,
+    BuilderPhaseOutputV1,
+    BuilderPhaseResponseV1,
+)
+from ontology_agent.studio.skill_packages import load_skill_package
+from ontology_agent.studio.source_projection import StudioAuthoringProjectionV1
 
 
 control_client = TestClient(control_app)
+
+
+class _ConstructionBuilderModel:
+    def generate(self, request):
+        proposals = []
+        if request.phase == "SEMANTIC":
+            proposals = [
+                {
+                    "contract": "builder-proposal/v1",
+                    "proposal_id": "proposal.service_request",
+                    "operation": {
+                        "action": "UPSERT",
+                        "collection": "entities",
+                        "object_id": "entity.service_request",
+                        "payload": {
+                            "id": "entity.service_request",
+                            "version": "1.0.0",
+                            "status": "proposed",
+                            "name": {"en": "Service Request", "zh": "服务请求"},
+                            "definition": "A request submitted for service.",
+                            "owner": "Business Owner",
+                            "sources": ["source.service_request"],
+                            "decisions": [],
+                            "tags": [],
+                            "primary_key": "property.service_request.id",
+                            "grain": "one service request",
+                            "lifecycle": "submitted to closed",
+                        },
+                    },
+                    "evidence_fragment_ids": [request.evidence_fragments[0].fragment_id],
+                    "rationale": "The selected source explicitly describes the object.",
+                    "assumptions": [],
+                    "confidence": 0.9,
+                }
+            ]
+        output = BuilderPhaseOutputV1.model_validate(
+            {
+                "contract": "builder-phase-output/v1",
+                "phase": request.phase,
+                "request_digest": request.request_digest,
+                "proposals": proposals,
+                "gaps": [],
+                "done": True,
+            }
+        )
+        return BuilderPhaseResponseV1(
+            requested_model="qwen3.8-max",
+            response_model="qwen3.8-max",
+            provider_request_id=f"provider-{request.phase.lower()}",
+            output=output,
+            output_digest=sha256_value(output),
+        )
 
 
 def _service(
@@ -85,6 +145,56 @@ def test_source_first_construction_closes_all_exact_inputs_without_claiming_sema
     assert len({item.occurrence_key for item in run.candidates}) == 13
     assert service.get(run.run_id) == run
     assert service.start(expected_revision=before.revision).run_id == run.run_id
+
+
+def test_generic_builder_candidates_enter_review_without_writing_draft(
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    workspace = DraftWorkspaceService(
+        tmp_path / "workspace",
+        scenario_dir,
+        StudioReleases(tmp_path / "releases"),
+    )
+    package = workspace.candidate_package()
+    body = "A service request is submitted, assessed and closed."
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.service_request",
+                "kind": "requirement_transcription",
+                "locator": "source-library:source-version.00000000000000000000000000000000",
+                "source_version_id": "source-version.00000000000000000000000000000000",
+                "checksum": hashlib.sha256(body.encode()).hexdigest(),
+                "registered_at": "2026-08-22T00:00:00Z",
+                "content_text": body,
+            }
+        ]
+    }
+    before = workspace.get()
+    service = StudioConstructionService(
+        store=FileConstructionRunStore(tmp_path / "construction"),
+        workspace=workspace,
+        package=package,
+        intake=intake,
+        authoring=StudioAuthoringProjectionV1(
+            requirements=(), metric_candidates=(), source_mode="CANONICAL_FALLBACK"
+        ),
+        builder=BoundedBuilderOrchestrator(
+            model=_ConstructionBuilderModel(),
+            skill=load_skill_package("ontology-build", "1.0.0"),
+        ),
+        engine=None,
+    )
+
+    run = service.start(expected_revision=before.revision)
+
+    assert run.engine_status == "COMPLETED"
+    assert workspace.get().revision == before.revision
+    assert {item.candidate_type for item in run.candidates} == {"SOURCE", "OBJECT"}
+    builder_stage = next(item for item in run.stage_receipts if item.stage == "BUILDER_AGENT")
+    assert builder_stage.status == "PASS"
+    assert all(item.review_status == "UNREVIEWED" for item in run.candidates)
 
 
 def test_durable_worker_executes_planned_run_and_records_terminal_job(

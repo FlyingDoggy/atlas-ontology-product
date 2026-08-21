@@ -28,6 +28,11 @@ from ..product_context import (
     S3ArtifactStore,
 )
 from .package_authoring import PackageDraftOperation, PackageDraftOperationsV1
+from .builder import (
+    BoundedBuilderOrchestrator,
+    BuilderError,
+    BuilderRunResultV1,
+)
 from .construction_jobs import ConstructionJobInputV1
 from .source_projection import (
     SourceProjectionAnchorV1,
@@ -50,6 +55,8 @@ class ConstructionConflict(ConstructionError):
 
 
 ConstructionCandidateType = Literal[
+    "SOURCE",
+    "GAP",
     "REQUIREMENT",
     "ACTOR",
     "PROCESS",
@@ -87,6 +94,7 @@ class ConstructionStageReceiptV1(StrictModel):
     stage: Literal[
         "SOURCE_SETTLEMENT",
         "STRUCTURED_EXTRACTION",
+        "BUILDER_AGENT",
         "PACKAGED_CASE_COMPILATION",
         "SEMANTICA_PROPOSAL",
         "CANDIDATE_PRECHECK",
@@ -133,6 +141,7 @@ class SemanticaConstructionRequestV1(StrictModel):
     requirements: tuple[dict[str, Any], ...]
     metric_candidates: tuple[dict[str, Any], ...]
     canonical_context: dict[str, Any]
+    proposed_context: dict[str, Any] | None = None
 
 
 class ConstructionEngine(Protocol):
@@ -779,7 +788,7 @@ def _candidate(
 class StudioConstructionService:
     """Product-owned source → candidate → human decision boundary."""
 
-    PROFILE_REF = "construction-profile.source-and-semantica/v2"
+    PROFILE_REF = "construction-profile.generic-builder/v3"
     PACKAGED_COLLECTION_TYPES: dict[str, ConstructionCandidateType] = {
         "actors": "ACTOR",
         "processes": "PROCESS",
@@ -806,6 +815,7 @@ class StudioConstructionService:
         intake: Any,
         authoring: StudioAuthoringProjectionV1,
         engine: ConstructionEngine | None,
+        builder: BoundedBuilderOrchestrator | None = None,
         review_drafts: Any | None = None,
         selected_source_version_ids: tuple[str, ...] = (),
     ) -> None:
@@ -814,6 +824,7 @@ class StudioConstructionService:
         self.package = package
         self.intake = intake
         self.authoring = authoring
+        self.builder = builder
         self.engine = engine
         self.review_drafts = review_drafts
         self.selected_source_version_ids = selected_source_version_ids
@@ -943,6 +954,102 @@ class StudioConstructionService:
                 )
             )
         return tuple(candidates)
+
+    def _builder_candidates(
+        self,
+        result: BuilderRunResultV1,
+    ) -> tuple[ConstructionCandidateV1, ...]:
+        anchors_by_fragment = {
+            item.fragment_id: item.anchor for item in result.evidence_bundle.fragments
+        }
+        anchors_by_source: dict[str, list[SourceProjectionAnchorV1]] = {}
+        for fragment in result.evidence_bundle.fragments:
+            anchors_by_source.setdefault(fragment.source_id, []).append(fragment.anchor)
+        output: list[ConstructionCandidateV1] = []
+        for operation in result.source_operations:
+            payload = operation.payload or {}
+            source_anchors = tuple(anchors_by_source.get(operation.object_id, ())[:3])
+            output.append(
+                _candidate(
+                    candidate_type="SOURCE",
+                    source_key=f"builder-source:{operation.object_id}",
+                    label=str(payload.get("title") or operation.object_id),
+                    definition=str(
+                        payload.get("notes")
+                        or "Exact registered source selected for this Build Run."
+                    ),
+                    support_class="DIRECT_EXACT",
+                    proposal={
+                        "contract": "builder-source-registration/v1",
+                        "source_id": operation.object_id,
+                        "skill_checksum": result.skill_checksum,
+                    },
+                    anchors=source_anchors,
+                    operation=operation,
+                    canonical_target=operation.object_id,
+                    limitations=(
+                        "Registration preserves source identity; it does not approve semantic claims.",
+                    ),
+                )
+            )
+        type_by_collection = {
+            **self.PACKAGED_COLLECTION_TYPES,
+            "sources": "SOURCE",
+        }
+        for proposal in result.proposals:
+            operation = proposal.operation
+            payload = operation.payload or {}
+            name = payload.get("name")
+            label = operation.object_id
+            if isinstance(name, dict):
+                label = str(name.get("zh") or name.get("en") or label)
+            source_anchors = tuple(
+                anchors_by_fragment[fragment_id]
+                for fragment_id in proposal.evidence_fragment_ids
+                if fragment_id in anchors_by_fragment
+            )
+            limitations = [
+                "Builder output is a model-inferred Candidate and requires human disposition.",
+                f"Rationale: {proposal.rationale}",
+            ]
+            limitations.extend(f"Assumption: {item}" for item in proposal.assumptions)
+            output.append(
+                _candidate(
+                    candidate_type=type_by_collection[operation.collection],
+                    source_key=f"builder:{proposal.proposal_id}",
+                    label=label,
+                    definition=str(payload.get("definition") or proposal.rationale),
+                    support_class="MODEL_INFERRED",
+                    proposal=proposal.model_dump(mode="json"),
+                    anchors=source_anchors,
+                    operation=operation,
+                    canonical_target=operation.object_id,
+                    limitations=tuple(limitations),
+                )
+            )
+        for gap in result.gaps:
+            source_anchors = tuple(
+                anchors_by_fragment[fragment_id]
+                for fragment_id in gap.evidence_fragment_ids
+                if fragment_id in anchors_by_fragment
+            )
+            output.append(
+                _candidate(
+                    candidate_type="GAP",
+                    source_key=f"builder:{gap.gap_id}",
+                    label=gap.clarification_question or gap.category.replace("_", " ").title(),
+                    definition=gap.description,
+                    support_class="MISSING",
+                    proposal=gap.model_dump(mode="json"),
+                    anchors=source_anchors,
+                    operation=None,
+                    canonical_target=None,
+                    limitations=(
+                        "This gap remains open until a reviewer resolves or explicitly accepts the boundary.",
+                    ),
+                )
+            )
+        return tuple(output)
 
     @staticmethod
     def _candidate_anchor_score(
@@ -1186,9 +1293,43 @@ class StudioConstructionService:
         *,
         run_id: str,
         source_set_digest: str,
+        builder_result: BuilderRunResultV1 | None,
     ) -> tuple[SemanticaEngineResultV1 | None, tuple[ConstructionCandidateV1, ...]]:
         if self.engine is None:
             return None, ()
+        proposed_context = None
+        anchors_by_id: dict[str, SourceProjectionAnchorV1] = {}
+        if builder_result is not None:
+            anchors_by_id = {
+                item.fragment_id: item.anchor
+                for item in builder_result.evidence_bundle.fragments
+            }
+            proposed_context = {
+                "entities": [
+                    item.operation.payload
+                    for item in builder_result.proposals
+                    if item.operation.collection == "entities"
+                ],
+                "relationships": [
+                    item.operation.payload
+                    for item in builder_result.proposals
+                    if item.operation.collection == "relationships"
+                ],
+                "properties": [
+                    item.operation.payload
+                    for item in builder_result.proposals
+                    if item.operation.collection == "properties"
+                ],
+                "source_anchor_ids": sorted(
+                    {
+                        fragment_id
+                        for item in builder_result.proposals
+                        if item.operation.collection
+                        in {"entities", "relationships", "properties"}
+                        for fragment_id in item.evidence_fragment_ids
+                    }
+                ),
+            }
         request = SemanticaConstructionRequestV1(
             run_id=run_id,
             workspace_id=self.workspace.get().workspace_id,
@@ -1206,6 +1347,7 @@ class StudioConstructionService:
                     item.model_dump(mode="json") for item in self.package.relationships
                 ],
             },
+            proposed_context=proposed_context,
         )
         result = self.engine.propose(request)
         expected_digest = sha256_value(
@@ -1221,11 +1363,15 @@ class StudioConstructionService:
                 definition=item.definition,
                 support_class="MODEL_INFERRED",
                 proposal=item.model_dump(mode="json"),
-                anchor=None,
+                anchors=tuple(
+                    anchors_by_id[anchor_id]
+                    for anchor_id in item.source_anchor_ids
+                    if anchor_id in anchors_by_id
+                ),
                 operation=None,
                 canonical_target=None,
                 limitations=(
-                    "Semantica proposal requires exact evidence linkage and human compilation.",
+                    "Semantica is a graph proposal tool; its output requires human compilation.",
                 ),
             )
             for item in result.candidates
@@ -1305,17 +1451,65 @@ class StudioConstructionService:
             started = datetime.now(timezone.utc)
             run_id = planned_run_id or "construction-run." + uuid.uuid4().hex
             direct = self._direct_candidates()
-            packaged_profile, packaged_ready, packaged_candidates = (
-                self._packaged_case_candidates(direct)
-            )
+            builder_result: BuilderRunResultV1 | None = None
+            builder_error: BuilderError | None = None
+            builder_candidates: tuple[ConstructionCandidateV1, ...] = ()
+            if self.builder is not None:
+                try:
+                    builder_result = self.builder.build(
+                        run_id=run_id,
+                        workspace_id=workspace.workspace_id,
+                        intake=self.intake,
+                        package=self.package,
+                    )
+                    builder_candidates = self._builder_candidates(builder_result)
+                    direct_targets = {
+                        (
+                            item.proposed_operation.collection,
+                            item.proposed_operation.object_id,
+                        )
+                        for item in direct
+                        if item.proposed_operation is not None
+                    }
+                    builder_candidates = tuple(
+                        item
+                        for item in builder_candidates
+                        if item.proposed_operation is None
+                        or (
+                            item.proposed_operation.collection,
+                            item.proposed_operation.object_id,
+                        )
+                        not in direct_targets
+                    )
+                except BuilderError as exc:
+                    builder_error = exc
+            # The packaged compiler is a compatibility path for existing Reference
+            # Solutions. A successful generic Builder Run must never be overwritten
+            # by a reviewed baseline replay.
+            if builder_result is None:
+                packaged_profile, packaged_ready, packaged_candidates = (
+                    self._packaged_case_candidates(direct)
+                )
+            else:
+                packaged_profile, packaged_ready, packaged_candidates = (None, False, ())
+            if builder_error is not None and not direct and not packaged_candidates:
+                raise ConstructionError("Builder stage failed before producing candidates") from builder_error
+            engine_error: Exception | None = None
             try:
                 engine_result, engine_candidates = self._engine_candidates(
                     run_id=run_id,
                     source_set_digest=source_set_digest,
+                    builder_result=builder_result,
                 )
             except Exception as exc:
-                raise ConstructionError("Semantica proposal stage failed") from exc
-            candidates = (*direct, *packaged_candidates, *engine_candidates)
+                engine_error = exc
+                engine_result, engine_candidates = (None, ())
+            candidates = (
+                *direct,
+                *builder_candidates,
+                *packaged_candidates,
+                *engine_candidates,
+            )
             if not candidates:
                 raise ConstructionError("Construction produced no candidate denominator")
             structured_digest = sha256_value(
@@ -1331,6 +1525,17 @@ class StudioConstructionService:
                         else "EXACT_PACK_NOT_INSTALLED"
                     )
                 }
+            )
+            builder_digest = (
+                builder_result.result_digest
+                if builder_result is not None
+                else sha256_value(
+                    {
+                        "status": "FAILED"
+                        if builder_error is not None
+                        else "NOT_CONFIGURED"
+                    }
+                )
             )
             engine_digest = (
                 engine_result.raw_result_digest
@@ -1365,6 +1570,33 @@ class StudioConstructionService:
                     ),
                 ),
                 ConstructionStageReceiptV1(
+                    stage="BUILDER_AGENT",
+                    status=(
+                        "PASS"
+                        if builder_result is not None
+                        else "FAIL"
+                        if builder_error is not None
+                        else "SKIPPED"
+                    ),
+                    input_digest=source_set_digest,
+                    output_digest=builder_digest,
+                    item_count=len(builder_candidates),
+                    implementation=(
+                        f"{builder_result.skill_id}@{builder_result.skill_version}"
+                        if builder_result is not None
+                        else "not-configured"
+                        if builder_error is None
+                        else "configured-unavailable"
+                    ),
+                    detail=(
+                        "The versioned Build Skill produced typed Candidates and explicit Gaps; Draft remains unchanged."
+                        if builder_result is not None
+                        else "The Builder failed; deterministic source candidates remain available."
+                        if builder_error is not None
+                        else "No Builder runtime is configured; compatibility construction remains available."
+                    ),
+                ),
+                ConstructionStageReceiptV1(
                     stage="PACKAGED_CASE_COMPILATION",
                     status=(
                         "PASS"
@@ -1389,18 +1621,28 @@ class StudioConstructionService:
                 ),
                 ConstructionStageReceiptV1(
                     stage="SEMANTICA_PROPOSAL",
-                    status="PASS" if engine_result is not None else "SKIPPED",
+                    status=(
+                        "PASS"
+                        if engine_result is not None
+                        else "WARN"
+                        if engine_error is not None
+                        else "SKIPPED"
+                    ),
                     input_digest=packaged_digest,
                     output_digest=engine_digest,
                     item_count=len(engine_candidates),
                     implementation=(
                         f"{engine_result.engine}/{engine_result.build_ref}"
                         if engine_result is not None
+                        else "degraded-unavailable"
+                        if engine_error is not None
                         else "not-configured"
                     ),
                     detail=(
                         "Semantica returned an isolated proposal; it has no Draft authority."
                         if engine_result is not None
+                        else "Semantica was unavailable; Builder and source-supported candidates remain usable."
+                        if engine_error is not None
                         else "Source-supported candidates remain usable; no Semantica success is claimed."
                     ),
                 ),
@@ -1436,7 +1678,11 @@ class StudioConstructionService:
                 "profile_ref": self.PROFILE_REF,
                 "status": "NEEDS_REVIEW",
                 "engine_status": (
-                    "COMPLETED" if engine_result is not None else "NOT_CONFIGURED"
+                    "COMPLETED"
+                    if builder_result is not None or engine_result is not None
+                    else "FAILED"
+                    if builder_error is not None or engine_error is not None
+                    else "NOT_CONFIGURED"
                 ),
                 "selected_sources": settlements,
                 "stage_receipts": receipts,

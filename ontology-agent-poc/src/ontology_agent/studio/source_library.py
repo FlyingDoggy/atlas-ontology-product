@@ -1085,6 +1085,7 @@ class StudioSourceLibraryService:
                 "checksum": version.content_checksum,
                 "processing_mode": version.processing_mode,
                 "source_version_id": version.source_version_id,
+                "registered_at": version.registered_at.isoformat(),
                 "title": version.title,
                 "original_name": version.original_name,
             }

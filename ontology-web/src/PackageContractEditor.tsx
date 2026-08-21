@@ -6,6 +6,8 @@ type Collection = PackageDraftOperation["collection"];
 type JsonObject = Record<string, unknown>;
 
 const collections: Array<{ id: Collection; label: string }> = [
+  { id: "sources", label: "Evidence sources" },
+  { id: "decisions", label: "Decision records" },
   { id: "actors", label: "Actors" },
   { id: "processes", label: "Processes" },
   { id: "entities", label: "Entities / Objects" },
@@ -67,6 +69,26 @@ function templateFor(
   const actor = ontologyPackage.actors[0]?.id ?? "actor.pending";
   const pattern = ontologyPackage.analysis_patterns[0]?.id ?? "analysis_pattern.pending";
   switch (collection) {
+    case "sources": return {
+      id: "source.new",
+      source_type: "assumption_register",
+      title: "New evidence source",
+      locator: "source-library:pending",
+      owner: ontologyPackage.scenario.owner,
+      captured_on: new Date().toISOString().slice(0, 10),
+      trust: "assumption",
+      notes: "Register exact source identity before review.",
+    };
+    case "decisions": return {
+      id: "decision.new",
+      question: "What semantic choice must be governed?",
+      options: [],
+      decision: "Pending review",
+      decided_by: actor,
+      decided_on: new Date().toISOString().slice(0, 10),
+      affects: [],
+      residual_assumption: "",
+    };
     case "actors": return { ...common, roles: [] };
     case "processes": return { ...common, process_type: "business", trigger: "manual", steps: [{ id: "step.1", name: "Review", actor, operation: "review", governed_refs: [], output_artifacts: [], on_failure: "stop" }], exception_paths: [] };
     case "entities": return { ...common, primary_key: property, grain: "one record", lifecycle: "proposed" };

@@ -26,6 +26,7 @@ class ProposalRequest(ClosedModel):
     requirements: tuple[dict[str, Any], ...]
     metric_candidates: tuple[dict[str, Any], ...]
     canonical_context: dict[str, Any]
+    proposed_context: dict[str, Any] | None = None
 
 
 class WorkerCandidate(ClosedModel):
@@ -66,6 +67,10 @@ def _source_anchor_ids(request: ProposalRequest) -> tuple[str, ...]:
         anchor = row.get("source_anchor")
         if isinstance(anchor, dict) and anchor.get("snippet_checksum"):
             values.add(str(anchor["snippet_checksum"]))
+    if request.proposed_context is not None:
+        proposed = request.proposed_context.get("source_anchor_ids", ())
+        if isinstance(proposed, list):
+            values.update(str(item) for item in proposed if item)
     return tuple(sorted(values))
 
 
@@ -75,10 +80,15 @@ def build_proposal(request: ProposalRequest) -> ProposalResponse:
     # structured context—not a bucket path or workspace filesystem.
     from semantica.ontology.ontology_generator import OntologyGenerator
 
-    entities = request.canonical_context.get("entities", [])
-    relationships = request.canonical_context.get("relationships", [])
+    context = (
+        request.proposed_context
+        if request.proposed_context is not None
+        else request.canonical_context
+    )
+    entities = context.get("entities", [])
+    relationships = context.get("relationships", [])
     if not isinstance(entities, list) or not isinstance(relationships, list):
-        raise ValueError("canonical_context must contain entity and relationship lists")
+        raise ValueError("construction context must contain entity and relationship lists")
     semantica_entities = [
         {
             "id": item.get("id"),

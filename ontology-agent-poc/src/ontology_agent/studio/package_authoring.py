@@ -10,8 +10,10 @@ from ..models import (
     AnalysisPattern,
     BusinessQuestion,
     DataSource,
+    Decision,
     Dimension,
     Entity,
+    GovernedObject,
     JoinContract,
     Metric,
     OntologyPackage,
@@ -21,6 +23,7 @@ from ..models import (
     Property,
     Relationship,
     Rule,
+    SourceReference,
     Status,
     StrictModel,
 )
@@ -28,6 +31,8 @@ from ..io import sha256_value
 
 
 PackageCollection = Literal[
+    "sources",
+    "decisions",
     "actors",
     "processes",
     "entities",
@@ -45,6 +50,8 @@ PackageCollection = Literal[
 ]
 
 _MODEL_BY_COLLECTION: dict[str, type[StrictModel]] = {
+    "sources": SourceReference,
+    "decisions": Decision,
     "actors": Actor,
     "processes": Process,
     "entities": Entity,
@@ -62,6 +69,18 @@ _MODEL_BY_COLLECTION: dict[str, type[StrictModel]] = {
 }
 
 
+def package_collection_schemas(
+    collections: tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    unknown = sorted(set(collections) - set(_MODEL_BY_COLLECTION))
+    if unknown:
+        raise ValueError("Unknown package collections: " + ", ".join(unknown))
+    return {
+        collection: _MODEL_BY_COLLECTION[collection].model_json_schema()
+        for collection in collections
+    }
+
+
 class PackageDraftOperation(StrictModel):
     """One kind-exact package mutation; payloads are never accepted as arbitrary JSON."""
 
@@ -77,6 +96,10 @@ class PackageDraftOperation(StrictModel):
                 raise ValueError("DEPRECATE does not accept a replacement payload")
             return self
         if self.action == "CONFIRM":
+            if self.collection in {"sources", "decisions"}:
+                raise ValueError(
+                    "Exact sources and decision records do not use asset confirmation"
+                )
             if self.payload is None:
                 raise ValueError("CONFIRM requires an exact review receipt")
             AssetConfirmation.model_validate(self.payload)
@@ -168,7 +191,7 @@ def apply_package_operations(
         )
         if operation.action == "UPSERT":
             replacement = model.model_validate(operation.payload)
-            if replacement.status not in {
+            if isinstance(replacement, GovernedObject) and replacement.status not in {
                 Status.PROPOSED,
                 Status.NEEDS_CLARIFICATION,
             }:
@@ -184,6 +207,10 @@ def apply_package_operations(
                     f"{operation.object_id}"
                 )
             existing = model.model_validate(current[index])
+            if not isinstance(existing, GovernedObject):
+                raise ValueError(
+                    "Only governed ontology assets can use asset confirmation"
+                )
             receipt = AssetConfirmation.model_validate(operation.payload)
             checksum = sha256_value(existing.model_dump(mode="json"))
             if checksum != receipt.asset_checksum:

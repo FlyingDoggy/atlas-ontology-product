@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from pathlib import Path
 
@@ -41,9 +42,88 @@ from ontology_agent.studio.llm import (
     load_studio_run_profile,
 )
 from ontology_agent.studio.workspace import DraftWorkspaceService
+from ontology_agent.models import OntologyPackage
+from ontology_agent.studio.builder import _phase_request
+from ontology_agent.studio.evidence import normalize_evidence
+from ontology_agent.studio.skill_packages import load_skill_package
 
 
 client = TestClient(app)
+
+
+def test_ontology_builder_gateway_executes_one_closed_versioned_skill_phase(
+    monkeypatch: pytest.MonkeyPatch,
+    package: OntologyPackage,
+) -> None:
+    text = "A service request is received and assigned a unique request identifier."
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.request",
+                "kind": "requirement_transcription",
+                "locator": "source-library:source-version.00000000000000000000000000000000",
+                "source_version_id": "source-version.00000000000000000000000000000000",
+                "checksum": hashlib.sha256(text.encode()).hexdigest(),
+                "content_text": text,
+            }
+        ]
+    }
+    skill = load_skill_package("ontology-build", "1.0.0")
+    bundle = normalize_evidence(intake, workspace_id="workspace.generic")
+    request = _phase_request(
+        run_id="construction-run." + "4" * 32,
+        workspace_id="workspace.generic",
+        phase="SEMANTIC",
+        skill=skill,
+        bundle=bundle,
+        package=package,
+        prior_operations=(),
+    )
+    captured: dict[str, object] = {}
+
+    def fake_transport(
+        url: str, headers: dict[str, str], body: dict[str, object], timeout: float
+    ) -> dict[str, object]:
+        captured.update(url=url, headers=headers, body=body, timeout=timeout)
+        return {
+            "id": "provider-request.builder-1",
+            "model": "qwen3.8-max",
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "contract": "builder-phase-output/v1",
+                                "phase": "SEMANTIC",
+                                "request_digest": request.request_digest,
+                                "proposals": [],
+                                "gaps": [],
+                                "done": True,
+                            }
+                        )
+                    }
+                }
+            ],
+        }
+
+    monkeypatch.setattr(gateway_module, "_provider_transport", fake_transport)
+    monkeypatch.setenv("ONTOLOGY_BUILDER_LLM_ENABLED", "true")
+    monkeypatch.setenv("ONTOLOGY_QWEN_API_KEY", "test-only-builder-secret")
+    monkeypatch.setenv("ONTOLOGY_QWEN_BASE_URL", "https://provider.example/v1")
+
+    response = client.post(
+        "/model/v1/ontology-build", json=request.model_dump(mode="json")
+    )
+
+    assert response.status_code == 200
+    assert response.json()["output"]["request_digest"] == request.request_digest
+    provider_body = captured["body"]
+    serialized = json.dumps(provider_body)
+    assert "Ontology Build Skill" in serialized
+    assert request.evidence_fragments[0].fragment_id in serialized
+    assert "test-only-builder-secret" not in serialized
+    assert provider_body["model"] == "qwen3.8-max"
+    assert provider_body["enable_thinking"] is False
 
 
 def test_model_gateway_health_reports_capability_without_secret_or_endpoint() -> None:

@@ -20,6 +20,7 @@ COPY scripts ./scripts
 COPY alembic.ini ./alembic.ini
 COPY alembic ./alembic
 COPY scenarios ./scenarios
+COPY skills ./skills
 
 RUN python scripts/generate_fixtures.py \
     && addgroup --system --gid 10001 app \

@@ -380,7 +380,7 @@ const editorDescriptorSchema = z
 export const packageDraftOperationSchema = z.object({
   action: z.enum(["UPSERT", "CONFIRM", "DEPRECATE"]),
   collection: z.enum([
-    "actors", "processes", "entities", "properties", "relationships",
+    "sources", "decisions", "actors", "processes", "entities", "properties", "relationships",
     "dimensions", "rules", "metrics", "data_sources", "bindings", "joins",
     "analysis_patterns", "policies", "questions",
   ]),
@@ -832,7 +832,7 @@ const constructionSourceSettlementSchema = z.object({
 
 const constructionStageReceiptSchema = z.object({
   contract: z.literal("construction-stage-receipt/v1"),
-  stage: z.enum(["SOURCE_SETTLEMENT", "STRUCTURED_EXTRACTION", "PACKAGED_CASE_COMPILATION", "SEMANTICA_PROPOSAL", "CANDIDATE_PRECHECK"]),
+  stage: z.enum(["SOURCE_SETTLEMENT", "STRUCTURED_EXTRACTION", "BUILDER_AGENT", "PACKAGED_CASE_COMPILATION", "SEMANTICA_PROPOSAL", "CANDIDATE_PRECHECK"]),
   status: z.enum(["PASS", "WARN", "SKIPPED", "FAIL"]),
   input_digest: sha256,
   output_digest: sha256,
@@ -847,7 +847,7 @@ export const constructionCandidateSchema = z.object({
   occurrence_key: sha256,
   revision_digest: sha256,
   candidate_type: z.enum([
-    "REQUIREMENT", "ACTOR", "PROCESS", "OBJECT", "LINK", "PROPERTY",
+    "SOURCE", "GAP", "REQUIREMENT", "ACTOR", "PROCESS", "OBJECT", "LINK", "PROPERTY",
     "DIMENSION", "METRIC", "RULE", "DATA_SOURCE", "MAPPING", "JOIN",
     "ANALYSIS_PATTERN", "POLICY", "QUESTION",
   ]),

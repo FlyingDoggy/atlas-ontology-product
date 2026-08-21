@@ -37,12 +37,15 @@ function useUnsavedReviewGuard(dirty: boolean): void {
 const stageLabels: Record<string, string> = {
   SOURCE_SETTLEMENT: "来源结算",
   STRUCTURED_EXTRACTION: "结构化提取",
-  PACKAGED_CASE_COMPILATION: "案例编译档",
+  BUILDER_AGENT: "候选构建",
+  PACKAGED_CASE_COMPILATION: "兼容资产编译",
   SEMANTICA_PROPOSAL: "语义候选生成",
   CANDIDATE_PRECHECK: "候选预检",
 };
 
 const candidateTypeLabels: Record<ConstructionCandidate["candidate_type"], string> = {
+  SOURCE: "来源",
+  GAP: "缺口",
   REQUIREMENT: "需求",
   ACTOR: "角色",
   PROCESS: "流程",

@@ -196,6 +196,12 @@ spec:
               value: /app
             - name: ONTOLOGY_QWEN_BASE_URL
               value: {{ .Values.llm.baseUrl | quote }}
+            - name: ONTOLOGY_BUILDER_LLM_ENABLED
+              value: "true"
+            - name: ONTOLOGY_BUILDER_MODEL
+              value: qwen3.8-max
+            - name: ONTOLOGY_SKILL_ROOT
+              value: /app/skills
             - name: ONTOLOGY_QWEN_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -399,6 +405,10 @@ spec:
           args: ["construction-worker", "--poll-seconds", "1", "--lease-seconds", "120"]
           env:
             {{- include "ontology.backendEnv" . | nindent 12 }}
+            {{- if .Values.llm.enabled }}
+            - name: ONTOLOGY_MODEL_GATEWAY_URL
+              value: http://model-gateway:8794
+            {{- end }}
             {{- if .Values.semantica.enabled }}
             - name: ONTOLOGY_SEMANTICA_WORKER_URL
               value: http://semantica-worker:8795

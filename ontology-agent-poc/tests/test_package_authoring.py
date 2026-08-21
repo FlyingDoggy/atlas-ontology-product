@@ -30,6 +30,49 @@ COLLECTIONS = (
 )
 
 
+def test_exact_source_can_be_registered_without_fabricating_review_status(
+    package: OntologyPackage,
+) -> None:
+    operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "sources",
+            "object_id": "source.registered_input",
+            "payload": {
+                "id": "source.registered_input",
+                "source_type": "data_dictionary",
+                "title": "Registered data dictionary",
+                "locator": "source-library:source-version.123",
+                "owner": "Ontology Team",
+                "captured_on": "2026-08-22",
+                "trust": "primary",
+                "notes": "Exact source version; semantic claims still require review.",
+            },
+        }
+    )
+
+    candidate = apply_package_operations(package, (operation,))
+
+    assert candidate.sources[-1].id == "source.registered_input"
+    assert not hasattr(candidate.sources[-1], "status")
+
+
+def test_exact_source_cannot_use_governed_asset_confirmation() -> None:
+    with pytest.raises(ValidationError, match="do not use asset confirmation"):
+        PackageDraftOperation.model_validate(
+            {
+                "action": "CONFIRM",
+                "collection": "sources",
+                "object_id": "source.input",
+                "payload": {
+                    "reviewer": "reviewer@example.com",
+                    "reviewed_at": "2026-08-22T00:00:00Z",
+                    "asset_checksum": "a" * 64,
+                },
+            }
+        )
+
+
 @pytest.mark.parametrize("collection", COLLECTIONS)
 def test_every_governed_collection_accepts_its_own_closed_contract(
     package: OntologyPackage,
