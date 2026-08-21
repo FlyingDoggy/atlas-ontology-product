@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ontology-agent-poc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ontology-agent-poc
+  template:
+    metadata:
+      labels:
+        app: ontology-agent-poc
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: prepare-adt-runtime
+          image: replace-with-internal-registry/ontology-agent-poc:0.1.0-arm64
+          imagePullPolicy: IfNotPresent
+          command: ["ontology-agent", "publish"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: runtime-registry
+              mountPath: /app/published
+            - name: temporary-files
+              mountPath: /tmp
+      containers:
+        - name: api
+          image: replace-with-internal-registry/ontology-agent-poc:0.1.0-arm64
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8790
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /api/readyz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          volumeMounts:
+            - name: runtime-registry
+              mountPath: /app/published
+              readOnly: true
+            - name: execution-output
+              mountPath: /app/outputs
+            - name: temporary-files
+              mountPath: /tmp
+      volumes:
+        - name: runtime-registry
+          emptyDir: {}
+        - name: execution-output
+          emptyDir: {}
+        - name: temporary-files
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ontology-agent-poc
+spec:
+  selector:
+    app: ontology-agent-poc
+  ports:
+    - name: http
+      port: 8790
+      targetPort: http
+  type: ClusterIP

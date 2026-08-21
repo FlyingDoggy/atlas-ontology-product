@@ -1,0 +1,125 @@
+{
+  "contract": "studio-editor-descriptor/v1",
+  "descriptor_id": "editor.adt.reference",
+  "version": "1.0.0",
+  "workspace_id": "workspace.adt.reference",
+  "studio_adapter_id": "studio-adapter.adt.reference@1",
+  "draft_schema_version": "adt-draft-workspace/v1",
+  "operations_contract": "studio-draft-operations/v1",
+  "title": {
+    "en": "ADT semantic draft",
+    "zh": "ADT 语义草稿"
+  },
+  "description": {
+    "en": "Review the metric definition, eligibility rule, supported dimensions and amount mapping before validation and release.",
+    "zh": "在验证和发布前，复核指标定义、合资格规则、支持维度与成交额映射。"
+  },
+  "semantic_slot_manifest": {
+    "locator": "llm/studio/semantic-slot-manifest.json",
+    "sha256": "20cbcd2af47a7f19b7f563ff9d51930e350620495abd5eed507ebf90ffbe3c0b"
+  },
+  "fields": [
+    {
+      "path": "metric_definition",
+      "label": {
+        "en": "Metric definition",
+        "zh": "指标定义"
+      },
+      "help": {
+        "en": "Human-reviewed definition used in the semantic release.",
+        "zh": "进入语义发布版本、并由业务人员确认的指标定义。"
+      },
+      "control": "TEXTAREA",
+      "value_kind": "STRING",
+      "required": true,
+      "options": []
+    },
+    {
+      "path": "eligibility_rule.include_status",
+      "label": {
+        "en": "Included trade status",
+        "zh": "纳入的交易状态"
+      },
+      "help": {
+        "en": "Only records with this closed status are eligible.",
+        "zh": "只有满足该枚举状态的记录才会进入计算。"
+      },
+      "control": "SELECT",
+      "value_kind": "STRING",
+      "required": true,
+      "options": [
+        {
+          "value": "EXECUTED",
+          "label": {"en": "Executed", "zh": "已成交"}
+        },
+        {
+          "value": "REJECTED",
+          "label": {"en": "Rejected", "zh": "已拒绝"}
+        }
+      ]
+    },
+    {
+      "path": "eligibility_rule.exclude_cancelled",
+      "label": {
+        "en": "Exclude cancelled records",
+        "zh": "排除已撤销记录"
+      },
+      "help": {
+        "en": "When enabled, cancellation_flag must be false.",
+        "zh": "启用后，只有 cancellation_flag 为 false 的记录才会进入计算。"
+      },
+      "control": "CHECKBOX",
+      "value_kind": "BOOLEAN",
+      "required": true,
+      "options": []
+    },
+    {
+      "path": "allowed_dimensions",
+      "label": {
+        "en": "Allowed dimensions",
+        "zh": "允许分析的维度"
+      },
+      "help": {
+        "en": "Dimensions exposed by the metric contract.",
+        "zh": "指标合同允许用户切分和比较的业务维度。"
+      },
+      "control": "MULTI_SELECT",
+      "value_kind": "STRING_LIST",
+      "required": true,
+      "options": [
+        {
+          "value": "dimension.period",
+          "label": {"en": "Period", "zh": "期间"}
+        },
+        {
+          "value": "dimension.segment",
+          "label": {"en": "Market segment", "zh": "市场板块"}
+        }
+      ]
+    },
+    {
+      "path": "amount_mapping",
+      "label": {
+        "en": "Amount mapping",
+        "zh": "成交额字段映射"
+      },
+      "help": {
+        "en": "Synthetic physical amount field selected for the ADT calculation.",
+        "zh": "ADT 计算所绑定的 synthetic 成交额物理字段。"
+      },
+      "control": "SELECT",
+      "value_kind": "STRING",
+      "required": true,
+      "options": [
+        {
+          "value": "executed_value_hkd_mn",
+          "label": {"en": "Executed value (HKD mn)", "zh": "成交金额（百万港元）"}
+        },
+        {
+          "value": "order_value_hkd_mn",
+          "label": {"en": "Order value (HKD mn)", "zh": "订单金额（百万港元）"}
+        }
+      ]
+    }
+  ]
+}

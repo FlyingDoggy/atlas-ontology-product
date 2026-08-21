@@ -1,0 +1,64 @@
+{
+  "contract": "engineering-evaluation-manifest/v1",
+  "manifest_id": "eval-manifest.adt.llm.v1",
+  "demo_class": "LLM_ENGINEERING_DEMO",
+  "profile_digest": "00bf0def0279cb09f965c35366ba90965d2f26a4cba5cecea93bd03258fcdeeb",
+  "question_family_checksum": "49539b9c004eb748c95d2e372fa84a231d9172ecc452ccfbdb3457ffeb15e8ae",
+  "egress_decision_digest": "3a63d36deb40a4cdacb46a5453b2e604263cfe88b371ce1212d415bcfbe88303",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "response_model": "qwen3.8-max",
+  "case_results": [
+    {
+      "case_id": "adt.compare.en.v1",
+      "outcome": "ANSWERED",
+      "committed": true,
+      "response_model": "qwen3.8-max",
+      "provider_call_count": 2,
+      "tool_sequence": ["compare_periods"],
+      "commit_digest": "f525ed9a5568a997952ffbc1546fd1131c6ee370979a86f91c8cc512dc1a7016",
+      "latency_ms": 2452
+    },
+    {
+      "case_id": "adt.driver.en.v1",
+      "outcome": "ANSWERED",
+      "committed": true,
+      "response_model": "qwen3.8-max",
+      "provider_call_count": 2,
+      "tool_sequence": ["compare_periods", "rank_contributors"],
+      "commit_digest": "710afb6ecdf9b793484d1002e734c66825430358c3e01022fec4fe915595844d",
+      "latency_ms": 2534
+    },
+    {
+      "case_id": "adt.driver.zh.v1",
+      "outcome": "ANSWERED",
+      "committed": true,
+      "response_model": "qwen3.8-max",
+      "provider_call_count": 2,
+      "tool_sequence": ["compare_periods", "rank_contributors"],
+      "commit_digest": "2b5991834d1f783d692d21c7a7392ee3a55035e9c00b6151ce9ceabdc0183082",
+      "latency_ms": 2573
+    },
+    {
+      "case_id": "adt.decompose.en.v1",
+      "outcome": "ANSWERED",
+      "committed": true,
+      "response_model": "qwen3.8-max",
+      "provider_call_count": 2,
+      "tool_sequence": ["compare_periods", "decompose_change"],
+      "commit_digest": "0fdeff183e44f9126a891ac2d004d485d799ca4be13fbc30cdf349f849c3b993",
+      "latency_ms": 2812
+    }
+  ],
+  "security_gates": {
+    "unregistered_input_zero_call_blocked": true,
+    "projection_leak_blocked": true,
+    "early_finish_partial_release_blocked": true,
+    "rollout_race_blocked": true,
+    "model_identity_mismatch_blocked": true,
+    "exact_model_output_schema_passed": true
+  },
+  "raw_content_retained": false,
+  "evaluated_at": "2026-08-19T15:36:42.210366Z",
+  "approved_by": "decision-owner.muyu"
+}

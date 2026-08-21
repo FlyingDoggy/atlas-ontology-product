@@ -1,0 +1,142 @@
+{
+  "adapter": "adt-reference",
+  "base_formula_shapes": [
+    "sum(field_ref)",
+    "count_distinct(field_ref)"
+  ],
+  "binding_transformations": [
+    "identity"
+  ],
+  "derived_formula_shapes": [
+    "divide(metric_ref,metric_ref)"
+  ],
+  "internal_operators": {
+    "DeriveADT": "1.0.0",
+    "EligibleTurnover": "1.0.0",
+    "EvidenceAudit": "1.0.0",
+    "ExactPeriodCompare": "1.0.0",
+    "MetricFact": "1.0.0",
+    "SegmentNetChangeShare": "1.0.0",
+    "SegmentTurnover": "1.0.0",
+    "SequentialCalendarFirst": "1.0.0",
+    "TradingDayCount": "1.0.0",
+    "TurnoverDriverAnalysis": "1.0.0"
+  },
+  "join_topology": "one-hop-from-base",
+  "operators": {
+    "EvidenceAudit": {
+      "exactly_two_periods": false,
+      "intent": "evidence_audit",
+      "operation": "EvidenceAudit",
+      "required_dimensions": [],
+      "required_metrics": [
+        "metric.average_daily_turnover"
+      ],
+      "required_outputs": [
+        "definition",
+        "formula",
+        "mappings",
+        "validation",
+        "execution"
+      ]
+    },
+    "ExactPeriodCompare": {
+      "exactly_two_periods": true,
+      "intent": "period_compare",
+      "operation": "ExactPeriodCompare",
+      "required_dimensions": [
+        "dimension.period"
+      ],
+      "required_metrics": [
+        "metric.average_daily_turnover"
+      ],
+      "required_outputs": [
+        "current",
+        "previous",
+        "delta",
+        "delta_pct"
+      ]
+    },
+    "MetricFact": {
+      "exactly_two_periods": false,
+      "intent": "metric_fact",
+      "operation": "MetricFact",
+      "required_dimensions": [
+        "dimension.period"
+      ],
+      "required_metrics": [
+        "metric.average_daily_turnover"
+      ],
+      "required_outputs": [
+        "period",
+        "turnover",
+        "trading_days",
+        "adt"
+      ]
+    },
+    "SegmentNetChangeShare": {
+      "exactly_two_periods": true,
+      "intent": "segment_contribution",
+      "operation": "SegmentNetChangeShare",
+      "required_dimensions": [
+        "dimension.segment",
+        "dimension.period"
+      ],
+      "required_metrics": [
+        "metric.eligible_turnover"
+      ],
+      "required_outputs": [
+        "segment",
+        "previous",
+        "current",
+        "delta",
+        "contribution_share"
+      ]
+    },
+    "SequentialCalendarFirst": {
+      "exactly_two_periods": true,
+      "intent": "sequential_decomposition",
+      "operation": "SequentialCalendarFirst",
+      "required_dimensions": [
+        "dimension.period"
+      ],
+      "required_metrics": [
+        "metric.eligible_turnover",
+        "metric.trading_day_count",
+        "metric.average_daily_turnover"
+      ],
+      "required_outputs": [
+        "calendar_effect",
+        "activity_effect",
+        "residual"
+      ]
+    },
+    "TurnoverDriverAnalysis": {
+      "exactly_two_periods": true,
+      "intent": "turnover_driver",
+      "operation": "TurnoverDriverAnalysis",
+      "required_dimensions": [
+        "dimension.period",
+        "dimension.segment"
+      ],
+      "required_metrics": [
+        "metric.eligible_turnover",
+        "metric.trading_day_count",
+        "metric.average_daily_turnover"
+      ],
+      "required_outputs": [
+        "period_facts",
+        "turnover_change",
+        "segment_contribution",
+        "calendar_effect",
+        "activity_effect",
+        "residual"
+      ]
+    }
+  },
+  "source_kinds": [
+    "csv"
+  ],
+  "time_semantics": "date-only",
+  "version": "1.0.0"
+}

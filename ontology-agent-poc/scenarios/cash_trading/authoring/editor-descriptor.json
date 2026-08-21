@@ -1,0 +1,77 @@
+{
+  "contract": "studio-editor-descriptor/v1",
+  "descriptor_id": "editor.cash-trading.reference",
+  "version": "1.0.0",
+  "workspace_id": "workspace.cash_trading.reference",
+  "studio_adapter_id": "studio-adapter.cash-trading.reference@1",
+  "draft_schema_version": "cash-trading-draft-workspace/v1",
+  "operations_contract": "studio-draft-operations/v1",
+  "title": {
+    "en": "Cash Trading semantic draft",
+    "zh": "现金交易语义草稿"
+  },
+  "description": {
+    "en": "Review the provisional self-trade definition, correction handling, latency convention and exposed dimensions before producing a new candidate package.",
+    "zh": "在生成新的候选包之前，复核临时自成交定义、修正处理、延迟口径和开放维度。"
+  },
+  "semantic_slot_manifest": {
+    "locator": "llm/studio/semantic-slot-manifest.json",
+    "sha256": "13380eb3748a932bb822f2f244f9b378ae11f551c8cbcff5b3f6d3b11bb4a8ff"
+  },
+  "fields": [
+    {
+      "path": "self_trade_definition",
+      "label": {"en": "Potential self-trade definition", "zh": "潜在自成交定义"},
+      "help": {"en": "Human-reviewed triage definition; it must not make a misconduct conclusion.", "zh": "由人员复核的筛查定义，不得据此下违规结论。"},
+      "control": "TEXTAREA",
+      "value_kind": "STRING",
+      "required": true,
+      "options": []
+    },
+    {
+      "path": "self_trade_identity_level",
+      "label": {"en": "Identity level", "zh": "身份层级"},
+      "help": {"en": "The current synthetic adapter implements participant-level equality only.", "zh": "当前 synthetic 适配器只实现参与者层级相等判断。"},
+      "control": "SELECT",
+      "value_kind": "STRING",
+      "required": true,
+      "options": [
+        {"value": "participant_id", "label": {"en": "Participant ID", "zh": "参与者ID"}}
+      ]
+    },
+    {
+      "path": "exclude_corrections",
+      "label": {"en": "Exclude corrections and busts", "zh": "排除修正与撤销成交"},
+      "help": {"en": "Exclude cancel, bust and corrected-original lineage from eligible trades.", "zh": "从合格成交中排除取消、bust 与被修正的原始记录。"},
+      "control": "CHECKBOX",
+      "value_kind": "BOOLEAN",
+      "required": true,
+      "options": []
+    },
+    {
+      "path": "latency_percentile_method",
+      "label": {"en": "Latency percentile method", "zh": "延迟百分位算法"},
+      "help": {"en": "The current synthetic controls are frozen to nearest-rank percentiles.", "zh": "当前 synthetic 控制结果固定使用 nearest-rank 百分位。"},
+      "control": "SELECT",
+      "value_kind": "STRING",
+      "required": true,
+      "options": [
+        {"value": "nearest_rank", "label": {"en": "Nearest rank", "zh": "最近秩"}}
+      ]
+    },
+    {
+      "path": "allowed_dimensions",
+      "label": {"en": "Allowed analytical dimensions", "zh": "允许分析的维度"},
+      "help": {"en": "Dimensions exposed by the current Cash Trading metric contracts.", "zh": "当前现金交易指标合同允许开放的分析维度。"},
+      "control": "MULTI_SELECT",
+      "value_kind": "STRING_LIST",
+      "required": true,
+      "options": [
+        {"value": "dimension.business_date", "label": {"en": "Business date", "zh": "业务日期"}},
+        {"value": "dimension.instrument", "label": {"en": "Instrument", "zh": "证券"}},
+        {"value": "dimension.participant", "label": {"en": "Participant", "zh": "参与者"}},
+        {"value": "dimension.market_segment", "label": {"en": "Market segment", "zh": "市场板块"}}
+      ]
+    }
+  ]
+}

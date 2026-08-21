@@ -1,0 +1,6 @@
+# EC2 release accelerator: release-dist is the already tested Vite production
+# output. The canonical clean build remains Dockerfile.
+ARG BASE_IMAGE=ontology-common-web:0.10.1-studio-navigation.1
+FROM ${BASE_IMAGE}
+
+COPY release-dist /usr/share/nginx/html

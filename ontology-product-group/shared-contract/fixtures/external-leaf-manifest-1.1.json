@@ -1,0 +1,5112 @@
+{
+  "caller_supplied": false,
+  "claim": "closed-relative-to-this-exact-pinned-manifest",
+  "contract_version": "shared-product-contract/0.1",
+  "entries": [
+    {
+      "facts": {
+        "build_or_schema_identity": "alias-resolution-profile.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "alias-resolution-profile.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "alias-resolution-profile.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:67c884305fe231ce047f1567c7e70e27fe12885a3f516cde340cc00a1a9d214b",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "audience.demo-analyst",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "audience.demo-analyst",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:48316f7cad1cd6a6d2e79ab57a743f8a76e8b7c7c8761570f1c4774ed54f4e95",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "audience.studio-triage",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "audience.studio-triage",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:3cd4cd6ed5abec123ff11ae7ef69e5e9ddbfd08e9eab6e8da2a7898c652fc635",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "authority-policy.local",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "authority-policy.local",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:a0a7500a7e98143a4fd2b97d819e1615a09930ea257175346bb6a93453509912",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "authority-policy.local",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "authority-policy.local",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:557603ffd5f5eb28e9e20ba3f784143beb8c0c0e2a567bb524be48c372ddcdbe",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "authority-policy.local",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "authority-policy.local",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:53cedd1f0acf10527be8ecbf603263f8ccb9001d3b0cfed249362e2fcacc3bf8",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "binding-requirements.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "binding-requirements.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:08d16018723efd704817f7127d42d3adb27a2c229c3fb564ed3ec64a525c3677",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "binding-validation.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "binding-validation.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "binding-validation.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:95bae0fff001d2627eb63e166ac6ad27e565333546a8ed82180eeb8821fe5c04",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "binding.adt.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "binding.adt.synthetic",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:f5e4158657cae7de8eeaee2555c2e553a738abc3ae585f96fa361dbc490be243",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "capability-requirements.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "capability-requirements.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:6e4dc21a61a080e8135e26bcffc93e5e8ee17b3a0d314497cb4b421b5b11c8e4",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "capability.exact-period-compare",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "capability.exact-period-compare",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:7cddb60eec4a0b5375f8d9cdfc5173a34639035da202144e290921e2b8e2f6aa",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "capability.metric-resolve",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "capability.metric-resolve",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:649efbcd4c4d8bce5f3020a1b38073f449a4976d0859b86fd97524cd3c1685f2",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.01",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.01",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:10ca2b736c1f8e2e1c33c86fa1196d089cad51b2ed0933900a29a64a3ba7c64e",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.02",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.02",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:c2ca52a842df26702676326df4e7b5fdf889dd3bfeff40d809db89ee3dfd140c",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.03",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.03",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:92f965431b6f99b495d9a3f2e4387ce879048c9cce595c94149d602aa4fef4bf",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.04",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.04",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:203334f681570c00c20d79f745823a19377a7d1cd73384870a00c8e033b33c21",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.05",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.05",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:aa2e9e4d04d77ca9c696c9c7baec3a89e3ce947ff094f292805bd071ee835eb3",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.06",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.06",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:1a8acbd90435926ed02199279ce19b5967b06ba2d8385365c4db01778b4d70cd",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.07",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.07",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:9973b3084d575d12e2489e825b2b264bab62124066e1aad3a6160ef58500997b",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "suite_id": "adt.tracer.v1.suite"
+      },
+      "leaf_class": "SUITE_CASE",
+      "object_id": "case.08",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "case.08",
+        "object_type": "suite-case-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:a21d7747d47faeacd200bf3c6dd82dd6bf22293a200663e769ec63f7d61b76f4",
+        "subject_schema": "suite-case-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "claims.exec.answer",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "claims.exec.answer",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:56dab43b44af84ec4d6b95de22acef790be4bf5fccfed1adb9bce03a74707649",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "claims.exec.clarify",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "claims.exec.clarify",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:9d18aa9685b479dee59fe66eb0985e37bca4a6dc1f7fed8a6fef1bf0e77706c7",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "claims.exec.concept",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "claims.exec.concept",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:18dd2348e6f28bf4c0ed6f344816e6477513a2d99fc98c545ebfcae10b5e0ccf",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "classification.public",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "classification.public",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:103bae07300fd02bed1d97dcc93b459de97bd38b5da20dc131f4a6fe17dfd85b",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "compatibility.exact",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "compatibility.exact",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "compatibility.exact",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2d5f87dd3b9406065d70741052b0b0b8a0564dea0e31aa300f7129ef629205d4",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "data-policy.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "data-policy.synthetic",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:855304a33608e96b08242e8c62c8590eb1c4c76eb35908c766bd86a0d911feb3",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "dataset-manifest.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "dataset-manifest.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:208e23e9f2cf447dbcc595d515b43d814f8840789f794cc62980d4b7e60c8377",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "disclosure-labels.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "disclosure-labels.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:82afda31a3cb711ed45a1e321845afacd22f26ebf5596efef41405deef4a5503",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "disclosure-validation.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "disclosure-validation.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "disclosure-validation.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:5297733b6afaa6dbce18ac62e2ff64d35e916e8c01be9da11f61800f55d17169",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "engine.duckdb",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "engine.duckdb",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "engine.duckdb",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:735e1c0eb95916fda53adece2e2ab3d01e00cc8466c14648caf133d262fae01b",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "evaluation.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "evaluation.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "evaluation.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:859378ddd273cdd1b514f6063cfc7ae4d821486730a397b011be243226c837b8",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "evidence.binding",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "evidence.binding",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:35c67f04609a8c2ac81944e5536b72dd94c2e0fa3f5edaf3d124199fbc038d07",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "evidence.control",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "evidence.control",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:49d9628c53203fa51f65ee8ca34c17df037c80225ea732270eab7a350ef21cc3",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "evidence.disclosure",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "evidence.disclosure",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8f0fd1f5298820ee4e318dc2181c2eed0ac4299ed900d0a79107a9b5adb583b9",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "evidence.runtime",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "evidence.runtime",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:27e0a6c23adad198e3cf525369c3791b89ab7c6d5660b2d5fad91869e5b32656",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "evidence.semantic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "evidence.semantic",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:219d54ae9d317af7c9565b49f69c86bdefda0da175d797160c160a1764df7fd3",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "expected.aux.q3",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "expected.aux.q3",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:4f59531f97bea4a44d22adfe95f9f90da2aa4e206d8e8671f66116f353ce5c40",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "expected.aux.q4",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "expected.aux.q4",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8c79e3353ecc1ab53a20b0ab58eadbc94afda211ae7875d2f5a6f61cbbb7cc2c",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "expected.public.q3",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "expected.public.q3",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:c2f5f52421f2c902c0fe75819f66d2e617d58987ed0ea2d3c5bb245d6f284d0d",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "expected.public.q4",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "expected.public.q4",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8077ebb99237dbbfbf464a207335f02b5c80f4c3aee4a4ec79cb55777eabea20",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "expected.synthetic.q3",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "expected.synthetic.q3",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:b49076b53a8d3ced1f27f09d0da777ae8eb563bf8e3bb3388b1e76548ca5023f",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "expected.synthetic.q4",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "expected.synthetic.q4",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:fd40b81da7e3391d2ed363a19fd97d73fdecb0a2e62de0e2b9cc7e2e004bc1a2",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "facts.exec.answer",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "facts.exec.answer",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:94bd4aee207f392b2dd7e9c480812418488703d251f6aa1e568f6f4340cfed45",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "failure-contract.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "failure-contract.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "failure-contract.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:490774d3fce594bdcbadf089bb39cbbd00189a056151a9247f4501a7ff295283",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "formula.adt.aux",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "formula.adt.aux",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:3362ec77dbe8853ba6f374426a5b53dcba673ba46a3dd0f2c5d21e8708759f25",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "formula.adt.public",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "formula.adt.public",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:c4be28b1bb4b43480154a334d2c3d00b2eaff3fbb4d7cac42f8da5722d3e0906",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "formula.adt.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "formula.adt.synthetic",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:4b1bb3a81303f40fa66a3325937f69312641011d58164db371c41661f73eab36",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "handle_kind": "opaque-safe-handle",
+        "raw_value_present": false,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "SAFE_HANDLE",
+      "object_id": "interaction.opaque.001",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "interaction.opaque.001",
+        "object_type": "safe-handle-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:aebfe5a000aeb0ef8e95b7600c957a1c22e58815c17b577e361984012178f9a6",
+        "subject_schema": "safe-handle-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "mutation.adt.core",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "mutation.adt.core",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:12eb0effa966ccb2deaa4d8ddd98b17c6a53014b68b5bb96fc066bb244f801d3",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "operator-conformance.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "operator-conformance.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:dd4be96e1bcb5981c796451e68ad566c655f249b25ee6a38db607555a14e9ca9",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "operator-input.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "operator-input.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "operator-input.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:eda9e4035662d6f9da507d777015149c49c80f7df949ff37217971585e461400",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "operator-output.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "operator-output.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "operator-output.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:50ae4dab864885b2755c91395b65106b65b709251c93668879f6c1e2a6564b8b",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "operator-policy.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "operator-policy.adt",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:1a0f49593d46e4675c511ede2e616df2b7b9813f1bd55fedf5b7394e7eba9ed8",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "operator.metric-resolve",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "operator.metric-resolve",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "operator.metric-resolve",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:fcfe35c57d4f7923c210aa49e20d6cc14a4eddbca24c358aa6068a5426721462",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "options.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "options.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "options.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:4775a542c9345ebc236ddf2019a22991256a4392176c9e91dea4c30f1b93d025",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "oracle-derivation.adt.aux",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "oracle-derivation.adt.aux",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:962a58f4309330a5f750af54a327efa2b34fd61400f9d432b90e5a580b687345",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "oracle-derivation.adt.public",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "oracle-derivation.adt.public",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:f9b2aa634b2ea6b8ee0f254a1bb2718a11afe6acadb1fa23438821428f4b8367",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "oracle-derivation.adt.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "oracle-derivation.adt.synthetic",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:05f403faa996e51724e08d47571ccdbf0f4696d955c8f70a87588ba2fdb24f72",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "oracle-source.adt.aux",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "oracle-source.adt.aux",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:4a4aba51f415837a2ccc74ed5ecd1cc91e66a6064ca619c10bc2f55a5faa265f",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "oracle-source.adt.public",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "oracle-source.adt.public",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:4e0551948b714df89e95b7e3f92602793791aa79a8e56e8fb3cdb5cc067f2b83",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "oracle-source.adt.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "oracle-source.adt.synthetic",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:7acfb0e7e9edae9497eedcb38245b4be5d95fc6c45e534bb75a0c6be09c1a943",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "partition.q3",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "partition.q3",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:0f675bb04f8971431471f00eeacb75ef70e4e17f9cd0570a213feef503c3179e",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "partition.q4",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "partition.q4",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:d4958082fa4ffe15f4e48647ce93d5916a3ff4783a29c09ea6437cdcc0fde857",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "period.quarter",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "period.quarter",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:493414a0bb943a8e736bd2fb11e9bb9788d7000f2e267999b63e838afdb010a2",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "plan.exec.answer",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "plan.exec.answer",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:905da6e61153b087c94aa2a9bf687a44feaa876332038e8aef341e208643a472",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "plan.exec.failed",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "plan.exec.failed",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:5b768b07a38b2163b9211ffbceb7258fcef0385de6dbc2db73c23bfa04177f77",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "policy-requirements.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "policy-requirements.adt",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:7fa96282aa9096eebbf777706d038b63fda35cbbf61aacae477b7d037fb2e375",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "population.trades",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "population.trades",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:71cc1ee9320ff50493949a3560ab89f2f19f7981c2a90049607cfe78790f36b0",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "principal_object_id": "principal.market-analyst",
+        "purpose": "governed-analysis-demo",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL_CONTEXT",
+      "object_id": "principal-context.analyst",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal-context.analyst",
+        "object_type": "principal-context-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:3b79e746409287935f20d7d1d57b40e4cf9bb95b1b1c385831f0f31ab3e2821f",
+        "subject_schema": "principal-context-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "channel",
+        "snapshot_digest": "sha-256:023969c0bebd004624e230017ebac755b0bf76e2e969f20c64816a24d743d20d",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "PRINCIPAL_REGISTRY",
+      "object_id": "principal-registry.local",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal-registry.local",
+        "object_type": "principal-registry-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:a7203c42e155e498ba8aea55f391f5de9f918a23e70386ca3835ecaa97612628",
+        "subject_schema": "principal-registry-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "snapshot_digest": "sha-256:023969c0bebd004624e230017ebac755b0bf76e2e969f20c64816a24d743d20d",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "PRINCIPAL_REGISTRY",
+      "object_id": "principal-registry.local",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal-registry.local",
+        "object_type": "principal-registry-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:5d8a22ba5f4328099e31fb703fc5c979e7df6406dc4636f40b42134e39822509",
+        "subject_schema": "principal-registry-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "snapshot_digest": "sha-256:023969c0bebd004624e230017ebac755b0bf76e2e969f20c64816a24d743d20d",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "PRINCIPAL_REGISTRY",
+      "object_id": "principal-registry.local",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal-registry.local",
+        "object_type": "principal-registry-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:845f4e32dbc4d5b1c56065dd3b852b6cbd1f8f18da55bbddd9758711cd55c5c1",
+        "subject_schema": "principal-registry-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.binding-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.binding-attestor",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:185af872ae7a337b4e6d7a07ec05372e52cdda295e01bddf6dc5da337c4fe2f5",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.control-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.control-attestor",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:5b6bbf041df7c769244eab91d69651e6ce47c30455dc0b7b42db27eb6abae07a",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.control-reviewer",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.control-reviewer",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:847be800d28cc855c0c4b32cd504a5f8fb128580ceb0d13cb66f924a45c7c24e",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.disclosure-approver",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.disclosure-approver",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:cb14510199d765a144be0ab65d0b6647767d412b9d85bf257350d9cdc7321e9e",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.disclosure-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.disclosure-attestor",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:185267e4191c61f4be5d0d399932e319ae0115707b6c787b2c1ce76164746bd2",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.market-analyst",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.market-analyst",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:e5e2f0cc176bce72f03d8fcc76314c3d21c551eb775dbc8fc4d1a8d4ca8b6b05",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.market-analyst",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.market-analyst",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:415362b0285e9e78def1d4bf8517ef5e567f78561a7c2ccfd8fb8f61265e8b69",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.reference-truth-owner",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.reference-truth-owner",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:18ea8ed9e645997022f2e2b158d14bc2fb5e38fe274bfaa898aae6285576d8c3",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.release-manager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.release-manager",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:10a2be27de8294e43c988816fb0d862b8f2057aa6caf380f750eb89e649664ca",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.result-releaser",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.result-releaser",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:186da9508f3c14cc8e09e977449d84de53914f76b19091d6c781285a567b1c80",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.runtime-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.runtime-attestor",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2bd3e0a98ec3042e1451e6de063d6af4e3011a06e15a534770328c77de5382b9",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.runtime-operator",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.runtime-operator",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:102e702b9a98b46179d2e2700cf1c921a38895d0e55943eb7bc8b16bbeea06f0",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.runtime-release-manager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.runtime-release-manager",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:18955afaa2763a18b5e0c6d12c2523900d7b5cbf89d16c7d9fc970e6b877da62",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.scr-requester",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.scr-requester",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:3bbdb1802e70369c24b978ec7ae34428da49ef1e249b3e0ae418f526f89c6194",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.semantic-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.semantic-attestor",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:72e4f22faf52c722989be668a7cffcfbd21e89822c7de684ec25e498ffe43adb",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "registry_object_id": "principal-registry.local",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "PRINCIPAL",
+      "object_id": "principal.triager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "principal.triager",
+        "object_type": "principal-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2b7d70c33302c5d73e1d8b7f3802bd4f5c2c294295cd82912530d8d6f7d05adb",
+        "subject_schema": "principal-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "projection-fidelity.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "projection-fidelity.adt",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:5796b8242d1d7f7c36316a78924dff49c2b71cbd86081a9ca578aa896aec1c1d",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "projection-policy.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "projection-policy.adt",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:b7df0e4e8a04d109b126e759cf64d17e17b74ddc59143b0444c2784fed86511e",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "projection-transformer.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "projection-transformer.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "projection-transformer.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2cada0ea5d7deca11a2681b039166639b28b4100e19177b711e46f047401ebf8",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "projection.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "projection.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "projection.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:6ffb9ff0cd489667ec9ab8c8e84d198c0907df2bcc4479cab696f90aa476c619",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "query.exec.answer",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "query.exec.answer",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:bd70f1164d1421c2c5df2d578bee68983c0a6bf2723a3de847002f0e5e2e06f0",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "evidence_profile": "deterministic-synthetic",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "EVIDENCE",
+      "object_id": "query.exec.failed",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "query.exec.failed",
+        "object_type": "evidence-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2db01b02b3aced29fe5c92f72d2bf41b352d09050481d6d6a580c67fb8fb9edc",
+        "subject_schema": "evidence-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "renderer.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "renderer.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "renderer.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:9c71f2b9ef10e931c553fe2823579d56ac9dec0ca41fa0bd92040ff441af3552",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_purpose": "governed-analysis-demo",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "request_family": "governed-analysis",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "REQUEST",
+      "object_id": "request.exec.001",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "request.exec.001",
+        "object_type": "request-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:1e1c9013f3f41c84ddd80ad633b302937a639e2f24f97e613377ddb0a73e1447",
+        "subject_schema": "request-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_purpose": "governed-analysis-demo",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "request_family": "governed-analysis",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "REQUEST",
+      "object_id": "request.resolve.001",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "request.resolve.001",
+        "object_type": "request-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:7167d5565d7ffbd0ec3e066342491da8ed03ff899c1547813e6f5df9a3035087",
+        "subject_schema": "request-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "resolver-build.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "resolver-build.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "resolver-build.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:9920531a6c316858522a76adf859940289c5ac8c4ecee6473e1e47d9bfa748aa",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ATTEST"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.binding-attestor",
+        "role_code": "attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.binding-attestor.attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.binding-attestor.attestor",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:979518ec735453e827b52012742c13a8ac7e2a741ea5f8713b7f3f0a973d8b9f",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ATTEST"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.control-attestor",
+        "role_code": "attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.control-attestor.attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.control-attestor.attestor",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:e62bff5637fa81ab5b8b241ca1ca739e1ff9de5701b304f5d94071ddf3b4ed43",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "APPROVE_CLEARED_INPUT",
+          "SCR_DISCLOSE"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.disclosure-approver",
+        "role_code": "disclosure-approver",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.disclosure-approver.disclosure-approver",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.disclosure-approver.disclosure-approver",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:ea293967eae78df09fef117a85ca2bcb03be2dbe2e2fb7457af1aa8c8b4cc99b",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ATTEST"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.disclosure-attestor",
+        "role_code": "attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.disclosure-attestor.attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.disclosure-attestor.attestor",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:7f53cab883f63eaf042875b2c04911dcf2889ba329b42033f49ed92e55cd1c4f",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "RESOLVE",
+          "RESULT_RELEASE"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.market-analyst",
+        "role_code": "analyst",
+        "scope_kind": "channel",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.market-analyst.analyst",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.market-analyst.analyst",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:9cd2167a6bb153606ddb611e424b1e147caa3d8c3f8be40361b5da4fdcadbbe7",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "SELECT_REFERENCE"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.reference-truth-owner",
+        "role_code": "reference-truth-owner",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.reference-truth-owner.reference-truth-owner",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.reference-truth-owner.reference-truth-owner",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:0abce092fd32fba5c560e0a1f588de6d49510d1b9d75baad2f775e4e2eefa50d",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "PUBLISH"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.release-manager",
+        "role_code": "release-manager",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.release-manager.release-manager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.release-manager.release-manager",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:ca831df7f8fab787c4d5cfa7b8a334217bec19c1674ce9c5faf96ae37e7bd94d",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "RESULT_RELEASE"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.result-releaser",
+        "role_code": "result-releaser",
+        "scope_kind": "channel",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.result-releaser.result-releaser",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.result-releaser.result-releaser",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:185bd373784d7e0fb1a747ae191359a775c8b5c4a605861d77a63d3a5b109ed3",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ATTEST"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.runtime-attestor",
+        "role_code": "attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.runtime-attestor.attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.runtime-attestor.attestor",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8320d79426614e27b20867280f845ff0a1d35a9776be52f46179df5834dd8539",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "REVOKE_VRS"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.runtime-operator",
+        "role_code": "runtime-operator",
+        "scope_kind": "channel",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.runtime-operator.runtime-operator",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.runtime-operator.runtime-operator",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:48b78ba762dd86c7a4d2d5812cbb4e29165a55dc63c3b10e4a6bd318a7611165",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ATTEST",
+          "SEAL"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.runtime-release-manager",
+        "role_code": "runtime-release-manager",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.runtime-release-manager.runtime-release-manager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.runtime-release-manager.runtime-release-manager",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:e7cbc106a0bc4078d271872884dff595fe9b98af53f6eb7e88006ccb9c0e887c",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "SCR_ENQUEUE"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.scr-requester",
+        "role_code": "scr-requester",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.scr-requester.scr-requester",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.scr-requester.scr-requester",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:b891405e515f3e9c8ab659ee47a7ad6958a9217ee5a17dbf5545f424e18d2351",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ATTEST"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.semantic-attestor",
+        "role_code": "attestor",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.semantic-attestor.attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.semantic-attestor.attestor",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:733e7accf0af8e07eaec87b25a455d8a2f6a8640b62fe0b28779350e7dbcfc1e",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "SCR_TRIAGE"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.triager",
+        "role_code": "triager",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "ROLE_ASSIGNMENT",
+      "object_id": "role-assignment.triager.triager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "role-assignment.triager.triager",
+        "object_type": "role-assignment-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:b8e95f011867564e5c774922e5ede92b7087b62484eb69ea184f673555c20e96",
+        "subject_schema": "role-assignment-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "rounding.scale6",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "rounding.scale6",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:52b7e1df05ecb34593ae95a5bb28241d450af5d8589b62d8d7176bc601bf69ba",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "runner.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "runner.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "runner.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:015e4c74ba2360692d31855f89cb9b58cf5462c5c99c7c7dc24c817eb0815ddc",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "runtime-build.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "runtime-build.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "runtime-build.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:b7d62fa5a9fd967f2dd8112b76ed779a8d68562d94c3b1506e9d0d23688ddcc9",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "runtime-capabilities.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "runtime-capabilities.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:78d85af674247decb2a138280034a1ff8ac65f8d817fe2bb226aaaf5c751c3be",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "channel",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "runtime-policy.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "runtime-policy.adt",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:066b2c7e30fe1b1f3fa72a525d016c9aa2a0f03e0e0548dd7cf80b811215efe3",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "runtime-projection-schema.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "runtime-projection-schema.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "runtime-projection-schema.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:e878774e46a0e22231edd6d797018e3db7fc294dca65a2d431eb08436239d42c",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "runtime-semantic.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "runtime-semantic.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2ebdce921b79937aea8b88130126c730ab0beb17044f32afde4bace914b98dd8",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "safe-content.adt.aux",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "safe-content.adt.aux",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:ce222c16ed6378fb2dd1a9abd0937fb396d66fec0ae6d769e83ca571c95c82da",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "safe-content.adt.public",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "safe-content.adt.public",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:749006b9f6929d2d8136cec614df8de7111102546a6e203d61ea44c93d4f5af8",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "safe-content.adt.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "safe-content.adt.synthetic",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:33c63d515def75f4a762e6c6efca1d37078b2728a4f74eb676aa63bf4db71006",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "handle_kind": "opaque-safe-handle",
+        "raw_value_present": false,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "SAFE_HANDLE",
+      "object_id": "safe-detail.001",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "safe-detail.001",
+        "object_type": "safe-handle-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:f4efd6559535e376dbb0bdf98ea343bf83cc34cd8196936510162d090dd97de3",
+        "subject_schema": "safe-handle-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "handle_kind": "opaque-safe-handle",
+        "raw_value_present": false,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "SAFE_HANDLE",
+      "object_id": "safe-term.turnover-velocity",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "safe-term.turnover-velocity",
+        "object_type": "safe-handle-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:01d26eeb211e515df27d1bc7ddeb2c96365048bba0d7fa93e7bd88ee98c67b44",
+        "subject_schema": "safe-handle-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "handle_kind": "opaque-safe-handle",
+        "raw_value_present": false,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "SAFE_HANDLE",
+      "object_id": "safe-term.unrelated",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "safe-term.unrelated",
+        "object_type": "safe-handle-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:1c04095d096d1725f3441fda51ad9c2e8d4bfe7de752621cdb4674a2a989e756",
+        "subject_schema": "safe-handle-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "ACTIVATE",
+          "APPROVE_CLEARED_INPUT",
+          "ATTEST",
+          "EVIDENCE_READ",
+          "PRE_QUERY",
+          "PUBLISH",
+          "RESOLVE",
+          "RESULT_RELEASE",
+          "REVOKE_VRS",
+          "SCR_DISCLOSE",
+          "SCR_ENQUEUE",
+          "SCR_TRIAGE",
+          "SEAL"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "scr-disclosure-policy.001",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "scr-disclosure-policy.001",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:e8d60aeef172d4a50d7554b97f8b8a01a92563ba3c97e205775d537d22b026fe",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "SELECT_REFERENCE"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "selection-policy.adt.r01",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "selection-policy.adt.r01",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8984d960d3c9110ce0bac1401a871fc2d93d7390b6f8f66e8809e14d67414d1b",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_actions": [
+          "SELECT_REFERENCE"
+        ],
+        "allowed_purposes": [
+          "governed-analysis-demo",
+          "ontology-build",
+          "semantic-change-triage"
+        ],
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "effective_at": "2026-08-19T00:00:00.000Z",
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "policy_version": "1.0.0",
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "STATIC_POLICY",
+      "object_id": "selection-policy.adt.r01.corrected",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "selection-policy.adt.r01.corrected",
+        "object_type": "static-policy-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:338d8022f2afff9766f635805909518ca19aae811cc7d08de09513a762f9c1c2",
+        "subject_schema": "static-policy-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "semantic-compiler-build.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "semantic-compiler-build.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "semantic-compiler-build.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:614ebb4ae39df39f30d0f55b1d380107675a4ef2b05e7f460791d50f66e3f1f9",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "candidate_subject_digest": "sha-256:6046fe526bb8b66166c187327da19eef95896c6c1fd37f8753bf26c01c5e3f89",
+        "classification": "PUBLIC",
+        "decision_kind": "scope-period-rounding",
+        "decision_outcome": "ACCEPTED",
+        "decision_profile": "recorded-semantic-decision",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "source_cleared_input_subject_digest": "sha-256:1cd72c0b4826c4a50915a0187997d0e0fb8ca13da2a9c2b0a4246db97fa70902",
+        "status": "ACTIVE",
+        "trace_subject_digest": "sha-256:6c9af686f671432f198adf189088ebda2cf7e1787ae1f24248a1944a56d692fe"
+      },
+      "leaf_class": "SEMANTIC_DECISION",
+      "object_id": "semantic-decision.adt.auxiliary",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "semantic-decision.adt.auxiliary",
+        "object_type": "semantic-decision-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:cc5a81936525a55b343683bd1491c5606fd86e2d215592ad8c2781ee16709b44",
+        "subject_schema": "semantic-decision-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "candidate_subject_digest": "sha-256:8a91dbe611351d5ca38c41ffdda35b4e6bd97ef976f84703ceae59945f92deaa",
+        "classification": "PUBLIC",
+        "decision_kind": "scope-period-rounding",
+        "decision_outcome": "ACCEPTED",
+        "decision_profile": "recorded-semantic-decision",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "source_cleared_input_subject_digest": "sha-256:4f88bad3977c2ed82fad65b7dfbffa44dea4a465a72b40a91bea856a509fb632",
+        "status": "ACTIVE",
+        "trace_subject_digest": "sha-256:c6c36ab6c2a1b5bb1ef476e9627c3d2ea3c6102f327b83d296074b54bfbf9dd1"
+      },
+      "leaf_class": "SEMANTIC_DECISION",
+      "object_id": "semantic-decision.adt.scope-period-rounding",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "semantic-decision.adt.scope-period-rounding",
+        "object_type": "semantic-decision-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:095241172b22f85884135185a06203220ede46e9f7869b87ba02e4b611c059eb",
+        "subject_schema": "semantic-decision-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "semantic-registry.market-metrics",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "semantic-registry.market-metrics",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:9b24439e3df8647a936daa25928c90512fde475695ebe4436fdfd5ecee67028c",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "semantic-schema.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "semantic-schema.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "semantic-schema.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:29e7b7747097f9e924035c8e1e4e923362e210b8b0009faf9413eb463caffd82",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "semantic-validation.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "semantic-validation.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "semantic-validation.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:7fde5c2407a7ac751dd448c038fe7c846bb560227097a34ed78d3c96a5832e64",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.binding-attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.binding-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.binding-attestor",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2d92ca3d12666735b5def7256262524e56b3dbb5c8666dad9cd62857f4189618",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.control-attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.control-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.control-attestor",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:866836866458945d8715ab2f9171e476082866bc5a820adc4487a2a717730bb9",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.disclosure-approver",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.disclosure-approver",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.disclosure-approver",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:2f739c596c19f54b146e7b98c0e4a8eb4a7b09731ba011dbad1f47aea0520b83",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.disclosure-attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.disclosure-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.disclosure-attestor",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:28566f1e39b2e247843e43b72415d47286f1ab66119797c32cc94044c74ef520",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.market-analyst",
+        "scope_kind": "channel",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.market-analyst",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.market-analyst",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:fc6de8b0721e439abb4d80f75ee804c89be204e74412faed0eadebe72c9a3885",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.reference-truth-owner",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.reference-truth-owner",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.reference-truth-owner",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:5f93e0183b3e64cec17d777f4ae6b757e61e21a724f502bfa52e82c33ac2ff48",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.release-manager",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.release-manager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.release-manager",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:f4f4db81c9105214fe95ed4ddfc1a84b17b74b88f1e4cb3eed5f8883bcb257d5",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.result-releaser",
+        "scope_kind": "channel",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.result-releaser",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.result-releaser",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:677b73bdf6b3c23acdb9f6c808897ef91415cc9c20d0901b1fe0e214be7de7c0",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.runtime-attestor",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.runtime-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.runtime-attestor",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:252840ad37dd388cd9c7ea4fa18f2d55a0f6a39deec6f699fa48e10f14f04358",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.runtime-operator",
+        "scope_kind": "channel",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.runtime-operator",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.runtime-operator",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "channel": "active",
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:3c1ebcb1f18e04d03b180269cfaeec45b653275d9e7baafbae4f085f8b8e534c",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "channel": "active",
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.runtime-release-manager",
+        "scope_kind": "runtime",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.runtime-release-manager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.runtime-release-manager",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:a9a3471d84ab9c67b85b9f705fc57bc715e899f0231112b568531600db9838e4",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.scr-requester",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.scr-requester",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.scr-requester",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:de217d0448256edb722f304152619b32dd72bb2c411fc1ee03446e26d735d7f9",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.semantic-attestor",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.semantic-attestor",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.semantic-attestor",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:15b3861cac8dc43ba7e4fd6f40ca5d932f23b18f0e77117a656c75ff56ca2da3",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "expires_at": "2026-08-20T00:00:00.000Z",
+        "issued_at": "2026-08-19T00:00:00.000Z",
+        "principal_object_id": "principal.triager",
+        "scope_kind": "governance",
+        "status": "ACTIVE",
+        "trust_epoch": 11
+      },
+      "leaf_class": "TRUSTED_SESSION",
+      "object_id": "session.triager",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "session.triager",
+        "object_type": "trusted-session-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8e90175a7cb01bec34572cda922afdc3838cfd235c71963c47e3df379002509e",
+        "subject_schema": "trusted-session-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "suite.other",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "suite.other",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:8155054e178416fe146ec87ede87f889eaaf736dffdc5a64d77c84181a30d373",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "tolerance.exact-scale6",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "tolerance.exact-scale6",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:cccc474c225cb9c5e8f3dbf4feed3d15497648bf6871b149bc58d17338dc7dbb",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "transform.synthetic.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "transform.synthetic.adt",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:59e0c87fab3e92687112fd97c625a92d58763b5e70fd535aa17eddef5f82cecd",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "unit.hkd-million",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "unit.hkd-million",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:b1a97e8dc8000a8665f48c8310c10ac099c2f76f60d85b9d8cf059ef6f47dcf3",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "build_or_schema_identity": "user-projection-schema.adt",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "runtime",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "BUILD_SCHEMA",
+      "object_id": "user-projection-schema.adt",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "user-projection-schema.adt",
+        "object_type": "build-schema-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "environment_id": "synthetic-reference",
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:f03157e9fcf7b8ccad5a3cc3d6ccb51689f1092f0370c6e21e50ef9b8542fcb4",
+        "subject_schema": "build-schema-leaf/1"
+      },
+      "scope": {
+        "environment_id": "synthetic-reference",
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "verification-criteria.adt.aux",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "verification-criteria.adt.aux",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:d4469b4734ca810b313930ec57cf8ec0f7fe6145bb10e3548943b2216e4d0955",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "verification-criteria.adt.public",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "verification-criteria.adt.public",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:ed2845e23fd5c8d3335870a166c9a8bf0c1addd408536e7b3ebb20768878dcc8",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    },
+    {
+      "facts": {
+        "allowed_slot_family": "integrity",
+        "classification": "PUBLIC",
+        "dependency_free": true,
+        "scope_kind": "governance",
+        "status": "ACTIVE"
+      },
+      "leaf_class": "INTEGRITY",
+      "object_id": "verification-criteria.adt.synthetic",
+      "object_version": "1.0.0",
+      "ref": {
+        "canonicalization_profile": "canonical-json-v1.0",
+        "contract_version": "shared-product-contract/0.1",
+        "object_id": "verification-criteria.adt.synthetic",
+        "object_type": "integrity-leaf",
+        "object_version": "1.0.0",
+        "scope": {
+          "tenant_id": "local-synthetic",
+          "workspace_id": "adt-poc"
+        },
+        "subject_digest": "sha-256:63957d38976bb817e4235de4f2e9fbc3adb63c029b278127e910b2d2974c143a",
+        "subject_schema": "integrity-leaf/1"
+      },
+      "scope": {
+        "tenant_id": "local-synthetic",
+        "workspace_id": "adt-poc"
+      }
+    }
+  ],
+  "entry_count": 156,
+  "manifest_schema": "external-leaf-manifest/1",
+  "stage_profile_id": "synthetic-trusted-flow/core@1.1"
+}

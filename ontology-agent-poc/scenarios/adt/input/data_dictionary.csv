@@ -1,0 +1,17 @@
+table_name,column_name,data_type,nullable,key_role,unit_or_enum,description,sample_or_enum_values
+trade_fact,trade_id,string,false,primary_key,,Stable synthetic event identifier,T0001
+trade_fact,market_id,string,false,join_key,,Governed market identifier,SYNTH-CASH
+trade_fact,trade_date,date,false,join_key,,Execution date,2025-07-02
+trade_fact,instrument_id,string,false,join_key,,Instrument identifier,INST-MB
+trade_fact,executed_value_hkd_mn,decimal,false,measure,HKD_MN,Executed value used by governed turnover,100000.00
+trade_fact,order_value_hkd_mn,decimal,false,candidate_measure,HKD_MN,Deliberately wrong candidate field for mutation testing,130000.00
+trade_fact,status,string,false,eligibility,EXECUTED|REJECTED,Processing status,EXECUTED
+trade_fact,cancellation_flag,boolean,false,eligibility,true|false,Cancellation marker,false
+instrument_dim,instrument_id,string,false,primary_key,,Instrument identifier,INST-MB
+instrument_dim,segment_id,string,false,dimension_key,MB|ETF|STRUCT|OTHER,Governed segment code,MB
+instrument_dim,segment_name,string,false,dimension_label,,Governed segment label,Main Board
+trading_calendar,market_id,string,false,composite_primary_key,,Governed market identifier,SYNTH-CASH
+trading_calendar,calendar_date,date,false,composite_primary_key,,Calendar date,2025-07-01
+trading_calendar,period_id,string,false,dimension_key,2025-Q3|2025-Q4,Governed reporting period,2025-Q3
+trading_calendar,is_trading_day,boolean,false,calendar_rule,true|false,Approved denominator flag,true
+

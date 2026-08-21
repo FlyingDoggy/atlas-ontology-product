@@ -1,0 +1,208 @@
+{
+  "checks": [
+    {
+      "category": "source",
+      "check_id": "PACKAGE_STATUS",
+      "details": {
+        "status": "confirmed"
+      },
+      "message": "Draft package is confirmed before publication",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "SCENARIO_PERIODS",
+      "details": {
+        "defects": []
+      },
+      "message": "Scenario periods are unique, valid, non-overlapping and inside the data window",
+      "status": "PASS"
+    },
+    {
+      "category": "structure",
+      "check_id": "UNIQUE_IDS",
+      "details": {
+        "duplicates": []
+      },
+      "message": "All governed object IDs are unique",
+      "status": "PASS"
+    },
+    {
+      "category": "source",
+      "check_id": "SOURCE_REFERENCES",
+      "details": {
+        "missing": []
+      },
+      "message": "Every governed object points to a registered source",
+      "status": "PASS"
+    },
+    {
+      "category": "source",
+      "check_id": "DECISION_REFERENCES",
+      "details": {
+        "missing": []
+      },
+      "message": "Every decision reference resolves",
+      "status": "PASS"
+    },
+    {
+      "category": "source",
+      "check_id": "DECISION_REFERENCE_CLOSURE",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Decision actors and affected governed objects resolve",
+      "status": "PASS"
+    },
+    {
+      "category": "source",
+      "check_id": "OWNER_REFERENCES",
+      "details": {
+        "missing": []
+      },
+      "message": "Every governed object has a registered accountable actor",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "PROCESS_REFERENCE_CLOSURE",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Process actors and governed references resolve",
+      "status": "PASS"
+    },
+    {
+      "category": "source",
+      "check_id": "CONFIRMED_ONLY",
+      "details": {
+        "invalid": []
+      },
+      "message": "Every publishable object is confirmed",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "BUSINESS_REFERENCE_CLOSURE",
+      "details": {
+        "dimensions": [],
+        "properties": [],
+        "relationships": []
+      },
+      "message": "Entity, property, relationship and dimension references close",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "RULE_REFERENCE_CLOSURE",
+      "details": {
+        "invalid": []
+      },
+      "message": "Rule conditions reference known properties",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "METRIC_DEPENDENCY_DAG",
+      "details": {
+        "cycles": []
+      },
+      "message": "Metric dependencies form an acyclic graph",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "METRIC_REFERENCE_CLOSURE",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Metric formulas, grains, dimensions, rules and sources resolve",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "METRIC_QUERY_CONSISTENCY",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Metric formula and physical query responsibilities are consistent",
+      "status": "PASS"
+    },
+    {
+      "category": "binding",
+      "check_id": "METRIC_BINDING_CLOSURE",
+      "details": {
+        "missing": []
+      },
+      "message": "Every executable measure, period and rule property has a physical binding",
+      "status": "PASS"
+    },
+    {
+      "category": "binding",
+      "check_id": "UNIQUE_LOGICAL_BINDINGS",
+      "details": {
+        "duplicates": []
+      },
+      "message": "Each logical target has one active physical binding in this environment",
+      "status": "PASS"
+    },
+    {
+      "category": "binding",
+      "check_id": "PHYSICAL_BINDINGS",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Bindings resolve to schema-compatible fields",
+      "status": "PASS"
+    },
+    {
+      "category": "binding",
+      "check_id": "JOIN_SCHEMA_CLOSURE",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Join contracts reference known fields",
+      "status": "PASS"
+    },
+    {
+      "category": "binding",
+      "check_id": "JOIN_TYPE_COMPATIBILITY",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Join-key physical types are compatible",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "ANALYSIS_CAPABILITY_CLOSURE",
+      "details": {
+        "invalid": {}
+      },
+      "message": "Analysis patterns reference available metrics and dimensions",
+      "status": "PASS"
+    },
+    {
+      "category": "semantic",
+      "check_id": "QUESTION_CAPABILITY_CLOSURE",
+      "details": {
+        "invalid": []
+      },
+      "message": "Competency questions bind to registered analysis patterns",
+      "status": "PASS"
+    },
+    {
+      "category": "shacl",
+      "check_id": "SHACL_GRAPH_CONFORMS",
+      "details": {
+        "report": "Validation Report\nConforms: True\n"
+      },
+      "message": "RDF projection conforms to SHACL shapes",
+      "status": "PASS"
+    }
+  ],
+  "package_checksum": "d6e9bb9135b4ac56e1d496844f1f904fcad240a74e691a2c52c3fd972c2f9768",
+  "package_id": "ontology.exchange_analytics.adt",
+  "package_version": "1.2.0",
+  "status": "PASS"
+}

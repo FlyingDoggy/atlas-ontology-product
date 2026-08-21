@@ -1,0 +1,22 @@
+# Managed-service deployment overlay.
+#
+# PostgreSQL and S3 are supplied by the target environment. The referenced
+# `ontology-product-state` Secret must contain the managed database URL and AWS
+# credentials. Replace the example private CIDR with the exact database/S3 VPC
+# endpoint CIDRs before any shared or external deployment.
+
+productState:
+  s3EndpointUrl: ""
+  manageBucket: false
+
+postgres:
+  enabled: false
+
+minio:
+  enabled: false
+
+networkPolicy:
+  externalServiceEgress:
+    enabled: true
+    cidrs:
+      - "10.0.0.0/8"

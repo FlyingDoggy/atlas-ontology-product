@@ -1,0 +1,39 @@
+{
+  "contract": "packaged-case-construction-profile/v1",
+  "profile_id": "construction-profile.cash-trading.reference.v1",
+  "package_id": "ontology.exchange_analytics.cash_trading",
+  "required_pack_id": "cash-trading.deloitte-hk.reference.20260820",
+  "reviewed_baseline_id": "cash-trading.internal-reviewed.0.2.0",
+  "authority": "PRODUCT_OWNED_COMPILER_PROFILE",
+  "candidate_collections": [
+    "actors",
+    "processes",
+    "entities",
+    "properties",
+    "relationships",
+    "dimensions",
+    "rules",
+    "metrics",
+    "data_sources",
+    "bindings",
+    "joins",
+    "analysis_patterns",
+    "policies",
+    "questions"
+  ],
+  "source_aliases": {
+    "source.requirements": ["asset.requirements"],
+    "source.metric_logic": ["asset.metric_logic"],
+    "source.data_dictionary": ["asset.cash_data_dictionary", "asset.cash_data_model"],
+    "source.sample_data": ["asset.cash_sample_data"]
+  },
+  "human_review_required": true,
+  "direct_publish_allowed": false,
+  "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED",
+  "limitations": [
+    "This profile records product and domain engineering already performed for the Cash Trading reference case; it is not customer source evidence.",
+    "The compiler emits typed candidates only after all exact reference-pack source identities match. Candidates remain non-authoritative until human review applies them to Draft.",
+    "Rules, formulas, policies and executable mappings can include provisional assumptions and internal compiler artifacts. They must not be described as facts extracted directly from HKEX materials.",
+    "The reviewed baseline is internally coherent for the constructed-synthetic demo and does not represent HKEX approval or production validation."
+  ]
+}

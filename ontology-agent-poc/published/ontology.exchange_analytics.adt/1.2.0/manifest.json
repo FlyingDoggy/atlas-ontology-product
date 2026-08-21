@@ -1,0 +1,42 @@
+{
+  "artifact_inventory_checksum": "5249f132b39d8f4d723e5659f2f0f8e77b5f04a8d0eedf10014c0dea44370eb9",
+  "base_components": {
+    "capability_checksum": "50f6084a639dbccc4f63b179e21529d0025813e15d161aebe20fce0aa6a2cb03",
+    "control_checksum": "69fd29cc38441a54ef157423ea72d110bb5be5e18ddd97528d75185c112a645a",
+    "dataset_checksum": "1a204379b39bc4079843f586c77fed0bc93f64be3b5b65837fde2cfbfa389ac0",
+    "package_checksum": "b5b52cdde26fe428a1fff61984df75643f71bc0d3787dff41580f0f73ec72ca5",
+    "runtime_identity_checksum": "e29064c88be1320c41d85fed11aeeb633fc0d74b7867954dc2d11292f74c7982",
+    "toolchain_checksum": "e67343f80396c415d5df9a217c78d71d8ca5f56d8270292511fb076c0a93a10e",
+    "validation_signature_checksum": "49d13dd85b0ccadbe522809c84fa4c830983e6f844787bde048a6124bc7fcb71"
+  },
+  "capability_checksum": "50f6084a639dbccc4f63b179e21529d0025813e15d161aebe20fce0aa6a2cb03",
+  "control_checksum": "69fd29cc38441a54ef157423ea72d110bb5be5e18ddd97528d75185c112a645a",
+  "dataset_checksum": "1a204379b39bc4079843f586c77fed0bc93f64be3b5b65837fde2cfbfa389ac0",
+  "package_checksum": "b5b52cdde26fe428a1fff61984df75643f71bc0d3787dff41580f0f73ec72ca5",
+  "package_id": "ontology.exchange_analytics.adt",
+  "publication_state": "published",
+  "runtime_contract": {
+    "access_mode": "synthetic-demo-role-simulation-not-authentication",
+    "adapter": "adt-reference-closed-capability-set",
+    "evidence": "claim-first",
+    "numeric_truth": "decimal-and-duckdb-results-only",
+    "planner": "registered-analysis-patterns-only",
+    "sql": "deterministic-compiler-only"
+  },
+  "runtime_identity_checksum": "e29064c88be1320c41d85fed11aeeb633fc0d74b7867954dc2d11292f74c7982",
+  "snapshot_checksum": "1c45635dbfc775d56c5549f900e0e168e340a5ae30dca6e40655465cd59661e0",
+  "snapshot_components": {
+    "artifact_inventory_checksum": "5249f132b39d8f4d723e5659f2f0f8e77b5f04a8d0eedf10014c0dea44370eb9",
+    "capability_checksum": "50f6084a639dbccc4f63b179e21529d0025813e15d161aebe20fce0aa6a2cb03",
+    "control_checksum": "69fd29cc38441a54ef157423ea72d110bb5be5e18ddd97528d75185c112a645a",
+    "dataset_checksum": "1a204379b39bc4079843f586c77fed0bc93f64be3b5b65837fde2cfbfa389ac0",
+    "package_checksum": "b5b52cdde26fe428a1fff61984df75643f71bc0d3787dff41580f0f73ec72ca5",
+    "runtime_identity_checksum": "e29064c88be1320c41d85fed11aeeb633fc0d74b7867954dc2d11292f74c7982",
+    "toolchain_checksum": "e67343f80396c415d5df9a217c78d71d8ca5f56d8270292511fb076c0a93a10e",
+    "validation_signature_checksum": "49d13dd85b0ccadbe522809c84fa4c830983e6f844787bde048a6124bc7fcb71"
+  },
+  "toolchain_checksum": "e67343f80396c415d5df9a217c78d71d8ca5f56d8270292511fb076c0a93a10e",
+  "validation_signature_checksum": "49d13dd85b0ccadbe522809c84fa4c830983e6f844787bde048a6124bc7fcb71",
+  "validation_status": "PASS",
+  "version": "1.2.0"
+}

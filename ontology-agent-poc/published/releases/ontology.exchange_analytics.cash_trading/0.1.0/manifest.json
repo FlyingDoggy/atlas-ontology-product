@@ -1,0 +1,64 @@
+{
+  "artifact_inventory_checksum": "eb58d5222ede8b8d780348ec4c441a28420224ceb05002af88c3a5fd6949c94c",
+  "capability_requirements_checksum": "79d614ed5c016dacf88a7526f66942ccb2172627c89f143b6211cc180ceae409",
+  "limitations": [
+    "constructed synthetic; not HKEX validated"
+  ],
+  "package_checksum": "2666d21b78e355df7419ecc166b3080bf92f3c0f7b35cc7d565e90fd97b9b4b2",
+  "package_id": "ontology.exchange_analytics.cash_trading",
+  "release_checksum": "2e56d518d1f2108d6690c83bf2ee628df477d9557804244985cd2446d3fac242",
+  "safe_sources": [
+    {
+      "safe_locator": "intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "source_id": "source.requirements",
+      "source_type": "requirement_transcription",
+      "title": "Deloitte HK requirements transcription",
+      "trust": "secondary"
+    },
+    {
+      "safe_locator": "intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "source_id": "source.metric_logic",
+      "source_type": "metric_transcription",
+      "title": "Deloitte HK metric logic transcription",
+      "trust": "secondary"
+    },
+    {
+      "safe_locator": "intake/source-manifest.json#SRC-DICT-001 sha256=2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a",
+      "source_id": "source.data_dictionary",
+      "source_type": "data_dictionary",
+      "title": "Deloitte HK generated data dictionary",
+      "trust": "secondary"
+    },
+    {
+      "safe_locator": "intake/source-manifest.json#SRC-SAMPLE-001 sha256=d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018",
+      "source_id": "source.sample_data",
+      "source_type": "sample_data",
+      "title": "Deloitte HK constructed-synthetic sample data",
+      "trust": "assumption"
+    },
+    {
+      "safe_locator": "governance/assumption-register.json sha256=846c64265d5391a08e93046e0706f4892fce68c5bd66903d851d156e6675760c",
+      "source_id": "source.assumption_register",
+      "source_type": "assumption_register",
+      "title": "PoC cash-trading assumption and decision register",
+      "trust": "assumption"
+    },
+    {
+      "safe_locator": "golden/oracle.json sha256=dc842cc1f27dbf3fa80c3f18aa1a6c1e26e64614df6d8c1ceb6793edcc815fe0",
+      "source_id": "source.derived_oracle",
+      "source_type": "derived_control",
+      "title": "Independent constructed-synthetic golden controls",
+      "trust": "assumption"
+    },
+    {
+      "safe_locator": "sql/reference_controls.sql sha256=e33d11e1b68d0f6f2c0cd6ae39aeb1dc3f30f1929ac93ea3e929001197b69751",
+      "source_id": "source.compiler_sql",
+      "source_type": "sql",
+      "title": "Compiler-generated Cash Trading reference SQL",
+      "trust": "assumption"
+    }
+  ],
+  "schema_version": "ontology-release/v1",
+  "semantic_validation_checksum": "66d4365fbf73d61fdabad536bb57d05d122f73629f97de270b328bb6818e420e",
+  "version": "0.1.0"
+}

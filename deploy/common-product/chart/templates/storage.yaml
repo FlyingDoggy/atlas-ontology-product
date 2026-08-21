@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ontology-published
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+spec:
+  accessModes: [{{ .Values.persistence.accessMode | quote }}]
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.published }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ontology-outputs
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+spec:
+  accessModes: [{{ .Values.persistence.accessMode | quote }}]
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.outputs }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ontology-studio-state
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+spec:
+  accessModes: [{{ .Values.persistence.accessMode | quote }}]
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.studio }}

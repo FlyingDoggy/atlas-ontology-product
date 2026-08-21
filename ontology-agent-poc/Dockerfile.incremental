@@ -1,0 +1,22 @@
+# EC2 release accelerator for an application-only change whose locked dependency
+# graph is identical to the named predecessor image. The canonical clean build
+# remains Dockerfile; this path performs no package-index access.
+ARG BASE_IMAGE=ontology-common-backend:0.10.0-feature-complete.candidate1
+FROM ${BASE_IMAGE}
+
+USER root
+WORKDIR /app
+
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+ENV PYTHONPATH=/app/src
+
+COPY scripts ./scripts
+COPY alembic.ini ./alembic.ini
+COPY alembic ./alembic
+COPY scenarios ./scenarios
+
+RUN python scripts/generate_fixtures.py \
+    && chown -R app:app /app/src /app/scripts /app/alembic /app/scenarios
+
+USER app

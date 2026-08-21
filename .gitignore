@@ -1,0 +1,76 @@
+# Operating-system and editor files
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*credential*
+
+# Python
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.py[cod]
+**/.coverage*
+**/htmlcov/
+**/dist/
+**/build/
+**/*.egg-info/
+
+# Node / frontend build
+/node_modules
+**/node_modules/
+ontology-web/dist/
+ontology-web/test-artifacts/
+
+# Runtime and generated state
+.playwright-cli/
+.work/
+artifacts/
+deliverables/
+output/
+outputs/
+test-artifacts/
+tmp/
+ontology-agent-poc/outputs/
+ontology-agent-poc/studio/
+ontology-agent-poc/published/runtime/
+ontology-product-group/release-evidence/
+ontology-product-group/reviews/
+review/
+reviews/
+
+# Customer material, infrastructure credentials, and large local media
+AWS info/
+HKEX DTT Input/
+ontology-agent-poc/scenarios/cash_trading/intake/reference-source-pack/
+*.pptx
+*.mov
+
+# Superseded standalone prototypes and generated helper artifacts
+ontology-agent-blueprint/
+ontology-console/
+ontology-demo/
+ontology-e2e-demo/
+ontology-system-design/
+user-manual/
+fm-agent-ontology.html
+build_hkex_ontology_workbooks.mjs
+build_hkex_simple_intake.mjs
+build_hkex_transcription_pack.mjs
+translate_hkex_intake_en.mjs

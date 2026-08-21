@@ -1,0 +1,74 @@
+{
+  "contract": "cash-trading-source-manifest/v1",
+  "manifest_id": "cash-trading.deloitte-hk.20260820",
+  "captured_at": "2026-08-20T14:08:35+08:00",
+  "source_root": "HKEX DTT Input",
+  "immutability_rule": "Source files are read-only evidence. Corrections and enrichments are recorded in the assumption register and emitted only to derived artifacts.",
+  "classification": "deloitte_transcription_and_constructed_synthetic_sample",
+  "limitations": [
+    "HKEX source documents, production data and production SQL were not exported.",
+    "The data dictionary was generated and only cross-checked for field existence; physical names may differ in HKEX systems.",
+    "The sample data is constructed synthetic and spans one week.",
+    "No value in this packet is an HKEX-approved business definition or known-correct control unless separately confirmed."
+  ],
+  "files": [
+    {
+      "source_id": "SRC-EMAIL-001",
+      "file_name": "email screenshot.jpeg",
+      "media_type": "image/jpeg",
+      "size_bytes": 318582,
+      "sha256": "488ed1d5b718337236bca5b812bd6606d73888e5028d347671c2569bc798fb9c",
+      "role": "provenance_and_limitations",
+      "sender": "Huey Ngan, Deloitte HK",
+      "sent_at": "2026-08-20T09:57:00+08:00",
+      "evidence_summary": "The attached dictionary is generated, the sample is synthetic, fields were cross-checked for existence, physical column names may differ, and the metrics are common examples used by the referenced teams."
+    },
+    {
+      "source_id": "SRC-REQ-001",
+      "file_name": "HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size_bytes": 34495,
+      "sha256": "fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "role": "requirements_and_metric_transcription",
+      "used_ranges": [
+        "01_Requirements_Process!A1:D33",
+        "02_Metric_Logic!A1:E16"
+      ]
+    },
+    {
+      "source_id": "SRC-DICT-001",
+      "file_name": "order_trade_activities_data_dictionary.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size_bytes": 52796,
+      "sha256": "2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a",
+      "role": "generated_logical_data_dictionary",
+      "sheets": [
+        "Data Model Overview",
+        "order_activity",
+        "trading_activity",
+        "instrument_reference",
+        "account_reference",
+        "trading_calendar",
+        "order_type_reference",
+        "exchange_rate"
+      ]
+    },
+    {
+      "source_id": "SRC-SAMPLE-001",
+      "file_name": "cash_trading_sample_data.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size_bytes": 837951,
+      "sha256": "d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018",
+      "role": "constructed_synthetic_sample_data",
+      "sheets": {
+        "order_activity": 2000,
+        "trading_activity": 200,
+        "instrument_reference": 5,
+        "account_reference": 20,
+        "trading_calendar": 7,
+        "order_type_reference": 6,
+        "exchange_rate": 8
+      }
+    }
+  ]
+}

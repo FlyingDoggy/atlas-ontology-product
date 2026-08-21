@@ -1,0 +1,103 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ontology-default-deny
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ontology-product-flows
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "ontology.selectorLabels" . | nindent 14 }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressControllerNamespace | quote }}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8790}
+        - {protocol: TCP, port: 8791}
+        - {protocol: TCP, port: 8792}
+        - {protocol: TCP, port: 8793}
+        - {protocol: TCP, port: 8794}
+        - {protocol: TCP, port: 8795}
+        - {protocol: TCP, port: 5432}
+        - {protocol: TCP, port: 9000}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "ontology.selectorLabels" . | nindent 14 }}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8790}
+        - {protocol: TCP, port: 8791}
+        - {protocol: TCP, port: 8792}
+        - {protocol: TCP, port: 8793}
+        - {protocol: TCP, port: 8794}
+        - {protocol: TCP, port: 8795}
+        - {protocol: TCP, port: 5432}
+        - {protocol: TCP, port: 9000}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    {{- if .Values.networkPolicy.externalServiceEgress.enabled }}
+    - to:
+        {{- range .Values.networkPolicy.externalServiceEgress.cidrs }}
+        - ipBlock: {cidr: {{ . | quote }}}
+        {{- end }}
+      ports:
+        - {protocol: TCP, port: 443}
+        - {protocol: TCP, port: 5432}
+    {{- end }}
+{{- end }}
+{{- if and .Values.networkPolicy.enabled .Values.llm.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ontology-model-provider-egress
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: model-gateway
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    - to:
+        {{- range .Values.llm.providerEgressCidrs }}
+        - ipBlock: {cidr: {{ . | quote }}}
+        {{- end }}
+      ports:
+        - {protocol: TCP, port: 443}
+{{- end }}

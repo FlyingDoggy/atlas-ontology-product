@@ -1,0 +1,5509 @@
+package_id: ontology.exchange_analytics.cash_trading
+version: 0.2.0
+status: confirmed
+created_at: '2026-08-20T12:00:00+08:00'
+scenario:
+  id: scenario.cash_trading_activity_monitoring
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Market Order and Trading Activity Monitoring
+    zh: 现金市场订单与成交活动监控
+  definition: Constructed-synthetic cash-market scenario covering order lifecycle, client activity, execution, self-trade
+    triage and trade-capture latency semantics.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.metric_logic
+  - source.assumption_register
+  decisions:
+  - decision.source_classification
+  - decision.time_convention
+  - decision.demo_policy
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - order_lifecycle
+  - client_activity
+  - surveillance_triage
+  - latency
+  timezone: Asia/Hong_Kong
+  market_id: SYNTH-XHKG-CASH
+  data_window_start: '2026-08-03'
+  data_window_end: '2026-08-09'
+  periods:
+  - id: sample-week-2026-08-03
+    start: '2026-08-03'
+    end: '2026-08-09'
+    inclusive: true
+  default_role: MarketSurveillanceDemo
+actors:
+- id: actor.cash_trading_domain_owner
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Trading Demo Domain Owner
+    zh: 现金交易演示业务负责人
+  definition: Accountable owner for provisional synthetic definitions and demo claims.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - DomainOwner
+  - SemanticApprover
+- id: actor.cash_trading_data_steward
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Trading Data Steward
+    zh: 现金交易数据管理员
+  definition: Owner of typed schema, mappings and data-quality evidence.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - DataSteward
+- id: actor.market_surveillance_user
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Market Surveillance User
+    zh: 市场监察用户
+  definition: Reviews potential self-trade candidates and their synthetic evidence.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - MarketSurveillanceDemo
+- id: actor.trading_user
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trading User
+    zh: 交易用户
+  definition: Reviews synthetic trading operations and latency analytics.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - TradingDemo
+- id: actor.markets_user
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Markets User
+    zh: 市场业务用户
+  definition: Consumes aggregate market trends with participant identifiers redacted.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - MarketsDemo
+- id: actor.ontology_agent
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Ontology Analytic Agent
+    zh: 本体分析智能体
+  definition: Deterministic and LLM-assisted service constrained by the active scenario package.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - SystemExecutor
+- id: actor.external_user
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: External User
+    zh: 外部用户
+  definition: A principal denied access to scenario data and evidence.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  roles:
+  - ExternalUser
+processes:
+- id: process.cash_trading_analysis
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Governed Cash Trading Analysis
+    zh: 受治理现金交易分析
+  definition: From a natural-language question to a policy-scoped deterministic result and evidence-backed explanation.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions:
+  - decision.demo_policy
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  process_type: analysis
+  trigger: An authorized demo user asks a supported self-trade, latency or evidence question.
+  steps:
+  - id: authorize
+    name: Resolve role, time window and output grain
+    actor: actor.ontology_agent
+    operation: PolicyGate
+    governed_refs:
+    - policy.cash_surveillance_demo
+    - policy.cash_markets_demo
+    output_artifacts:
+    - policy_decision
+    on_failure: refuse
+  - id: bind
+    name: Bind the question to a registered analysis pattern and metrics
+    actor: actor.ontology_agent
+    operation: SemanticBinding
+    governed_refs:
+    - analysis.self_trade_summary
+    - analysis.self_trade_trend
+    - analysis.self_trade_timeline
+    - analysis.trade_latency_profile
+    - analysis.cash_evidence_audit
+    output_artifacts:
+    - analysis_plan
+    on_failure: clarify
+  - id: execute
+    name: Execute bounded DuckDB tools over verified Parquet
+    actor: actor.ontology_agent
+    operation: DeterministicExecution
+    governed_refs:
+    - source.cash_trade_analytics
+    - rule.eligible_trade
+    - rule.self_trade_eligible
+    - rule.potential_self_trade
+    - rule.nonnegative_latency
+    output_artifacts:
+    - verified_fact_set
+    on_failure: stop
+  - id: evidence
+    name: Attach claims to metrics, decisions, data and query identities
+    actor: actor.ontology_agent
+    operation: EvidenceAssembly
+    governed_refs:
+    - analysis.cash_evidence_audit
+    output_artifacts:
+    - answer
+    - claim_evidence
+    - limitation_disclosure
+    on_failure: stop
+  exception_paths:
+  - ambiguous_time_to_clarify
+  - unsupported_suspicion_rule_to_clarify
+  - misconduct_conclusion_to_refuse
+  - unauthorized_detail_to_refuse
+  - validation_failure_to_no_answer
+sources:
+- id: source.requirements
+  source_type: requirement_transcription
+  title: Deloitte HK requirements transcription
+  locator: intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf
+  owner: Deloitte HK
+  captured_on: '2026-08-20'
+  trust: secondary
+  notes: Transcribed business context; not an exported HKEX source document.
+- id: source.metric_logic
+  source_type: metric_transcription
+  title: Deloitte HK metric logic transcription
+  locator: intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf
+  owner: Deloitte HK
+  captured_on: '2026-08-20'
+  trust: secondary
+  notes: Common metric examples; definitions remain subject to confirmation.
+- id: source.data_dictionary
+  source_type: data_dictionary
+  title: Deloitte HK generated data dictionary
+  locator: intake/source-manifest.json#SRC-DICT-001 sha256=2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a
+  owner: Deloitte HK
+  captured_on: '2026-08-20'
+  trust: secondary
+  notes: Generated and field-existence cross-checked; physical production names may differ.
+- id: source.sample_data
+  source_type: sample_data
+  title: Deloitte HK constructed-synthetic sample data
+  locator: intake/source-manifest.json#SRC-SAMPLE-001 sha256=d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018
+  owner: Deloitte HK
+  captured_on: '2026-08-20'
+  trust: assumption
+  notes: One-week constructed-synthetic sample; not HKEX production data.
+- id: source.assumption_register
+  source_type: assumption_register
+  title: PoC cash-trading assumption and decision register
+  locator: governance/assumption-register.json sha256=846c64265d5391a08e93046e0706f4892fce68c5bd66903d851d156e6675760c
+  owner: PoC Product & Domain Team
+  captured_on: '2026-08-20'
+  trust: assumption
+  notes: Every correction, provisional definition and derived-control convention is versioned here.
+- id: source.derived_oracle
+  source_type: derived_control
+  title: Independent constructed-synthetic golden controls
+  locator: golden/oracle.json sha256=dc842cc1f27dbf3fa80c3f18aa1a6c1e26e64614df6d8c1ceb6793edcc815fe0
+  owner: PoC Product & Domain Team
+  captured_on: '2026-08-20'
+  trust: assumption
+  notes: Independently recomputed from typed Parquet; not Deloitte/HKEX known-correct evidence.
+- id: source.compiler_sql
+  source_type: sql
+  title: Compiler-generated Cash Trading reference SQL
+  locator: sql/reference_controls.sql sha256=32457c30e9853c48ccea851322e7892e74e7a074ba2d45af80650741d6bcfdd5
+  owner: PoC Product & Domain Team
+  captured_on: '2026-08-20'
+  trust: assumption
+  notes: Generated reference SQL; no existing SQL was supplied.
+decisions:
+- id: decision.source_classification
+  question: What claim can be made from the supplied packet?
+  options:
+  - HKEX validated
+  - Deloitte confirmed
+  - Constructed synthetic only
+  decision: Treat the case as constructed synthetic and illustrative only.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - scenario.cash_trading_activity_monitoring
+  - source.order_activity
+  - source.trading_activity
+  - source.instrument_reference
+  - source.account_reference
+  - source.trading_calendar
+  - source.order_type_reference
+  - source.exchange_rate
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.cancel_spelling
+  question: Which cancellation status spelling is canonical?
+  options:
+  - CANCELED
+  - CANCELLED
+  decision: Use CANCELED and accept CANCELLED only as an input alias.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.order.order_status
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.order_lifecycle
+  question: What is the observed order lifecycle key?
+  options:
+  - order_id
+  - venue/date/order
+  - activity_id
+  decision: Use venue_code + trading_date + order_id and disclose incomplete observed timelines.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - entity.order_activity
+  - property.order.order_id
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.self_trade_candidate
+  question: What constitutes the first demo self-trade candidate?
+  options:
+  - same normalized side participants
+  - same account
+  - business-defined surveillance model
+  decision: Use same normalized buy and sell participant IDs as a triage candidate only.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.trade.has_both_participant_ids
+  - property.trade.is_potential_self_trade
+  - rule.potential_self_trade
+  - metric.potential_self_trade_count
+  - metric.potential_self_trade_rate
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.self_trade_denominator
+  question: What is the potential self-trade rate denominator?
+  options:
+  - all trades
+  - eligible active trades with both participant IDs
+  - all order events
+  decision: Use eligible active trades with both-side participant IDs.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - rule.self_trade_eligible
+  - metric.self_trade_eligible_trade_count
+  - metric.potential_self_trade_rate
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.trade_eligibility
+  question: Which trade rows are eligible?
+  options:
+  - all rows
+  - active TRADE rows
+  - active rows excluding correction lineage
+  decision: Use active TRADE rows and exclude cancel/bust/corrected originals.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.trade.is_eligible_trade
+  - rule.eligible_trade
+  - metric.eligible_trade_count
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.submitted_order
+  question: What counts as a submitted order in an incomplete observed extract?
+  options:
+  - NEW events only
+  - NEW or REJECT lifecycle
+  - every observed lifecycle
+  decision: Use one distinct venue + trading date + order ID lifecycle containing any NEW or REJECT event.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.order_lifecycle.is_submitted
+  - rule.submitted_order
+  - metric.submitted_order_count
+  - metric.order_rejection_rate
+  - metric.order_to_trade_ratio
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.rejected_order
+  question: What counts as a rejected submitted order?
+  options:
+  - terminal state only
+  - any REJECT event
+  - any REJECT event or REJECTED state
+  decision: Mark a submitted lifecycle rejected when any observed event is REJECT or has REJECTED state.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.order_lifecycle.is_rejected
+  - rule.rejected_order
+  - metric.rejected_order_count
+  - metric.order_rejection_rate
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.client_classification
+  question: What constitutes a client for the constructed-synthetic case?
+  options:
+  - participant_type=CLIENT
+  - account_type=CLIENT
+  - beneficial owner mapping
+  decision: Use the effective account_reference row with participant_type=CLIENT; exclude unresolved participants.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.trade.is_active_client
+  - property.order_lifecycle.is_client
+  - rule.active_client_trade
+  - rule.eligible_client_order
+  - metric.active_client_trading_volume
+  - metric.client_order_completion_rate
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.client_completion
+  question: What is an eligible and completed client order?
+  options:
+  - latest FILLED among all client lifecycles
+  - latest FILLED among submitted non-rejected client lifecycles
+  - any fill event
+  decision: Use submitted client lifecycles with no observed rejection as denominator and latest valid FILLED state as numerator.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.order_lifecycle.is_eligible_client_order
+  - property.order_lifecycle.is_fully_filled
+  - metric.eligible_client_order_count
+  - metric.fully_filled_client_order_count
+  - metric.client_order_completion_rate
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.cancel_ratio
+  question: What is the cancel-to-trade numerator?
+  options:
+  - cancel events
+  - distinct lifecycles containing CANCEL
+  - terminal canceled lifecycles
+  decision: Count distinct observed order lifecycles containing an eligible CANCEL event and divide by eligible active trades
+    for the same cohort.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.order_lifecycle.is_canceled
+  - rule.canceled_order
+  - metric.canceled_order_count
+  - metric.cancel_to_trade_ratio
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.order_to_trade
+  question: What denominator convention applies to order-to-trade?
+  options:
+  - distinct trades
+  - two times distinct active trades
+  - execution events
+  decision: Use two times distinct eligible active trades to represent the two matched sides in this synthetic case.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - metric.order_to_trade_denominator
+  - metric.order_to_trade_ratio
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.latency_convention
+  question: How is capture latency calculated and summarized?
+  options:
+  - average
+  - nearest-rank percentiles
+  - continuous percentiles
+  decision: Use receive minus transaction timestamp in integer milliseconds, nearest-rank p50/p95/p99, and separate negative
+    exceptions.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.trade.capture_latency_ms
+  - property.trade.is_nonnegative_latency
+  - rule.nonnegative_latency
+  - metric.trade_capture_latency_ms
+  - analysis.trade_latency_profile
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.notional_currency
+  question: How are supplied notional fields labelled?
+  options:
+  - both HKD
+  - native HKD and converted USD
+  - USD only
+  decision: Label trade_notional as HKD and base_notional_before_haircut as USD.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.trade.trade_notional_hkd
+  - property.trade.base_notional_usd
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.calendar_key
+  question: What is the logical calendar key?
+  options:
+  - business_date
+  - calendar_code + business_date
+  decision: Use calendar_code + business_date.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - property.calendar.calendar_key
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.time_convention
+  question: How are source times interpreted?
+  options:
+  - already UTC
+  - Hong Kong wall time then UTC
+  - local only
+  decision: Interpret source wall time as Asia/Hong_Kong, persist UTC, retain venue business date.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - scenario.cash_trading_activity_monitoring
+  - property.trade.business_date
+  - property.trade.transaction_timestamp
+  - property.trade.receive_timestamp
+  - property.order.trading_date
+  - property.order.transaction_timestamp
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+- id: decision.demo_policy
+  question: What access policy applies before production IAM exists?
+  options:
+  - all users all rows
+  - demo role projection
+  - no access
+  decision: Apply the explicit synthetic-demo role projection and make no production IAM claim.
+  decided_by: actor.cash_trading_domain_owner
+  decided_on: '2026-08-20'
+  affects:
+  - policy.cash_surveillance_demo
+  - policy.cash_markets_demo
+  - process.cash_trading_analysis
+  residual_assumption: Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external
+    confirmation.
+entities:
+- id: entity.trade_activity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade Activity
+    zh: 成交活动
+  definition: A normalized cash trade or execution activity.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.trade.trading_activity_id
+  grain: one trade activity event
+  lifecycle: append-only event with correction references
+- id: entity.order_activity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Activity
+    zh: 订单活动
+  definition: An observed order-lifecycle event in the supplied reporting window.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.order.activity_id
+  grain: one observed order activity event
+  lifecycle: event sequence may be incomplete in the sample
+- id: entity.order_lifecycle
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Observed Order Lifecycle
+    zh: 已观测订单生命周期
+  definition: A deterministic grouping of supplied order events by venue, trading date and order ID; completeness outside
+    the extract is not inferred.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.order_lifecycle.lifecycle_key
+  grain: one observed order lifecycle
+  lifecycle: derived from the latest valid observed event plus lifecycle flags
+- id: entity.participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant
+    zh: 参与者
+  definition: A participant, member, client or account-level party in the synthetic reference.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.participant.participant_id
+  grain: one participant reference row
+  lifecycle: effective-dated reference
+- id: entity.instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Instrument
+    zh: 证券
+  definition: A cash-market instrument in the synthetic reference.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.instrument.instrument_id
+  grain: one instrument reference row
+  lifecycle: effective-dated reference
+- id: entity.trading_day
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trading Day
+    zh: 交易日
+  definition: A venue calendar date and trading-day designation.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.calendar.calendar_key
+  grain: one calendar and business-date row
+  lifecycle: versioned calendar record
+- id: entity.market_segment
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Market Segment
+    zh: 市场板块
+  definition: A normalized market-segment member used for analysis.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  primary_key: property.market_segment.code
+  grain: one segment code
+  lifecycle: controlled classification
+properties:
+- id: property.trade.trading_activity_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trading Activity ID
+    zh: 成交活动ID
+  definition: Stable normalized trade-activity identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.business_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Business Date
+    zh: 业务日期
+  definition: Venue-calendar business date for the trade.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.time_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: date
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.venue_code
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Venue Code
+    zh: 交易场所代码
+  definition: Normalized venue identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.market_segment
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Market Segment
+    zh: 市场板块
+  definition: Normalized market segment.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: false
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.instrument_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Instrument ID
+    zh: 证券ID
+  definition: Instrument join key.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.participant_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant ID
+    zh: 参与者ID
+  definition: Associated participant identifier where available.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: false
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.buy_participant_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Buy Participant ID
+    zh: 买方参与者ID
+  definition: Normalized buying participant identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: false
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.sell_participant_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Sell Participant ID
+    zh: 卖方参与者ID
+  definition: Normalized selling participant identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: string
+  required: false
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.trade_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade Quantity
+    zh: 成交数量
+  definition: Executed trade quantity.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: decimal
+  required: true
+  unit: SHARE
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.trade_notional_hkd
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Native Trade Notional
+    zh: 原币成交名义金额
+  definition: Native trade notional reported in HKD for the supplied sample.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.notional_currency
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: decimal
+  required: true
+  unit: HKD
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.base_notional_usd
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Converted Base Notional
+    zh: 转换后基础名义金额
+  definition: Base notional before haircut reported in USD for the supplied sample.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.notional_currency
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: decimal
+  required: true
+  unit: USD
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.transaction_timestamp
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Transaction Timestamp
+    zh: 交易时间戳
+  definition: Matching-engine timestamp normalized to UTC.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.time_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: datetime
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.receive_timestamp
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Receive Timestamp
+    zh: 接收时间戳
+  definition: Platform receive timestamp normalized to UTC.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.time_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: datetime
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.is_eligible_trade
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Eligible Trade Flag
+    zh: 合格成交标志
+  definition: Adapter-derived flag for the provisional active-trade population.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.is_active_client
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Active Client Trade Flag
+    zh: 活跃客户成交标志
+  definition: True when the associated participant resolves to an effective CLIENT reference record for the trade timestamp.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.client_classification
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.has_both_participant_ids
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Both Participants Available
+    zh: 双方参与者可用
+  definition: True when both normalized side participant identifiers are present.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.self_trade_candidate
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.is_potential_self_trade
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Flag
+    zh: 潜在自成交标志
+  definition: Deterministic triage flag; not a misconduct conclusion.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.self_trade_candidate
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.is_nonnegative_latency
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Valid Latency Flag
+    zh: 有效延迟标志
+  definition: True when capture latency is non-negative.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  decisions:
+  - decision.latency_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.trade.capture_latency_ms
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Capture Latency
+    zh: 捕获延迟
+  definition: Receive timestamp minus transaction timestamp in milliseconds.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  decisions:
+  - decision.latency_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trade_activity
+  data_type: integer
+  required: false
+  unit: MILLISECOND
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order.activity_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Activity ID
+    zh: 订单活动ID
+  definition: Stable order-event identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_activity
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order.order_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order ID
+    zh: 订单ID
+  definition: Order identifier within venue and trading date.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.order_lifecycle
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_activity
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order.trading_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Trading Date
+    zh: 订单交易日
+  definition: Trading date of the observed order event.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.time_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_activity
+  data_type: date
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order.order_status
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Status
+    zh: 订单状态
+  definition: Canonical post-event status using CANCELED spelling.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.cancel_spelling
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_activity
+  data_type: enum
+  required: true
+  enum_values:
+  - NEW
+  - PARTIALLY_FILLED
+  - FILLED
+  - CANCELED
+  - REPLACED
+  - REJECTED
+  - EXPIRED
+  - SUSPENDED
+  - PENDING
+  - UNKNOWN
+  null_meaning: not_allowed
+- id: property.order.transaction_timestamp
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Transaction Timestamp
+    zh: 订单交易时间戳
+  definition: Observed order-event transaction timestamp.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.time_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_activity
+  data_type: datetime
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.lifecycle_key
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Lifecycle Key
+    zh: 订单生命周期键
+  definition: Venue code, trading date and order ID composed into one stable observed-lifecycle key.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.trading_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Lifecycle Trading Date
+    zh: 生命周期交易日
+  definition: Business date assigned to the observed order lifecycle.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.time_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: date
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.venue_code
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Lifecycle Venue
+    zh: 生命周期交易场所
+  definition: Normalized venue of the observed order lifecycle.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.market_segment
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Lifecycle Market Segment
+    zh: 生命周期市场板块
+  definition: Market segment from the latest valid observed order state.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: string
+  required: false
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.instrument_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Lifecycle Instrument
+    zh: 生命周期证券
+  definition: Instrument from the latest valid observed order state.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.participant_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Lifecycle Participant
+    zh: 生命周期参与者
+  definition: Participant from the latest valid observed order state.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: string
+  required: false
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.is_client
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Client Lifecycle Flag
+    zh: 客户订单标志
+  definition: True when the effective participant reference is classified CLIENT.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.client_classification
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.is_submitted
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Submitted Lifecycle Flag
+    zh: 已提交订单标志
+  definition: True when an observed lifecycle contains a NEW or REJECT submission attempt.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.submitted_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.is_rejected
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Rejected Lifecycle Flag
+    zh: 已拒绝订单标志
+  definition: True when any observed event in the lifecycle is REJECT or has REJECTED status.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.rejected_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.is_eligible_client_order
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Eligible Client Order Flag
+    zh: 合格客户订单标志
+  definition: True for a submitted client lifecycle with no observed rejection.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.client_completion
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.is_fully_filled
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Fully Filled Lifecycle Flag
+    zh: 完全成交订单标志
+  definition: True when the latest valid observed order state is FILLED.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.is_canceled
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Canceled Lifecycle Flag
+    zh: 已撤销订单标志
+  definition: True when the lifecycle contains an eligible CANCEL event after CANCELLED-to-CANCELED normalization.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.cancel_spelling
+  - decision.cancel_ratio
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: boolean
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.final_order_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Final Order Quantity
+    zh: 最终订单数量
+  definition: Order quantity at the latest valid observed lifecycle state.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: integer
+  required: true
+  unit: SHARE
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.order_lifecycle.final_cumulative_executed_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Final Cumulative Executed Quantity
+    zh: 最终累计成交数量
+  definition: Cumulative executed quantity at the latest valid observed lifecycle state.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.metric_logic
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.order_lifecycle
+  data_type: integer
+  required: true
+  unit: SHARE
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.participant.participant_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant ID
+    zh: 参与者ID
+  definition: Stable synthetic participant identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.participant
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.participant.participant_name
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant Name
+    zh: 参与者名称
+  definition: Synthetic participant display name.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.participant
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.participant.participant_type
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant Type
+    zh: 参与者类型
+  definition: Controlled participant classification.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.participant
+  data_type: enum
+  required: true
+  enum_values:
+  - BROKER
+  - DEALER
+  - BANK
+  - MARKET_MAKER
+  - CLIENT
+  - FUND
+  - INTERNAL_DESK
+  - CLEARING_MEMBER
+  - OTHER
+  null_meaning: not_allowed
+- id: property.instrument.instrument_id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Instrument ID
+    zh: 证券ID
+  definition: Stable synthetic instrument identifier.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.instrument
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.instrument.instrument_name
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Instrument Name
+    zh: 证券名称
+  definition: Synthetic instrument display name.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.instrument
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.instrument.primary_symbol
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Primary Symbol
+    zh: 主要代码
+  definition: Primary venue symbol.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.instrument
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.calendar.calendar_key
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Calendar Key
+    zh: 日历键
+  definition: Logical calendar_code + business_date key.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions:
+  - decision.calendar_key
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trading_day
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.calendar.business_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Calendar Business Date
+    zh: 日历业务日期
+  definition: Business date represented by the calendar row.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trading_day
+  data_type: date
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.calendar.is_trading_day
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Is Trading Day
+    zh: 是否交易日
+  definition: Trading-day indicator.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trading_day
+  data_type: enum
+  required: true
+  enum_values:
+  - Y
+  - N
+  null_meaning: not_allowed
+- id: property.market_segment.code
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Market Segment Code
+    zh: 市场板块代码
+  definition: Normalized market-segment code.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.market_segment
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+- id: property.market_segment.name
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Market Segment Name
+    zh: 市场板块名称
+  definition: Display label for the market segment.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.market_segment
+  data_type: string
+  required: true
+  enum_values: []
+  null_meaning: not_allowed
+relationships:
+- id: relationship.trade_instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade has instrument
+    zh: 成交对应证券
+  definition: A trade activity references one instrument.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.trade_activity
+  to_entity: entity.instrument
+  predicate: hasInstrument
+  cardinality: N:1
+- id: relationship.trade_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade has participant
+    zh: 成交对应参与者
+  definition: A trade activity may reference an associated participant.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.trade_activity
+  to_entity: entity.participant
+  predicate: hasParticipant
+  cardinality: N:1
+- id: relationship.order_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order has participant
+    zh: 订单对应参与者
+  definition: An order activity may reference a participant.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.order_activity
+  to_entity: entity.participant
+  predicate: hasParticipant
+  cardinality: N:1
+- id: relationship.order_lifecycle_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order lifecycle has participant
+    zh: 订单生命周期对应参与者
+  definition: An observed order lifecycle may resolve to one effective participant.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.order_lifecycle
+  to_entity: entity.participant
+  predicate: hasParticipant
+  cardinality: N:1
+- id: relationship.order_lifecycle_instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order lifecycle has instrument
+    zh: 订单生命周期对应证券
+  definition: An observed order lifecycle references one instrument.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.order_lifecycle
+  to_entity: entity.instrument
+  predicate: hasInstrument
+  cardinality: N:1
+- id: relationship.order_lifecycle_day
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order lifecycle occurs on day
+    zh: 订单生命周期发生于交易日
+  definition: An observed order lifecycle is assigned to one trading date.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.order_lifecycle
+  to_entity: entity.trading_day
+  predicate: occursOn
+  cardinality: N:1
+- id: relationship.trade_day
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade occurs on day
+    zh: 成交发生于交易日
+  definition: A trade activity is assigned to one business date.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  from_entity: entity.trade_activity
+  to_entity: entity.trading_day
+  predicate: occursOn
+  cardinality: N:1
+dimensions:
+- id: dimension.business_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Business Date
+    zh: 业务日期
+  definition: Daily reporting dimension.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.trading_day
+  key_property: property.calendar.business_date
+  label_property: property.calendar.business_date
+  hierarchy: []
+  member_resolution: exact
+- id: dimension.instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Instrument
+    zh: 证券
+  definition: Instrument reporting dimension.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.instrument
+  key_property: property.instrument.instrument_id
+  label_property: property.instrument.instrument_name
+  hierarchy: []
+  member_resolution: exact
+- id: dimension.participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant
+    zh: 参与者
+  definition: Synthetic participant reporting dimension subject to role projection.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.participant
+  key_property: property.participant.participant_id
+  label_property: property.participant.participant_name
+  hierarchy:
+  - property.participant.participant_type
+  member_resolution: exact
+- id: dimension.market_segment
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Market Segment
+    zh: 市场板块
+  definition: Market-segment reporting dimension.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  entity: entity.market_segment
+  key_property: property.market_segment.code
+  label_property: property.market_segment.name
+  hierarchy: []
+  member_resolution: exact
+rules:
+- id: rule.eligible_trade
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Eligible Trade
+    zh: 合格成交
+  definition: Include only active TRADE rows that are not corrected originals.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.trade_eligibility
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.trade.is_eligible_trade
+    op: is_true
+  failure_behavior: exclude
+- id: rule.active_client_trade
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Active Client Trade
+    zh: 活跃客户成交
+  definition: An eligible trade whose associated participant resolves to an effective CLIENT reference row.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.trade_eligibility
+  - decision.client_classification
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.trade.is_eligible_trade
+    op: is_true
+  - property: property.trade.is_active_client
+    op: is_true
+  failure_behavior: exclude
+- id: rule.self_trade_eligible
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Self-Trade Eligible Population
+    zh: 自成交合格总体
+  definition: An eligible trade with both normalized side participant identifiers available.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.self_trade_denominator
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.trade.has_both_participant_ids
+    op: is_true
+  failure_behavior: exclude
+- id: rule.potential_self_trade
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Candidate
+    zh: 潜在自成交候选
+  definition: Both normalized side participant IDs are present and equal.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.self_trade_candidate
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.trade.is_potential_self_trade
+    op: is_true
+  failure_behavior: exclude
+- id: rule.nonnegative_latency
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Non-Negative Capture Latency
+    zh: 非负捕获延迟
+  definition: Exclude negative latency observations from KPI values and count them as exceptions.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.latency_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.trade.is_nonnegative_latency
+    op: is_true
+  failure_behavior: exclude
+- id: rule.submitted_order
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Submitted Order Lifecycle
+    zh: 已提交订单生命周期
+  definition: An observed lifecycle containing a NEW or REJECT submission attempt.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.submitted_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.order_lifecycle.is_submitted
+    op: is_true
+  failure_behavior: exclude
+- id: rule.rejected_order
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Rejected Order Lifecycle
+    zh: 已拒绝订单生命周期
+  definition: A submitted lifecycle containing a REJECT event or REJECTED state.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.rejected_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.order_lifecycle.is_rejected
+    op: is_true
+  failure_behavior: exclude
+- id: rule.eligible_client_order
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Eligible Client Order
+    zh: 合格客户订单
+  definition: A submitted client lifecycle with no observed rejection.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.client_classification
+  - decision.client_completion
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.order_lifecycle.is_eligible_client_order
+    op: is_true
+  failure_behavior: exclude
+- id: rule.fully_filled_client_order
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Fully Filled Client Order
+    zh: 完全成交客户订单
+  definition: An eligible client order whose latest valid observed state is FILLED.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.client_completion
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.order_lifecycle.is_eligible_client_order
+    op: is_true
+  - property: property.order_lifecycle.is_fully_filled
+    op: is_true
+  failure_behavior: exclude
+- id: rule.canceled_order
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Canceled Order Lifecycle
+    zh: 已撤销订单生命周期
+  definition: An observed lifecycle containing an eligible CANCEL event after spelling normalization.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.assumption_register
+  - source.metric_logic
+  decisions:
+  - decision.cancel_ratio
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  rule_type: eligibility
+  all:
+  - property: property.order_lifecycle.is_canceled
+    op: is_true
+  failure_behavior: exclude
+metrics:
+- id: metric.submitted_order_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Submitted Order Count
+    zh: 已提交订单数
+  definition: Distinct observed order lifecycles containing a NEW or REJECT submission attempt.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  - decision.submitted_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: ORDER
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.lifecycle_key
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.lifecycle_key
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_submitted
+    required_joins: []
+    filters:
+    - rule.submitted_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.rejected_order_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Rejected Order Count
+    zh: 已拒绝订单数
+  definition: Distinct submitted order lifecycles containing an observed rejection.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.submitted_order
+  - decision.rejected_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: ORDER
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.lifecycle_key
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.lifecycle_key
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_rejected
+    required_joins: []
+    filters:
+    - rule.submitted_order
+    - rule.rejected_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.order_rejection_rate
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Rejection Rate
+    zh: 订单拒绝率
+  definition: Rejected distinct submitted order lifecycles divided by submitted distinct order lifecycles for the same cohort.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.submitted_order
+  - decision.rejected_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-01
+  - ontology_reviewed
+  metric_type: derived
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: percentage
+  unit: PERCENT
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.rejected_order_count
+      args: []
+    - op: metric_ref
+      ref: metric.submitted_order_count
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.submitted_order_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Submitted Order Quantity
+    zh: 已提交订单数量
+  definition: Sum of final order quantity across distinct submitted observed lifecycles.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  - decision.submitted_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: decimal
+  unit: SHARE
+  aggregation_semantics: additive
+  formula:
+    op: sum
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.final_order_quantity
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.final_order_quantity
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_submitted
+    required_joins: []
+    filters:
+    - rule.submitted_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.executed_order_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Executed Order Quantity
+    zh: 订单累计成交数量
+  definition: Sum of final cumulative executed quantity across the same submitted lifecycle population.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  - decision.submitted_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: decimal
+  unit: SHARE
+  aggregation_semantics: additive
+  formula:
+    op: sum
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.final_cumulative_executed_quantity
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.final_cumulative_executed_quantity
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_submitted
+    required_joins: []
+    filters:
+    - rule.submitted_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.order_fill_rate
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Fill Rate
+    zh: 订单成交率
+  definition: Final cumulative executed quantity divided by final submitted order quantity across the same lifecycle cohort.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  - decision.submitted_order
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-02
+  - ontology_reviewed
+  metric_type: derived
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: percentage
+  unit: PERCENT
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.executed_order_quantity
+      args: []
+    - op: metric_ref
+      ref: metric.submitted_order_quantity
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.eligible_trade_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Eligible Trade Count
+    zh: 合格成交笔数
+  definition: Distinct active TRADE rows after correction-lineage exclusions.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: TRADE
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.trade.trading_activity_id
+      args: []
+  query:
+    base_source: source.cash_trade_analytics
+    measure_property: property.trade.trading_activity_id
+    period_property: property.trade.business_date
+    date_property: property.trade.business_date
+    population_property: property.trade.is_eligible_trade
+    required_joins: []
+    filters:
+    - rule.eligible_trade
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.trade_capture_latency_ms
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade Capture Latency
+    zh: 成交捕获延迟
+  definition: Per-trade receive minus transaction latency; the current runtime reports count, min, nearest-rank p50/p95/p99,
+    max and negative exceptions.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.latency_convention
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-03
+  - ontology_reviewed
+  - agent_runtime_supported
+  metric_type: base
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: MILLISECOND
+  aggregation_semantics: non_additive
+  formula:
+    op: field_ref
+    ref: property.trade.capture_latency_ms
+    args: []
+  query:
+    base_source: source.cash_trade_analytics
+    measure_property: property.trade.capture_latency_ms
+    period_property: property.trade.business_date
+    date_property: property.trade.business_date
+    population_property: property.trade.is_nonnegative_latency
+    required_joins: []
+    filters:
+    - rule.eligible_trade
+    - rule.nonnegative_latency
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.market_segment
+  null_policy: exclude
+  zero_denominator_policy: refuse
+- id: metric.active_client_trade_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Active Client Trade Quantity
+    zh: 活跃客户成交数量
+  definition: Gross executed quantity for eligible trades whose associated participant resolves to an effective CLIENT record.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  - decision.client_classification
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: decimal
+  unit: SHARE
+  aggregation_semantics: additive
+  formula:
+    op: sum
+    args:
+    - op: field_ref
+      ref: property.trade.trade_quantity
+      args: []
+  query:
+    base_source: source.cash_trade_analytics
+    measure_property: property.trade.trade_quantity
+    period_property: property.trade.business_date
+    date_property: property.trade.business_date
+    population_property: property.trade.is_active_client
+    required_joins: []
+    filters:
+    - rule.active_client_trade
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.active_client_trade_notional_hkd
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Active Client Trade Notional
+    zh: 活跃客户成交金额
+  definition: Gross native notional in HKD before haircut for eligible active-client trades.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  - decision.client_classification
+  - decision.notional_currency
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: decimal
+  unit: HKD
+  aggregation_semantics: additive
+  formula:
+    op: sum
+    args:
+    - op: field_ref
+      ref: property.trade.trade_notional_hkd
+      args: []
+  query:
+    base_source: source.cash_trade_analytics
+    measure_property: property.trade.trade_notional_hkd
+    period_property: property.trade.business_date
+    date_property: property.trade.business_date
+    population_property: property.trade.is_active_client
+    required_joins: []
+    filters:
+    - rule.active_client_trade
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.active_client_trading_volume
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Active Client Trading Volume
+    zh: 活跃客户成交量
+  definition: Gross active-client trade notional in HKD millions; active-client quantity remains available as a companion
+    measure.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  - decision.client_classification
+  - decision.notional_currency
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-04
+  - ontology_reviewed
+  metric_type: derived
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: decimal
+  unit: HKD_MN
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.active_client_trade_notional_hkd
+      args: []
+    - op: literal
+      value: '1000000'
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.eligible_client_order_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Eligible Client Order Count
+    zh: 合格客户订单数
+  definition: Distinct submitted client lifecycles with no observed rejection.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.client_classification
+  - decision.client_completion
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: ORDER
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.lifecycle_key
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.lifecycle_key
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_eligible_client_order
+    required_joins: []
+    filters:
+    - rule.eligible_client_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.fully_filled_client_order_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Fully Filled Client Order Count
+    zh: 完全成交客户订单数
+  definition: Distinct eligible client order lifecycles whose latest valid observed state is FILLED.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.client_classification
+  - decision.client_completion
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: ORDER
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.lifecycle_key
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.lifecycle_key
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_fully_filled
+    required_joins: []
+    filters:
+    - rule.fully_filled_client_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.client_order_completion_rate
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Client Order Completion Rate
+    zh: 客户订单完成率
+  definition: Fully filled eligible client order lifecycles divided by eligible submitted client order lifecycles.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.client_classification
+  - decision.client_completion
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-05
+  - ontology_reviewed
+  metric_type: derived
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: percentage
+  unit: PERCENT
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.fully_filled_client_order_count
+      args: []
+    - op: metric_ref
+      ref: metric.eligible_client_order_count
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.canceled_order_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Canceled Order Count
+    zh: 已撤销订单数
+  definition: Distinct observed order lifecycles containing an eligible cancel event.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.cancel_spelling
+  - decision.cancel_ratio
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: ORDER
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.order_lifecycle.lifecycle_key
+      args: []
+  query:
+    base_source: source.cash_order_lifecycle_analytics
+    measure_property: property.order_lifecycle.lifecycle_key
+    period_property: property.order_lifecycle.trading_date
+    date_property: property.order_lifecycle.trading_date
+    population_property: property.order_lifecycle.is_canceled
+    required_joins: []
+    filters:
+    - rule.canceled_order
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.cancel_to_trade_ratio
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cancel-to-Trade Ratio
+    zh: 撤单成交比
+  definition: Distinct canceled order lifecycles divided by distinct eligible active trades for the same cohort.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.cancel_ratio
+  - decision.trade_eligibility
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-06
+  - ontology_reviewed
+  metric_type: derived
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: percentage
+  unit: PERCENT
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.canceled_order_count
+      args: []
+    - op: metric_ref
+      ref: metric.eligible_trade_count
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.order_to_trade_denominator
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order-to-Trade Denominator
+    zh: 订单成交比折算分母
+  definition: Two trade sides per distinct eligible matched trade under the provisional two-sided matching convention.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  - decision.order_to_trade
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: derived
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: decimal
+  unit: TRADE_SIDE
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: multiply
+    args:
+    - op: metric_ref
+      ref: metric.eligible_trade_count
+      args: []
+    - op: literal
+      value: '2'
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.order_to_trade_ratio
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order-to-Trade Ratio
+    zh: 订单成交比
+  definition: Distinct submitted order lifecycles divided by two times distinct eligible active trades.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.submitted_order
+  - decision.trade_eligibility
+  - decision.order_to_trade
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-07
+  - ontology_reviewed
+  metric_type: derived
+  base_entity: entity.order_lifecycle
+  result_grain:
+  - dimension.business_date
+  value_type: percentage
+  unit: PERCENT
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.submitted_order_count
+      args: []
+    - op: metric_ref
+      ref: metric.order_to_trade_denominator
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.self_trade_eligible_trade_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Self-Trade Eligible Trade Count
+    zh: 自成交合格成交笔数
+  definition: Distinct eligible active trades with both-side participant identifiers available.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.trade_eligibility
+  - decision.self_trade_denominator
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: TRADE
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.trade.trading_activity_id
+      args: []
+  query:
+    base_source: source.cash_trade_analytics
+    measure_property: property.trade.trading_activity_id
+    period_property: property.trade.business_date
+    date_property: property.trade.business_date
+    population_property: property.trade.has_both_participant_ids
+    required_joins: []
+    filters:
+    - rule.eligible_trade
+    - rule.self_trade_eligible
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.potential_self_trade_count
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Candidate Count
+    zh: 潜在自成交候选笔数
+  definition: Distinct eligible trades whose normalized buy and sell participant IDs are both present and equal.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.self_trade_candidate
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - supporting_metric
+  metric_type: base
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: integer
+  unit: TRADE
+  aggregation_semantics: additive
+  formula:
+    op: count_distinct
+    args:
+    - op: field_ref
+      ref: property.trade.trading_activity_id
+      args: []
+  query:
+    base_source: source.cash_trade_analytics
+    measure_property: property.trade.trading_activity_id
+    period_property: property.trade.business_date
+    date_property: property.trade.business_date
+    population_property: property.trade.is_potential_self_trade
+    required_joins: []
+    filters:
+    - rule.eligible_trade
+    - rule.self_trade_eligible
+    - rule.potential_self_trade
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+- id: metric.potential_self_trade_rate
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Rate
+    zh: 潜在自成交率
+  definition: Potential self-trade candidate count divided by eligible active trades with both-side participant IDs; this
+    is a triage measure, not a misconduct conclusion.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.metric_logic
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.self_trade_candidate
+  - decision.self_trade_denominator
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  - source_metric:M-08
+  - ontology_reviewed
+  - agent_runtime_supported
+  metric_type: derived
+  base_entity: entity.trade_activity
+  result_grain:
+  - dimension.business_date
+  value_type: percentage
+  unit: PERCENT
+  aggregation_semantics: derived_non_additive
+  formula:
+    op: divide
+    args:
+    - op: metric_ref
+      ref: metric.potential_self_trade_count
+      args: []
+    - op: metric_ref
+      ref: metric.self_trade_eligible_trade_count
+      args: []
+  query:
+    required_joins: []
+    filters: []
+  allowed_dimensions:
+  - dimension.business_date
+  - dimension.instrument
+  - dimension.participant
+  - dimension.market_segment
+  null_policy: fail_validation
+  zero_denominator_policy: refuse
+data_sources:
+- id: source.order_activity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Activity
+    zh: order_activity
+  definition: Typed Parquet projection of the supplied constructed-synthetic order_activity worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: order_activity
+    grain: one constructed-synthetic order_activity row
+    primary_key:
+    - activity_id
+    fields:
+    - name: activity_id
+      data_type: string
+      nullable: false
+      description: Unique identifier for each normalized order activity event.
+    - name: trading_date
+      data_type: date
+      nullable: false
+      description: Business trading date assigned by the market calendar.
+    - name: venue_code
+      data_type: string
+      nullable: false
+      description: Code identifying the exchange, ATS or trading venue.
+    - name: market_segment
+      data_type: string
+      nullable: true
+      description: Trading board, market segment or order book segment.
+    - name: instrument_id
+      data_type: string
+      nullable: false
+      description: Enterprise identifier for the traded cash-market instrument.
+    - name: security_id
+      data_type: string
+      nullable: true
+      description: Native or industry security identifier used by the venue.
+    - name: security_id_type
+      data_type: string
+      nullable: true
+      description: Type of identifier stored in security_id.
+    - name: symbol
+      data_type: string
+      nullable: false
+      description: Venue trading symbol or ticker.
+    - name: currency_code
+      data_type: string
+      nullable: false
+      description: Trading currency of price fields.
+    - name: order_id
+      data_type: string
+      nullable: false
+      description: Venue-assigned identifier for the order.
+    - name: parent_order_id
+      data_type: string
+      nullable: true
+      description: Identifier of the parent order for child or routed orders.
+    - name: client_order_id
+      data_type: string
+      nullable: true
+      description: Client or broker-assigned order identifier, if provided.
+    - name: participant_id
+      data_type: string
+      nullable: true
+      description: Market participant or member identifier associated with the order.
+    - name: trader_id
+      data_type: string
+      nullable: true
+      description: Trader or operator identifier associated with order entry.
+    - name: account_type
+      data_type: string
+      nullable: true
+      description: Trading account classification.
+    - name: event_sequence_no
+      data_type: integer
+      nullable: false
+      description: Monotonically increasing sequence number within the source channel or partition.
+    - name: channel_id
+      data_type: string
+      nullable: true
+      description: Identifier of the source feed channel, partition or matching-engine stream.
+    - name: transaction_timestamp
+      data_type: datetime
+      nullable: false
+      description: Timestamp assigned by the venue or matching engine when the event occurred.
+    - name: source_timestamp
+      data_type: string
+      nullable: true
+      description: Original source timestamp before timezone normalization.
+    - name: receive_timestamp
+      data_type: datetime
+      nullable: true
+      description: Timestamp when the event was received by the capture system.
+    - name: ingestion_timestamp
+      data_type: datetime
+      nullable: false
+      description: Timestamp when the record was loaded into the analytical platform.
+    - name: event_date_time_key
+      data_type: string
+      nullable: false
+      description: Sortable composite representation of timestamp and sequence for deterministic ordering.
+    - name: activity_type
+      data_type: string
+      nullable: false
+      description: Normalized type of order book activity.
+    - name: execution_type
+      data_type: string
+      nullable: true
+      description: Normalized execution-report event type.
+    - name: order_status
+      data_type: string
+      nullable: false
+      description: Order status immediately after applying the event.
+    - name: side
+      data_type: string
+      nullable: false
+      description: Order side.
+    - name: order_type
+      data_type: string
+      nullable: false
+      description: Order pricing or behavior type.
+    - name: native_order_type
+      data_type: string
+      nullable: true
+      description: Unmodified venue-specific order type code.
+    - name: time_in_force
+      data_type: string
+      nullable: true
+      description: Instruction controlling how long the order remains active.
+    - name: expire_timestamp
+      data_type: datetime
+      nullable: true
+      description: Scheduled expiry time for GTD or time-bounded orders.
+    - name: limit_price
+      data_type: decimal
+      nullable: true
+      description: Specified limit price for the order.
+    - name: stop_price
+      data_type: decimal
+      nullable: true
+      description: Trigger price for stop or stop-limit orders.
+    - name: peg_offset
+      data_type: decimal
+      nullable: true
+      description: Price offset used by a pegged order.
+    - name: peg_reference
+      data_type: string
+      nullable: true
+      description: Reference price used for a pegged order.
+    - name: order_quantity
+      data_type: integer
+      nullable: false
+      description: Original or revised total quantity of the order after this event.
+      unit: SHARE
+    - name: display_quantity
+      data_type: integer
+      nullable: true
+      description: Maximum quantity displayed to the market for reserve/iceberg orders.
+    - name: minimum_quantity
+      data_type: integer
+      nullable: true
+      description: Minimum executable quantity condition.
+    - name: executed_quantity
+      data_type: integer
+      nullable: false
+      description: Quantity executed by this activity event.
+      unit: SHARE
+    - name: cumulative_executed_quantity
+      data_type: integer
+      nullable: false
+      description: Total quantity executed for the order up to and including this event.
+      unit: SHARE
+    - name: unfilled_quantity
+      data_type: integer
+      nullable: false
+      description: Unexecuted quantity remaining after this event.
+      unit: SHARE
+    - name: execution_price
+      data_type: decimal
+      nullable: true
+      description: Price of the execution represented by this event.
+    - name: average_execution_price
+      data_type: decimal
+      nullable: true
+      description: Volume-weighted average execution price for the order up to this event.
+    - name: trade_id
+      data_type: string
+      nullable: true
+      description: Venue-assigned identifier for an execution or trade.
+    - name: match_id
+      data_type: string
+      nullable: true
+      description: Identifier linking the buy and sell sides of a matched execution.
+    - name: liquidity_indicator
+      data_type: string
+      nullable: true
+      description: Indicates whether the order added or removed displayed liquidity for an execution.
+    - name: book_level
+      data_type: integer
+      nullable: true
+      description: Price level occupied by the order immediately after the event.
+    - name: priority_sequence
+      data_type: integer
+      nullable: true
+      description: Order priority position or venue priority sequence at its price level.
+    - name: best_bid_price
+      data_type: decimal
+      nullable: true
+      description: Best displayed bid price immediately after applying the activity event.
+    - name: best_bid_quantity
+      data_type: integer
+      nullable: true
+      description: Aggregate displayed quantity at best bid immediately after the event.
+    - name: best_ask_price
+      data_type: decimal
+      nullable: true
+      description: Best displayed ask price immediately after applying the activity event.
+    - name: best_ask_quantity
+      data_type: integer
+      nullable: true
+      description: Aggregate displayed quantity at best ask immediately after the event.
+    - name: mid_price
+      data_type: decimal
+      nullable: true
+      description: Midpoint of best bid and best ask after the event.
+    - name: spread
+      data_type: decimal
+      nullable: true
+      description: Absolute bid-ask spread after the event.
+    - name: spread_bps
+      data_type: decimal
+      nullable: true
+      description: Bid-ask spread expressed in basis points of the midpoint.
+    - name: is_hidden
+      data_type: string
+      nullable: false
+      description: Indicates whether the order is non-displayed.
+    - name: is_iceberg
+      data_type: string
+      nullable: false
+      description: Indicates whether the order has reserve quantity.
+    - name: is_auction
+      data_type: string
+      nullable: false
+      description: Indicates that the activity belongs to an auction or call market phase.
+    - name: session_phase
+      data_type: string
+      nullable: false
+      description: Trading session phase at the event time.
+    - name: order_restriction
+      data_type: string
+      nullable: true
+      description: Special handling or regulatory restriction applied to the order.
+    - name: self_trade_prevention_id
+      data_type: string
+      nullable: true
+      description: Identifier used by the venue to prevent self-matching.
+    - name: reject_reason_code
+      data_type: string
+      nullable: true
+      description: Code explaining why an order or request was rejected.
+    - name: cancel_reason_code
+      data_type: string
+      nullable: true
+      description: Code explaining cancellation, deletion or expiry.
+    - name: correction_indicator
+      data_type: string
+      nullable: false
+      description: Indicates whether the event corrects or reverses a prior event.
+    - name: reference_activity_id
+      data_type: string
+      nullable: true
+      description: Identifier of the prior activity being replaced, corrected or canceled.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Name of the originating feed, gateway or source application.
+    - name: source_file_name
+      data_type: string
+      nullable: true
+      description: Name of the source file or stream object containing the event.
+    - name: source_record_no
+      data_type: integer
+      nullable: true
+      description: Record position within the source file or message batch.
+    - name: record_hash
+      data_type: string
+      nullable: false
+      description: Hash used to detect duplicate or changed source records.
+- id: source.trading_activity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trading Activity
+    zh: trading_activity
+  definition: Typed Parquet projection of the supplied constructed-synthetic trading_activity worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: trading_activity
+    grain: one constructed-synthetic trading_activity row
+    primary_key:
+    - trading_activity_id
+    fields:
+    - name: trading_activity_id
+      data_type: string
+      nullable: false
+      description: Unique identifier for each normalized cash-market trade or execution activity.
+    - name: business_date
+      data_type: date
+      nullable: false
+      description: Trading-calendar date to which the execution is assigned.
+    - name: venue_code
+      data_type: string
+      nullable: false
+      description: Exchange, ATS or venue where the trade occurred.
+    - name: market_segment
+      data_type: string
+      nullable: true
+      description: Board or market segment where the trade occurred.
+    - name: instrument_id
+      data_type: string
+      nullable: false
+      description: Enterprise identifier of the traded instrument.
+    - name: participant_id
+      data_type: string
+      nullable: true
+      description: Participant responsible for or associated with the activity, where available.
+    - name: buy_participant_id
+      data_type: string
+      nullable: true
+      description: Buying participant identifier, where disclosed.
+    - name: sell_participant_id
+      data_type: string
+      nullable: true
+      description: Selling participant identifier, where disclosed.
+    - name: trade_id
+      data_type: string
+      nullable: false
+      description: Venue-assigned trade or execution identifier.
+    - name: match_id
+      data_type: string
+      nullable: true
+      description: Identifier linking the two sides of a matched transaction.
+    - name: order_id
+      data_type: string
+      nullable: true
+      description: Order identifier associated with the activity, where order-level data is available.
+    - name: buy_order_id
+      data_type: string
+      nullable: true
+      description: Identifier of the buy order involved in the trade.
+    - name: sell_order_id
+      data_type: string
+      nullable: true
+      description: Identifier of the sell order involved in the trade.
+    - name: event_sequence_no
+      data_type: integer
+      nullable: false
+      description: Source sequence used to order activities deterministically.
+    - name: channel_id
+      data_type: string
+      nullable: true
+      description: Feed channel, partition or matching-engine stream identifier.
+    - name: transaction_timestamp
+      data_type: datetime
+      nullable: false
+      description: Venue or matching-engine timestamp for the activity.
+    - name: receive_timestamp
+      data_type: datetime
+      nullable: true
+      description: Timestamp when the activity was received by the capture platform.
+    - name: activity_type
+      data_type: string
+      nullable: false
+      description: Normalized type of trading activity.
+    - name: execution_type
+      data_type: string
+      nullable: false
+      description: Execution classification for the activity.
+    - name: trade_status
+      data_type: string
+      nullable: false
+      description: Post-event status of the trade record.
+    - name: aggressor_side
+      data_type: string
+      nullable: true
+      description: Side that initiated the execution.
+    - name: trade_price
+      data_type: decimal
+      nullable: false
+      description: Execution price in trade currency.
+    - name: trade_quantity
+      data_type: integer
+      nullable: false
+      description: Executed quantity in the instrument trading unit.
+      unit: SHARE
+    - name: trade_notional
+      data_type: decimal
+      nullable: false
+      description: Gross trade value in trade currency.
+      unit: HKD
+    - name: trade_currency
+      data_type: string
+      nullable: false
+      description: Currency in which the trade price is quoted.
+    - name: settlement_currency
+      data_type: string
+      nullable: false
+      description: Currency in which settlement is expected.
+    - name: settlement_date
+      data_type: date
+      nullable: true
+      description: Expected contractual settlement date.
+    - name: fx_rate_to_base
+      data_type: decimal
+      nullable: true
+      description: Exchange rate from trade_currency to the reporting base currency.
+      unit: USD_PER_HKD
+    - name: haircut_rate
+      data_type: decimal
+      nullable: true
+      description: Currency or risk haircut rate applicable to the conversion.
+      unit: RATIO
+    - name: base_notional_before_haircut
+      data_type: decimal
+      nullable: true
+      description: Trade notional converted to reporting base currency before haircut.
+      unit: USD
+    - name: base_notional_after_haircut
+      data_type: decimal
+      nullable: true
+      description: Converted trade notional after applying the haircut.
+      unit: USD
+    - name: best_bid_price
+      data_type: decimal
+      nullable: true
+      description: Best bid immediately before or at the execution according to the selected snapshot convention.
+    - name: best_ask_price
+      data_type: decimal
+      nullable: true
+      description: Best ask immediately before or at the execution according to the selected snapshot convention.
+    - name: mid_price
+      data_type: decimal
+      nullable: true
+      description: Midpoint of the selected best bid and best ask.
+    - name: effective_spread_bps
+      data_type: decimal
+      nullable: true
+      description: Execution cost relative to prevailing midpoint in basis points.
+    - name: trade_condition_codes
+      data_type: string
+      nullable: true
+      description: Source trade-condition codes associated with the activity.
+    - name: is_auction
+      data_type: string
+      nullable: false
+      description: Indicates an auction execution.
+    - name: is_off_book
+      data_type: string
+      nullable: false
+      description: Indicates that execution occurred outside the central limit order book.
+    - name: is_correction
+      data_type: string
+      nullable: false
+      description: Indicates a correction to an earlier trade.
+    - name: reference_trading_activity_id
+      data_type: string
+      nullable: true
+      description: Identifier of the prior activity corrected, canceled or busted.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Originating feed, gateway or application.
+    - name: source_file_name
+      data_type: string
+      nullable: true
+      description: Source file or stream object containing the activity.
+    - name: source_record_no
+      data_type: integer
+      nullable: true
+      description: Record position in the source file or batch.
+    - name: ingestion_timestamp
+      data_type: datetime
+      nullable: false
+      description: UTC timestamp when the record was loaded.
+    - name: record_hash
+      data_type: string
+      nullable: false
+      description: Hash for duplicate detection and change control.
+- id: source.instrument_reference
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Instrument Reference
+    zh: instrument_reference
+  definition: Typed Parquet projection of the supplied constructed-synthetic instrument_reference worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: instrument_reference
+    grain: one constructed-synthetic instrument_reference row
+    primary_key:
+    - instrument_id
+    fields:
+    - name: instrument_id
+      data_type: string
+      nullable: false
+      description: Unique enterprise identifier for an instrument.
+    - name: instrument_name
+      data_type: string
+      nullable: false
+      description: Official or mastered instrument name.
+    - name: short_name
+      data_type: string
+      nullable: true
+      description: Abbreviated display name.
+    - name: asset_class
+      data_type: string
+      nullable: false
+      description: High-level asset classification.
+    - name: security_type
+      data_type: string
+      nullable: false
+      description: Detailed security type.
+    - name: isin
+      data_type: string
+      nullable: true
+      description: International Securities Identification Number.
+    - name: sedol
+      data_type: string
+      nullable: true
+      description: Stock Exchange Daily Official List identifier.
+    - name: cusip
+      data_type: string
+      nullable: true
+      description: CUSIP identifier.
+    - name: primary_venue_code
+      data_type: string
+      nullable: false
+      description: Primary listing or trading venue.
+    - name: primary_symbol
+      data_type: string
+      nullable: false
+      description: Primary trading symbol.
+    - name: trading_currency
+      data_type: string
+      nullable: false
+      description: Currency in which the instrument is quoted.
+    - name: settlement_currency
+      data_type: string
+      nullable: false
+      description: Default settlement currency.
+    - name: country_of_incorporation
+      data_type: string
+      nullable: true
+      description: Issuer country of incorporation.
+    - name: country_of_risk
+      data_type: string
+      nullable: true
+      description: Country primarily associated with investment risk.
+    - name: issuer_id
+      data_type: string
+      nullable: true
+      description: Enterprise issuer identifier.
+    - name: lot_size
+      data_type: decimal
+      nullable: false
+      description: Standard board-lot quantity.
+    - name: tick_size
+      data_type: decimal
+      nullable: false
+      description: Minimum standard price increment.
+    - name: price_scale
+      data_type: integer
+      nullable: false
+      description: Number of implied decimal places in encoded prices.
+    - name: quantity_scale
+      data_type: integer
+      nullable: false
+      description: Number of decimal places allowed for quantity.
+    - name: contract_multiplier
+      data_type: decimal
+      nullable: false
+      description: Multiplier used to calculate notional value.
+    - name: settlement_cycle
+      data_type: string
+      nullable: false
+      description: Regular-way settlement convention.
+    - name: listing_date
+      data_type: date
+      nullable: true
+      description: First effective listing date.
+    - name: delisting_date
+      data_type: date
+      nullable: true
+      description: Last effective listing date.
+    - name: instrument_status
+      data_type: string
+      nullable: false
+      description: Current mastered status.
+    - name: valid_from_timestamp
+      data_type: datetime
+      nullable: false
+      description: Start of validity for this reference version.
+    - name: valid_to_timestamp
+      data_type: datetime
+      nullable: true
+      description: End of validity for this reference version.
+    - name: is_current
+      data_type: string
+      nullable: false
+      description: Indicates the current effective record.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Originating reference-data provider or application.
+- id: source.account_reference
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Account Reference
+    zh: account_reference
+  definition: Typed Parquet projection of the supplied constructed-synthetic account_reference worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: account_reference
+    grain: one constructed-synthetic account_reference row
+    primary_key:
+    - participant_id
+    fields:
+    - name: participant_id
+      data_type: string
+      nullable: false
+      description: Unique enterprise identifier for a trading participant, member, client or account entity.
+    - name: participant_name
+      data_type: string
+      nullable: false
+      description: Official or mastered participant name.
+    - name: participant_short_name
+      data_type: string
+      nullable: true
+      description: Abbreviated participant name.
+    - name: participant_type
+      data_type: string
+      nullable: false
+      description: Classification of participant.
+    - name: member_code
+      data_type: string
+      nullable: true
+      description: Venue or exchange member code.
+    - name: venue_code
+      data_type: string
+      nullable: true
+      description: Venue associated with member_code.
+    - name: lei
+      data_type: string
+      nullable: true
+      description: Legal Entity Identifier.
+    - name: account_type
+      data_type: string
+      nullable: false
+      description: Operational or ownership account type.
+    - name: client_category
+      data_type: string
+      nullable: true
+      description: Regulatory or commercial client category.
+    - name: country_code
+      data_type: string
+      nullable: true
+      description: Participant domicile or registered country.
+    - name: base_currency
+      data_type: string
+      nullable: false
+      description: Default reporting or account currency.
+    - name: clearing_member_id
+      data_type: string
+      nullable: true
+      description: Identifier of the participant clearing the activity.
+    - name: parent_participant_id
+      data_type: string
+      nullable: true
+      description: Parent entity in the participant hierarchy.
+    - name: risk_group_id
+      data_type: string
+      nullable: true
+      description: Identifier used to aggregate participants for risk controls.
+    - name: credit_limit
+      data_type: decimal
+      nullable: true
+      description: Approved monetary credit limit in limit_currency.
+    - name: limit_currency
+      data_type: string
+      nullable: true
+      description: Currency of credit_limit.
+    - name: participant_status
+      data_type: string
+      nullable: false
+      description: Current status.
+    - name: valid_from_timestamp
+      data_type: datetime
+      nullable: false
+      description: Start of validity for this reference version.
+    - name: valid_to_timestamp
+      data_type: datetime
+      nullable: true
+      description: End of validity for this reference version.
+    - name: is_current
+      data_type: string
+      nullable: false
+      description: Indicates current effective record.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Originating reference-data provider or application.
+- id: source.trading_calendar
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trading Calendar
+    zh: trading_calendar
+  definition: Typed Parquet projection of the supplied constructed-synthetic trading_calendar worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: trading_calendar
+    grain: one constructed-synthetic trading_calendar row
+    primary_key:
+    - calendar_code
+    - business_date
+    fields:
+    - name: business_date
+      data_type: date
+      nullable: false
+      description: Business date represented by the calendar row.
+    - name: calendar_code
+      data_type: string
+      nullable: false
+      description: Calendar applied to the date, e.g. venue or settlement calendar.
+    - name: venue_code
+      data_type: string
+      nullable: true
+      description: Venue associated with the calendar row.
+    - name: day_of_week
+      data_type: string
+      nullable: false
+      description: Day name for the business date.
+    - name: is_business_day
+      data_type: string
+      nullable: false
+      description: Indicates a business day for the canonical calendar.
+    - name: is_trading_day
+      data_type: string
+      nullable: false
+      description: Indicates whether normal trading is scheduled.
+    - name: is_settlement_day
+      data_type: string
+      nullable: false
+      description: Indicates whether settlement processing is scheduled.
+    - name: is_holiday
+      data_type: string
+      nullable: false
+      description: Indicates a full or partial market holiday.
+    - name: holiday_name
+      data_type: string
+      nullable: true
+      description: Name of the holiday or special market day.
+    - name: session_type
+      data_type: string
+      nullable: false
+      description: Overall trading-session classification.
+    - name: market_open_timestamp
+      data_type: datetime
+      nullable: true
+      description: Scheduled continuous-market open in UTC.
+    - name: market_close_timestamp
+      data_type: datetime
+      nullable: true
+      description: Scheduled continuous-market close in UTC.
+    - name: opening_auction_start_timestamp
+      data_type: datetime
+      nullable: true
+      description: Scheduled opening-auction start in UTC.
+    - name: closing_auction_end_timestamp
+      data_type: datetime
+      nullable: true
+      description: Scheduled closing-auction end in UTC.
+    - name: timezone_name
+      data_type: string
+      nullable: false
+      description: IANA timezone used for local market times.
+    - name: previous_business_date
+      data_type: date
+      nullable: true
+      description: Previous date where is_business_day = Y.
+    - name: next_business_date
+      data_type: date
+      nullable: true
+      description: Next date where is_business_day = Y.
+    - name: previous_trading_date
+      data_type: date
+      nullable: true
+      description: Previous date where is_trading_day = Y.
+    - name: next_trading_date
+      data_type: date
+      nullable: true
+      description: Next date where is_trading_day = Y.
+    - name: month_end_flag
+      data_type: string
+      nullable: false
+      description: Indicates last business day of month.
+    - name: quarter_end_flag
+      data_type: string
+      nullable: false
+      description: Indicates last business day of quarter.
+    - name: year_end_flag
+      data_type: string
+      nullable: false
+      description: Indicates last business day of year.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Originating calendar provider or application.
+- id: source.order_type_reference
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Order Type Reference
+    zh: order_type_reference
+  definition: Typed Parquet projection of the supplied constructed-synthetic order_type_reference worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: order_type_reference
+    grain: one constructed-synthetic order_type_reference row
+    primary_key:
+    - order_type_code
+    fields:
+    - name: order_type_code
+      data_type: string
+      nullable: false
+      description: Normalized unique code for an available order type.
+    - name: order_type_name
+      data_type: string
+      nullable: false
+      description: Human-readable order type name.
+    - name: order_type_summary
+      data_type: string
+      nullable: false
+      description: Concise description of pricing behavior and execution conditions.
+    - name: order_category
+      data_type: string
+      nullable: false
+      description: High-level category.
+    - name: price_instruction
+      data_type: string
+      nullable: false
+      description: Primary price instruction.
+    - name: time_in_force_values
+      data_type: string
+      nullable: false
+      description: Supported time-in-force values.
+    - name: requires_limit_price
+      data_type: string
+      nullable: false
+      description: Indicates whether limit_price must be supplied.
+    - name: requires_stop_price
+      data_type: string
+      nullable: false
+      description: Indicates whether stop_price must be supplied.
+    - name: supports_display_quantity
+      data_type: string
+      nullable: false
+      description: Indicates whether the order type supports reserve or displayed quantity.
+    - name: supports_peg_offset
+      data_type: string
+      nullable: false
+      description: Indicates whether a peg offset is supported.
+    - name: eligible_session_phases
+      data_type: string
+      nullable: false
+      description: Session phases in which the order may be entered or executed.
+    - name: execution_priority_summary
+      data_type: string
+      nullable: true
+      description: Summary of price/time or venue-specific priority treatment.
+    - name: venue_code
+      data_type: string
+      nullable: true
+      description: Venue for which the order type is available.
+    - name: market_segment
+      data_type: string
+      nullable: true
+      description: Market segment for availability.
+    - name: availability_status
+      data_type: string
+      nullable: false
+      description: Availability status.
+    - name: effective_from_date
+      data_type: date
+      nullable: false
+      description: First business date of availability.
+    - name: effective_to_date
+      data_type: date
+      nullable: true
+      description: Last business date of availability.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Originating configuration or venue-rule source.
+- id: source.exchange_rate
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Exchange Rate
+    zh: exchange_rate
+  definition: Typed Parquet projection of the supplied constructed-synthetic exchange_rate worksheet.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.sample_data
+  decisions:
+  - decision.source_classification
+  tags:
+  - constructed_synthetic
+  - parquet
+  - raw_projection
+  protocol: tabular/v1
+  tables:
+  - name: exchange_rate
+    grain: one constructed-synthetic exchange_rate row
+    primary_key:
+    - exchange_rate_id
+    fields:
+    - name: exchange_rate_id
+      data_type: string
+      nullable: false
+      description: Unique identifier for the effective exchange-rate record.
+    - name: business_date
+      data_type: date
+      nullable: false
+      description: Business date for which the rate is applicable.
+    - name: from_currency
+      data_type: string
+      nullable: false
+      description: Currency being converted.
+    - name: to_currency
+      data_type: string
+      nullable: false
+      description: Currency into which the amount is converted.
+    - name: rate_type
+      data_type: string
+      nullable: false
+      description: Purpose or market convention of the rate.
+    - name: exchange_rate
+      data_type: decimal
+      nullable: false
+      description: Multiplier converting one unit of from_currency into to_currency.
+      unit: TO_CURRENCY_PER_FROM_CURRENCY
+    - name: haircut_rate
+      data_type: decimal
+      nullable: false
+      description: Risk haircut applicable to the currency conversion.
+      unit: RATIO
+    - name: haircut_basis
+      data_type: string
+      nullable: false
+      description: Explains how the haircut is applied.
+    - name: adjusted_exchange_rate
+      data_type: decimal
+      nullable: true
+      description: Exchange rate after applying a reduce-value haircut.
+    - name: inverse_exchange_rate
+      data_type: decimal
+      nullable: false
+      description: Reciprocal rate from to_currency to from_currency.
+    - name: rate_timestamp
+      data_type: datetime
+      nullable: false
+      description: UTC timestamp at which the quoted rate was observed or fixed.
+    - name: valid_from_timestamp
+      data_type: datetime
+      nullable: false
+      description: Start of rate validity.
+    - name: valid_to_timestamp
+      data_type: datetime
+      nullable: true
+      description: End of rate validity.
+    - name: rate_provider
+      data_type: string
+      nullable: false
+      description: Name or code of the rate provider.
+    - name: source_rate_id
+      data_type: string
+      nullable: true
+      description: Provider-assigned rate identifier.
+    - name: is_official_rate
+      data_type: string
+      nullable: false
+      description: Indicates whether the rate is an official published fixing.
+    - name: quality_status
+      data_type: string
+      nullable: false
+      description: Quality and approval status of the rate.
+    - name: source_system
+      data_type: string
+      nullable: false
+      description: Originating market-data or risk source.
+- id: source.cash_trade_analytics
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Trade Analytic View
+    zh: 现金交易分析视图
+  definition: Adapter-owned deterministic view over the exact trading-activity Parquet source.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.self_trade_candidate
+  - decision.trade_eligibility
+  - decision.latency_convention
+  - decision.notional_currency
+  tags:
+  - constructed_synthetic
+  - adapter_view
+  - executable
+  protocol: tabular/v1
+  tables:
+  - name: cash_trade_analytics
+    grain: one normalized trading activity row
+    primary_key:
+    - trading_activity_id
+    fields:
+    - name: trading_activity_id
+      data_type: string
+      nullable: false
+      description: Stable trade-activity identifier.
+    - name: business_date
+      data_type: date
+      nullable: false
+      description: Venue-calendar business date.
+    - name: venue_code
+      data_type: string
+      nullable: false
+      description: Normalized venue code.
+    - name: market_segment
+      data_type: string
+      nullable: true
+      description: Cash-market segment.
+    - name: instrument_id
+      data_type: string
+      nullable: false
+      description: Instrument identifier.
+    - name: participant_id
+      data_type: string
+      nullable: true
+      description: Associated participant identifier.
+    - name: buy_participant_id
+      data_type: string
+      nullable: true
+      description: Normalized buying participant identifier.
+    - name: sell_participant_id
+      data_type: string
+      nullable: true
+      description: Normalized selling participant identifier.
+    - name: trade_quantity
+      data_type: decimal
+      nullable: false
+      description: Executed quantity.
+      unit: SHARE
+    - name: trade_notional_hkd
+      data_type: decimal
+      nullable: false
+      description: Native executed notional in HKD.
+      unit: HKD
+    - name: base_notional_usd
+      data_type: decimal
+      nullable: false
+      description: Converted notional before haircut in USD.
+      unit: USD
+    - name: transaction_timestamp
+      data_type: datetime
+      nullable: false
+      description: Matching-engine transaction timestamp in UTC.
+    - name: receive_timestamp
+      data_type: datetime
+      nullable: false
+      description: Platform receive timestamp in UTC.
+    - name: is_eligible_trade
+      data_type: boolean
+      nullable: false
+      description: True when the provisional eligible-trade rule passes.
+    - name: is_active_client
+      data_type: boolean
+      nullable: false
+      description: True when participant_id resolves to an effective CLIENT reference row.
+    - name: has_both_participant_ids
+      data_type: boolean
+      nullable: false
+      description: True when both side participant IDs are populated.
+    - name: is_potential_self_trade
+      data_type: boolean
+      nullable: false
+      description: True when both normalized side participant IDs are equal.
+    - name: is_nonnegative_latency
+      data_type: boolean
+      nullable: false
+      description: True when capture latency is non-negative.
+    - name: capture_latency_ms
+      data_type: integer
+      nullable: true
+      description: Receive time minus transaction time in milliseconds.
+      unit: MILLISECOND
+- id: source.cash_order_lifecycle_analytics
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Order Lifecycle Analytic View
+    zh: 现金订单生命周期分析视图
+  definition: Adapter-owned deterministic lifecycle view over exact order events and effective participant reference data.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  - source.compiler_sql
+  decisions:
+  - decision.order_lifecycle
+  - decision.submitted_order
+  - decision.rejected_order
+  - decision.client_classification
+  - decision.cancel_ratio
+  tags:
+  - constructed_synthetic
+  - adapter_view
+  - ontology_ready
+  protocol: tabular/v1
+  tables:
+  - name: cash_order_lifecycle_analytics
+    grain: one normalized observed order lifecycle
+    primary_key:
+    - lifecycle_key
+    fields:
+    - name: lifecycle_key
+      data_type: string
+      nullable: false
+      description: Stable venue + trading date + order identifier.
+    - name: trading_date
+      data_type: date
+      nullable: false
+      description: Business date assigned to the observed lifecycle.
+    - name: venue_code
+      data_type: string
+      nullable: false
+      description: Normalized venue code.
+    - name: market_segment
+      data_type: string
+      nullable: true
+      description: Cash-market segment from the latest observed state.
+    - name: instrument_id
+      data_type: string
+      nullable: false
+      description: Instrument identifier from the latest observed state.
+    - name: participant_id
+      data_type: string
+      nullable: true
+      description: Participant identifier from the latest observed state.
+    - name: is_client
+      data_type: boolean
+      nullable: false
+      description: True when the effective participant reference is classified CLIENT.
+    - name: is_submitted
+      data_type: boolean
+      nullable: false
+      description: True when the lifecycle contains a NEW or REJECT submission attempt.
+    - name: is_rejected
+      data_type: boolean
+      nullable: false
+      description: True when any observed event rejects the submission.
+    - name: is_eligible_client_order
+      data_type: boolean
+      nullable: false
+      description: True for a submitted client lifecycle with no observed rejection.
+    - name: is_fully_filled
+      data_type: boolean
+      nullable: false
+      description: True when the latest valid observed state is FILLED.
+    - name: is_canceled
+      data_type: boolean
+      nullable: false
+      description: True when the lifecycle contains an eligible cancel event.
+    - name: final_order_quantity
+      data_type: integer
+      nullable: false
+      description: Order quantity at the latest valid observed state.
+      unit: SHARE
+    - name: final_cumulative_executed_quantity
+      data_type: integer
+      nullable: false
+      description: Cumulative executed quantity at the latest valid observed state.
+      unit: SHARE
+bindings:
+- id: binding.trade.id
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.trading_activity_id
+    zh: property.trade.trading_activity_id绑定
+  definition: Synthetic runtime binding for property.trade.trading_activity_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.trading_activity_id
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: trading_activity_id
+  data_type: string
+  transformation: identity
+- id: binding.trade.business_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.business_date
+    zh: property.trade.business_date绑定
+  definition: Synthetic runtime binding for property.trade.business_date.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.business_date
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: business_date
+  data_type: date
+  transformation: identity
+- id: binding.trade.venue
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.venue_code
+    zh: property.trade.venue_code绑定
+  definition: Synthetic runtime binding for property.trade.venue_code.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.venue_code
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: venue_code
+  data_type: string
+  transformation: identity
+- id: binding.trade.market_segment
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.market_segment
+    zh: property.trade.market_segment绑定
+  definition: Synthetic runtime binding for property.trade.market_segment.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.market_segment
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: market_segment
+  data_type: string
+  transformation: identity
+- id: binding.trade.instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.instrument_id
+    zh: property.trade.instrument_id绑定
+  definition: Synthetic runtime binding for property.trade.instrument_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.instrument_id
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: instrument_id
+  data_type: string
+  transformation: identity
+- id: binding.trade.participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.participant_id
+    zh: property.trade.participant_id绑定
+  definition: Synthetic runtime binding for property.trade.participant_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.participant_id
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: participant_id
+  data_type: string
+  transformation: identity
+- id: binding.trade.buy_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.buy_participant_id
+    zh: property.trade.buy_participant_id绑定
+  definition: Synthetic runtime binding for property.trade.buy_participant_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.buy_participant_id
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: buy_participant_id
+  data_type: string
+  transformation: identity
+- id: binding.trade.sell_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.sell_participant_id
+    zh: property.trade.sell_participant_id绑定
+  definition: Synthetic runtime binding for property.trade.sell_participant_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.sell_participant_id
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: sell_participant_id
+  data_type: string
+  transformation: identity
+- id: binding.trade.quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.trade_quantity
+    zh: property.trade.trade_quantity绑定
+  definition: Synthetic runtime binding for property.trade.trade_quantity.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.trade_quantity
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: trade_quantity
+  data_type: decimal
+  unit: SHARE
+  transformation: identity
+- id: binding.trade.notional_hkd
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.trade_notional_hkd
+    zh: property.trade.trade_notional_hkd绑定
+  definition: Synthetic runtime binding for property.trade.trade_notional_hkd.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.trade_notional_hkd
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: trade_notional_hkd
+  data_type: decimal
+  unit: HKD
+  transformation: identity
+- id: binding.trade.base_notional_usd
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.base_notional_usd
+    zh: property.trade.base_notional_usd绑定
+  definition: Synthetic runtime binding for property.trade.base_notional_usd.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.base_notional_usd
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: base_notional_usd
+  data_type: decimal
+  unit: USD
+  transformation: identity
+- id: binding.trade.transaction_timestamp
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.transaction_timestamp
+    zh: property.trade.transaction_timestamp绑定
+  definition: Synthetic runtime binding for property.trade.transaction_timestamp.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.transaction_timestamp
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: transaction_timestamp
+  data_type: datetime
+  transformation: identity
+- id: binding.trade.receive_timestamp
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.receive_timestamp
+    zh: property.trade.receive_timestamp绑定
+  definition: Synthetic runtime binding for property.trade.receive_timestamp.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.receive_timestamp
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: receive_timestamp
+  data_type: datetime
+  transformation: identity
+- id: binding.trade.eligible
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.is_eligible_trade
+    zh: property.trade.is_eligible_trade绑定
+  definition: Synthetic runtime binding for property.trade.is_eligible_trade.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.is_eligible_trade
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: is_eligible_trade
+  data_type: boolean
+  transformation: activity_type=TRADE AND trade_status=ACTIVE AND not corrected original
+- id: binding.trade.active_client
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.is_active_client
+    zh: property.trade.is_active_client绑定
+  definition: Synthetic runtime binding for property.trade.is_active_client.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.is_active_client
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: is_active_client
+  data_type: boolean
+  transformation: effective participant reference has participant_type=CLIENT
+- id: binding.trade.has_both_participants
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.has_both_participant_ids
+    zh: property.trade.has_both_participant_ids绑定
+  definition: Synthetic runtime binding for property.trade.has_both_participant_ids.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.has_both_participant_ids
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: has_both_participant_ids
+  data_type: boolean
+  transformation: buy_participant_id and sell_participant_id are non-null
+- id: binding.trade.self_trade
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.is_potential_self_trade
+    zh: property.trade.is_potential_self_trade绑定
+  definition: Synthetic runtime binding for property.trade.is_potential_self_trade.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.is_potential_self_trade
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: is_potential_self_trade
+  data_type: boolean
+  transformation: normalized buy_participant_id equals normalized sell_participant_id
+- id: binding.trade.nonnegative_latency
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.is_nonnegative_latency
+    zh: property.trade.is_nonnegative_latency绑定
+  definition: Synthetic runtime binding for property.trade.is_nonnegative_latency.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.is_nonnegative_latency
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: is_nonnegative_latency
+  data_type: boolean
+  transformation: capture_latency_ms >= 0
+- id: binding.trade.capture_latency
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.trade.capture_latency_ms
+    zh: property.trade.capture_latency_ms绑定
+  definition: Synthetic runtime binding for property.trade.capture_latency_ms.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.trade.capture_latency_ms
+  source: source.cash_trade_analytics
+  table: cash_trade_analytics
+  column: capture_latency_ms
+  data_type: integer
+  unit: MILLISECOND
+  transformation: receive_timestamp - transaction_timestamp in milliseconds
+- id: binding.order_lifecycle.key
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.lifecycle_key
+    zh: property.order_lifecycle.lifecycle_key绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.lifecycle_key.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.lifecycle_key
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: lifecycle_key
+  data_type: string
+  transformation: venue_code + trading_date + order_id
+- id: binding.order_lifecycle.trading_date
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.trading_date
+    zh: property.order_lifecycle.trading_date绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.trading_date.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.trading_date
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: trading_date
+  data_type: date
+  transformation: identity
+- id: binding.order_lifecycle.venue
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.venue_code
+    zh: property.order_lifecycle.venue_code绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.venue_code.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.venue_code
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: venue_code
+  data_type: string
+  transformation: identity
+- id: binding.order_lifecycle.market_segment
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.market_segment
+    zh: property.order_lifecycle.market_segment绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.market_segment.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.market_segment
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: market_segment
+  data_type: string
+  transformation: identity
+- id: binding.order_lifecycle.instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.instrument_id
+    zh: property.order_lifecycle.instrument_id绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.instrument_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.instrument_id
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: instrument_id
+  data_type: string
+  transformation: identity
+- id: binding.order_lifecycle.participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.participant_id
+    zh: property.order_lifecycle.participant_id绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.participant_id.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.participant_id
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: participant_id
+  data_type: string
+  transformation: identity
+- id: binding.order_lifecycle.client
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.is_client
+    zh: property.order_lifecycle.is_client绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.is_client.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.is_client
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: is_client
+  data_type: boolean
+  transformation: effective participant_type=CLIENT
+- id: binding.order_lifecycle.submitted
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.is_submitted
+    zh: property.order_lifecycle.is_submitted绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.is_submitted.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.is_submitted
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: is_submitted
+  data_type: boolean
+  transformation: any NEW or REJECT event
+- id: binding.order_lifecycle.rejected
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.is_rejected
+    zh: property.order_lifecycle.is_rejected绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.is_rejected.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.is_rejected
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: is_rejected
+  data_type: boolean
+  transformation: any REJECT event or REJECTED state
+- id: binding.order_lifecycle.eligible_client
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.is_eligible_client_order
+    zh: property.order_lifecycle.is_eligible_client_order绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.is_eligible_client_order.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.is_eligible_client_order
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: is_eligible_client_order
+  data_type: boolean
+  transformation: is_client AND is_submitted AND NOT is_rejected
+- id: binding.order_lifecycle.fully_filled
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.is_fully_filled
+    zh: property.order_lifecycle.is_fully_filled绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.is_fully_filled.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.is_fully_filled
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: is_fully_filled
+  data_type: boolean
+  transformation: latest order_status=FILLED
+- id: binding.order_lifecycle.canceled
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.is_canceled
+    zh: property.order_lifecycle.is_canceled绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.is_canceled.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.is_canceled
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: is_canceled
+  data_type: boolean
+  transformation: any CANCEL event after CANCELLED alias normalization
+- id: binding.order_lifecycle.final_order_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.final_order_quantity
+    zh: property.order_lifecycle.final_order_quantity绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.final_order_quantity.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.final_order_quantity
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: final_order_quantity
+  data_type: integer
+  unit: SHARE
+  transformation: latest valid observed order_quantity
+- id: binding.order_lifecycle.final_executed_quantity
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Binding for property.order_lifecycle.final_cumulative_executed_quantity
+    zh: property.order_lifecycle.final_cumulative_executed_quantity绑定
+  definition: Synthetic runtime binding for property.order_lifecycle.final_cumulative_executed_quantity.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  logical_target: property.order_lifecycle.final_cumulative_executed_quantity
+  source: source.cash_order_lifecycle_analytics
+  table: cash_order_lifecycle_analytics
+  column: final_cumulative_executed_quantity
+  data_type: integer
+  unit: SHARE
+  transformation: latest valid observed cumulative_executed_quantity
+joins:
+- id: join.trade_instrument
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade to Instrument
+    zh: 成交关联证券
+  definition: Resolve each trade instrument.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  left_source: source.trading_activity
+  left_table: trading_activity
+  right_source: source.instrument_reference
+  right_table: instrument_reference
+  keys:
+  - left_column: instrument_id
+    right_column: instrument_id
+  expected_cardinality: N:1
+  fanout_policy: block
+- id: join.trade_buy_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade to Buy Participant
+    zh: 成交关联买方参与者
+  definition: Resolve the buying participant where available.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  left_source: source.trading_activity
+  left_table: trading_activity
+  right_source: source.account_reference
+  right_table: account_reference
+  keys:
+  - left_column: buy_participant_id
+    right_column: participant_id
+  expected_cardinality: N:1
+  fanout_policy: block
+- id: join.trade_sell_participant
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade to Sell Participant
+    zh: 成交关联卖方参与者
+  definition: Resolve the selling participant where available.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  left_source: source.trading_activity
+  left_table: trading_activity
+  right_source: source.account_reference
+  right_table: account_reference
+  keys:
+  - left_column: sell_participant_id
+    right_column: participant_id
+  expected_cardinality: N:1
+  fanout_policy: block
+- id: join.trade_calendar
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade to Calendar
+    zh: 成交关联日历
+  definition: Resolve a trade to its venue calendar date.
+  owner: actor.cash_trading_data_steward
+  sources:
+  - source.data_dictionary
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  left_source: source.trading_activity
+  left_table: trading_activity
+  right_source: source.trading_calendar
+  right_table: trading_calendar
+  keys:
+  - left_column: venue_code
+    right_column: venue_code
+  - left_column: business_date
+    right_column: business_date
+  expected_cardinality: N:1
+  fanout_policy: block
+analysis_patterns:
+- id: analysis.self_trade_summary
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Summary
+    zh: 潜在自成交汇总
+  definition: Return eligible count, candidate count, rate and top candidate dimensions.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  intent: anomaly_triage
+  operation: cash.self_trade_summary
+  required_metrics:
+  - metric.self_trade_eligible_trade_count
+  - metric.potential_self_trade_count
+  - metric.potential_self_trade_rate
+  required_dimensions: []
+  exactly_two_periods: false
+  output_fields:
+  - eligible_trade_count
+  - candidate_trade_count
+  - candidate_rate_percent
+  - candidate_participants
+  - candidate_instruments
+  - limitations
+  failure_conditions:
+  - missing time range
+  - zero eligible population
+  - role denied
+- id: analysis.self_trade_trend
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Trend
+    zh: 潜在自成交趋势
+  definition: Return the candidate count and rate by business date.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  intent: time_series
+  operation: cash.self_trade_daily_trend
+  required_metrics:
+  - metric.self_trade_eligible_trade_count
+  - metric.potential_self_trade_count
+  - metric.potential_self_trade_rate
+  required_dimensions:
+  - dimension.business_date
+  exactly_two_periods: false
+  output_fields:
+  - business_date
+  - eligible_trade_count
+  - candidate_trade_count
+  - candidate_rate_percent
+  failure_conditions:
+  - missing time range
+  - role denied
+- id: analysis.self_trade_timeline
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Potential Self-Trade Evidence Timeline
+    zh: 潜在自成交证据时间线
+  definition: Return the selected participant's candidate trades and linked observed order events in chronological order.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  intent: timeline_evidence
+  operation: cash.self_trade_timeline
+  required_metrics:
+  - metric.potential_self_trade_count
+  required_dimensions:
+  - dimension.participant
+  exactly_two_periods: false
+  output_fields:
+  - participant_id
+  - event_timestamp
+  - event_type
+  - trade_id
+  - order_id
+  - instrument_id
+  - observed_lifecycle_complete
+  - limitations
+  failure_conditions:
+  - participant missing
+  - participant not a candidate
+  - role denied
+- id: analysis.trade_latency_profile
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade Capture Latency Profile
+    zh: 成交捕获延迟分布
+  definition: Return count, minimum, nearest-rank p50/p95/p99, maximum and negative-latency exceptions.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  intent: latency_profile
+  operation: cash.trade_latency_profile
+  required_metrics:
+  - metric.trade_capture_latency_ms
+  required_dimensions: []
+  exactly_two_periods: false
+  output_fields:
+  - eligible_latency_count
+  - minimum_ms
+  - p50_ms
+  - p95_ms
+  - p99_ms
+  - maximum_ms
+  - negative_latency_count
+  - limitations
+  failure_conditions:
+  - missing time range
+  - empty eligible population
+  - role denied
+- id: analysis.cash_evidence_audit
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Trading Evidence Audit
+    zh: 现金交易证据审计
+  definition: Expose exact metric, decision, dataset, SQL and control references for an answer.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  intent: evidence_audit
+  operation: cash.evidence_audit
+  required_metrics:
+  - metric.potential_self_trade_rate
+  - metric.trade_capture_latency_ms
+  required_dimensions: []
+  exactly_two_periods: false
+  output_fields:
+  - claim
+  - value
+  - metric_ids
+  - decision_ids
+  - dataset_checksum
+  - query_hash
+  - limitations
+  failure_conditions:
+  - unknown execution
+  - role denied
+policies:
+- id: policy.cash_surveillance_demo
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Surveillance Demo Policy
+    zh: 现金监察演示策略
+  definition: Allow synthetic row evidence for surveillance triage for at most three months.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions:
+  - decision.demo_policy
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  allowed_roles:
+  - MarketSurveillanceDemo
+  - TradingDemo
+  denied_roles:
+  - MarketsDemo
+  - ExternalUser
+  allowed_grains:
+  - aggregate
+  - daily
+  - participant
+  - trade_event
+  - order_event
+  denied_fields: []
+  minimum_group_size: 1
+- id: policy.cash_markets_demo
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Cash Markets Aggregate Demo Policy
+    zh: 现金市场汇总演示策略
+  definition: Allow only aggregate synthetic trends with participant names and row evidence denied.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions:
+  - decision.demo_policy
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  allowed_roles:
+  - MarketsDemo
+  denied_roles:
+  - ExternalUser
+  allowed_grains:
+  - aggregate
+  - daily
+  - instrument
+  - market_segment
+  denied_fields:
+  - participant_id
+  - participant_name
+  - trading_activity_id
+  - order_id
+  minimum_group_size: 3
+questions:
+- id: question.self_trade_yesterday
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Self-Trades Yesterday
+    zh: 昨日自成交分析
+  definition: Summarize potential self-trade candidates for a specified business date.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  examples:
+  - Analyze potential self-trades for 2026-08-07.
+  - What was the potential self-trade rate yesterday?
+  analysis_pattern: analysis.self_trade_summary
+  required_inputs:
+  - business_date
+  expected_answer: Eligible trade count, candidate count, rate, candidate participants/instruments and the triage-only limitation.
+- id: question.self_trade_weekly_trend
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Self-Trade Daily Trend
+    zh: 自成交日趋势
+  definition: Show the potential self-trade trend over the selected week.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  examples:
+  - Show the daily potential self-trade trend for 2026-08-03 to 2026-08-07.
+  analysis_pattern: analysis.self_trade_trend
+  required_inputs:
+  - start_date
+  - end_date
+  expected_answer: One row per business date with counts and percentage.
+- id: question.self_trade_participant_timeline
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Participant Evidence Timeline
+    zh: 参与者证据时间线
+  definition: Show the observed timeline for one candidate participant.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  examples:
+  - Show the evidence timeline for PART001 on 2026-08-03.
+  analysis_pattern: analysis.self_trade_timeline
+  required_inputs:
+  - participant_id
+  - business_date
+  expected_answer: Chronological candidate trade and linked observed order events, with lifecycle completeness disclosed.
+- id: question.trade_latency
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Trade Capture Latency
+    zh: 成交捕获延迟
+  definition: Profile valid trade capture latency for a selected period.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  examples:
+  - What were p50, p95 and p99 trade capture latency for the sample week?
+  analysis_pattern: analysis.trade_latency_profile
+  required_inputs:
+  - start_date
+  - end_date
+  expected_answer: Count, min, p50, p95, p99, max and exception count in milliseconds; no SLA claim.
+- id: question.evidence
+  version: 1.0.0
+  status: confirmed
+  name:
+    en: Answer Evidence
+    zh: 答案证据
+  definition: Explain the exact governed definitions and computations behind a prior answer.
+  owner: actor.cash_trading_domain_owner
+  sources:
+  - source.requirements
+  - source.assumption_register
+  decisions: []
+  tags:
+  - constructed_synthetic
+  - cash_trading
+  examples:
+  - Show the evidence behind that self-trade rate.
+  analysis_pattern: analysis.cash_evidence_audit
+  required_inputs:
+  - execution_id
+  expected_answer: Claim-level links to metrics, decisions, dataset and query identity.

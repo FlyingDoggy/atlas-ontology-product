@@ -1,0 +1,23 @@
+{
+  "contract": "studio-engineering-run-profile/v1",
+  "profile_id": "adt.studio.qwen3.8max.v1",
+  "version": "1.0.0",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "accepted_response_models": ["qwen3.8-max"],
+  "provider_account_ref": "operator.qwen.demo",
+  "endpoint_ref": "dashscope-compatible-cn",
+  "region": "cn-beijing",
+  "slot_manifest_path": "semantic-slot-manifest.json",
+  "prompt_manifest_path": "prompts.json",
+  "prompt_manifest_digest": "e0b5d286e5a6669aaafe9885a65f75f8569708078e76c899197323fe940ce261",
+  "projection_policy_path": "projection-policy.json",
+  "projection_policy_digest": "129a1bc5e8c76b8296ab72fcc4f962efdc87153a82a8554ec118bd40a7b256b4",
+  "absolute_timeout_ms": 25000,
+  "provider_timeout_ms": 20000,
+  "max_input_tokens": 5000,
+  "max_output_tokens": 1600,
+  "temperature": 0,
+  "thinking": false,
+  "trace_policy": "safe-metadata-no-raw-response/v1"
+}

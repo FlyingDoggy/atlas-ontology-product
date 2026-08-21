@@ -1,0 +1,4991 @@
+{
+  "actors": [
+    {
+      "decisions": [],
+      "definition": "Accountable owner for provisional synthetic definitions and demo claims.",
+      "id": "actor.cash_trading_domain_owner",
+      "name": {
+        "en": "Cash Trading Demo Domain Owner",
+        "zh": "现金交易演示业务负责人"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "DomainOwner",
+        "SemanticApprover"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Owner of typed schema, mappings and data-quality evidence.",
+      "id": "actor.cash_trading_data_steward",
+      "name": {
+        "en": "Cash Trading Data Steward",
+        "zh": "现金交易数据管理员"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "DataSteward"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Reviews potential self-trade candidates and their synthetic evidence.",
+      "id": "actor.market_surveillance_user",
+      "name": {
+        "en": "Market Surveillance User",
+        "zh": "市场监察用户"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "MarketSurveillanceDemo"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Reviews synthetic trading operations and latency analytics.",
+      "id": "actor.trading_user",
+      "name": {
+        "en": "Trading User",
+        "zh": "交易用户"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "TradingDemo"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Consumes aggregate market trends with participant identifiers redacted.",
+      "id": "actor.markets_user",
+      "name": {
+        "en": "Markets User",
+        "zh": "市场业务用户"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "MarketsDemo"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Deterministic and LLM-assisted service constrained by the active scenario package.",
+      "id": "actor.ontology_agent",
+      "name": {
+        "en": "Ontology Analytic Agent",
+        "zh": "本体分析智能体"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "SystemExecutor"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "A principal denied access to scenario data and evidence.",
+      "id": "actor.external_user",
+      "name": {
+        "en": "External User",
+        "zh": "外部用户"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "roles": [
+        "ExternalUser"
+      ],
+      "sources": [
+        "source.requirements"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "analysis_patterns": [
+    {
+      "decisions": [],
+      "definition": "Return eligible count, candidate count, rate and top candidate dimensions.",
+      "exactly_two_periods": false,
+      "failure_conditions": [
+        "missing time range",
+        "zero eligible population",
+        "role denied"
+      ],
+      "id": "analysis.self_trade_summary",
+      "intent": "anomaly_triage",
+      "name": {
+        "en": "Potential Self-Trade Summary",
+        "zh": "潜在自成交汇总"
+      },
+      "operation": "cash.self_trade_summary",
+      "output_fields": [
+        "eligible_trade_count",
+        "candidate_trade_count",
+        "candidate_rate_percent",
+        "candidate_participants",
+        "candidate_instruments",
+        "limitations"
+      ],
+      "owner": "actor.cash_trading_domain_owner",
+      "required_dimensions": [],
+      "required_metrics": [
+        "metric.self_trade_eligible_trade_count",
+        "metric.potential_self_trade_count",
+        "metric.potential_self_trade_rate"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Return the candidate count and rate by business date.",
+      "exactly_two_periods": false,
+      "failure_conditions": [
+        "missing time range",
+        "role denied"
+      ],
+      "id": "analysis.self_trade_trend",
+      "intent": "time_series",
+      "name": {
+        "en": "Potential Self-Trade Trend",
+        "zh": "潜在自成交趋势"
+      },
+      "operation": "cash.self_trade_daily_trend",
+      "output_fields": [
+        "business_date",
+        "eligible_trade_count",
+        "candidate_trade_count",
+        "candidate_rate_percent"
+      ],
+      "owner": "actor.cash_trading_domain_owner",
+      "required_dimensions": [
+        "dimension.business_date"
+      ],
+      "required_metrics": [
+        "metric.self_trade_eligible_trade_count",
+        "metric.potential_self_trade_count",
+        "metric.potential_self_trade_rate"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Return the selected participant's candidate trades and linked observed order events in chronological order.",
+      "exactly_two_periods": false,
+      "failure_conditions": [
+        "participant missing",
+        "participant not a candidate",
+        "role denied"
+      ],
+      "id": "analysis.self_trade_timeline",
+      "intent": "timeline_evidence",
+      "name": {
+        "en": "Potential Self-Trade Evidence Timeline",
+        "zh": "潜在自成交证据时间线"
+      },
+      "operation": "cash.self_trade_timeline",
+      "output_fields": [
+        "participant_id",
+        "event_timestamp",
+        "event_type",
+        "trade_id",
+        "order_id",
+        "instrument_id",
+        "observed_lifecycle_complete",
+        "limitations"
+      ],
+      "owner": "actor.cash_trading_domain_owner",
+      "required_dimensions": [
+        "dimension.participant"
+      ],
+      "required_metrics": [
+        "metric.potential_self_trade_count"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Return count, minimum, nearest-rank p50/p95/p99, maximum and negative-latency exceptions.",
+      "exactly_two_periods": false,
+      "failure_conditions": [
+        "missing time range",
+        "empty eligible population",
+        "role denied"
+      ],
+      "id": "analysis.trade_latency_profile",
+      "intent": "latency_profile",
+      "name": {
+        "en": "Trade Capture Latency Profile",
+        "zh": "成交捕获延迟分布"
+      },
+      "operation": "cash.trade_latency_profile",
+      "output_fields": [
+        "eligible_latency_count",
+        "minimum_ms",
+        "p50_ms",
+        "p95_ms",
+        "p99_ms",
+        "maximum_ms",
+        "negative_latency_count",
+        "limitations"
+      ],
+      "owner": "actor.cash_trading_domain_owner",
+      "required_dimensions": [],
+      "required_metrics": [
+        "metric.trade_capture_latency_ms"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Expose exact metric, decision, dataset, SQL and control references for an answer.",
+      "exactly_two_periods": false,
+      "failure_conditions": [
+        "unknown execution",
+        "role denied"
+      ],
+      "id": "analysis.cash_evidence_audit",
+      "intent": "evidence_audit",
+      "name": {
+        "en": "Cash Trading Evidence Audit",
+        "zh": "现金交易证据审计"
+      },
+      "operation": "cash.evidence_audit",
+      "output_fields": [
+        "claim",
+        "value",
+        "metric_ids",
+        "decision_ids",
+        "dataset_checksum",
+        "query_hash",
+        "limitations"
+      ],
+      "owner": "actor.cash_trading_domain_owner",
+      "required_dimensions": [],
+      "required_metrics": [
+        "metric.potential_self_trade_rate",
+        "metric.trade_capture_latency_ms"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "bindings": [
+    {
+      "column": "trading_activity_id",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.trading_activity_id.",
+      "id": "binding.trade.id",
+      "logical_target": "property.trade.trading_activity_id",
+      "name": {
+        "en": "Binding for property.trade.trading_activity_id",
+        "zh": "property.trade.trading_activity_id绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "business_date",
+      "data_type": "date",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.business_date.",
+      "id": "binding.trade.business_date",
+      "logical_target": "property.trade.business_date",
+      "name": {
+        "en": "Binding for property.trade.business_date",
+        "zh": "property.trade.business_date绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "venue_code",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.venue_code.",
+      "id": "binding.trade.venue",
+      "logical_target": "property.trade.venue_code",
+      "name": {
+        "en": "Binding for property.trade.venue_code",
+        "zh": "property.trade.venue_code绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "market_segment",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.market_segment.",
+      "id": "binding.trade.market_segment",
+      "logical_target": "property.trade.market_segment",
+      "name": {
+        "en": "Binding for property.trade.market_segment",
+        "zh": "property.trade.market_segment绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "instrument_id",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.instrument_id.",
+      "id": "binding.trade.instrument",
+      "logical_target": "property.trade.instrument_id",
+      "name": {
+        "en": "Binding for property.trade.instrument_id",
+        "zh": "property.trade.instrument_id绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "participant_id",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.participant_id.",
+      "id": "binding.trade.participant",
+      "logical_target": "property.trade.participant_id",
+      "name": {
+        "en": "Binding for property.trade.participant_id",
+        "zh": "property.trade.participant_id绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "buy_participant_id",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.buy_participant_id.",
+      "id": "binding.trade.buy_participant",
+      "logical_target": "property.trade.buy_participant_id",
+      "name": {
+        "en": "Binding for property.trade.buy_participant_id",
+        "zh": "property.trade.buy_participant_id绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "sell_participant_id",
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.sell_participant_id.",
+      "id": "binding.trade.sell_participant",
+      "logical_target": "property.trade.sell_participant_id",
+      "name": {
+        "en": "Binding for property.trade.sell_participant_id",
+        "zh": "property.trade.sell_participant_id绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "trade_quantity",
+      "data_type": "decimal",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.trade_quantity.",
+      "id": "binding.trade.quantity",
+      "logical_target": "property.trade.trade_quantity",
+      "name": {
+        "en": "Binding for property.trade.trade_quantity",
+        "zh": "property.trade.trade_quantity绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "unit": "SHARE",
+      "version": "1.0.0"
+    },
+    {
+      "column": "trade_notional_hkd",
+      "data_type": "decimal",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.trade_notional_hkd.",
+      "id": "binding.trade.notional_hkd",
+      "logical_target": "property.trade.trade_notional_hkd",
+      "name": {
+        "en": "Binding for property.trade.trade_notional_hkd",
+        "zh": "property.trade.trade_notional_hkd绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "unit": "HKD",
+      "version": "1.0.0"
+    },
+    {
+      "column": "base_notional_usd",
+      "data_type": "decimal",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.base_notional_usd.",
+      "id": "binding.trade.base_notional_usd",
+      "logical_target": "property.trade.base_notional_usd",
+      "name": {
+        "en": "Binding for property.trade.base_notional_usd",
+        "zh": "property.trade.base_notional_usd绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "unit": "USD",
+      "version": "1.0.0"
+    },
+    {
+      "column": "transaction_timestamp",
+      "data_type": "datetime",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.transaction_timestamp.",
+      "id": "binding.trade.transaction_timestamp",
+      "logical_target": "property.trade.transaction_timestamp",
+      "name": {
+        "en": "Binding for property.trade.transaction_timestamp",
+        "zh": "property.trade.transaction_timestamp绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "receive_timestamp",
+      "data_type": "datetime",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.receive_timestamp.",
+      "id": "binding.trade.receive_timestamp",
+      "logical_target": "property.trade.receive_timestamp",
+      "name": {
+        "en": "Binding for property.trade.receive_timestamp",
+        "zh": "property.trade.receive_timestamp绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "identity",
+      "version": "1.0.0"
+    },
+    {
+      "column": "is_eligible_trade",
+      "data_type": "boolean",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.is_eligible_trade.",
+      "id": "binding.trade.eligible",
+      "logical_target": "property.trade.is_eligible_trade",
+      "name": {
+        "en": "Binding for property.trade.is_eligible_trade",
+        "zh": "property.trade.is_eligible_trade绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "activity_type=TRADE AND trade_status=ACTIVE AND not corrected original",
+      "version": "1.0.0"
+    },
+    {
+      "column": "has_both_participant_ids",
+      "data_type": "boolean",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.has_both_participant_ids.",
+      "id": "binding.trade.has_both_participants",
+      "logical_target": "property.trade.has_both_participant_ids",
+      "name": {
+        "en": "Binding for property.trade.has_both_participant_ids",
+        "zh": "property.trade.has_both_participant_ids绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "buy_participant_id and sell_participant_id are non-null",
+      "version": "1.0.0"
+    },
+    {
+      "column": "is_potential_self_trade",
+      "data_type": "boolean",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.is_potential_self_trade.",
+      "id": "binding.trade.self_trade",
+      "logical_target": "property.trade.is_potential_self_trade",
+      "name": {
+        "en": "Binding for property.trade.is_potential_self_trade",
+        "zh": "property.trade.is_potential_self_trade绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "normalized buy_participant_id equals normalized sell_participant_id",
+      "version": "1.0.0"
+    },
+    {
+      "column": "is_nonnegative_latency",
+      "data_type": "boolean",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.is_nonnegative_latency.",
+      "id": "binding.trade.nonnegative_latency",
+      "logical_target": "property.trade.is_nonnegative_latency",
+      "name": {
+        "en": "Binding for property.trade.is_nonnegative_latency",
+        "zh": "property.trade.is_nonnegative_latency绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "capture_latency_ms >= 0",
+      "version": "1.0.0"
+    },
+    {
+      "column": "capture_latency_ms",
+      "data_type": "integer",
+      "decisions": [],
+      "definition": "Synthetic runtime binding for property.trade.capture_latency_ms.",
+      "id": "binding.trade.capture_latency",
+      "logical_target": "property.trade.capture_latency_ms",
+      "name": {
+        "en": "Binding for property.trade.capture_latency_ms",
+        "zh": "property.trade.capture_latency_ms绑定"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "source": "source.cash_trade_analytics",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "table": "cash_trade_analytics",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "transformation": "receive_timestamp - transaction_timestamp in milliseconds",
+      "unit": "MILLISECOND",
+      "version": "1.0.0"
+    }
+  ],
+  "created_at": "2026-08-20T12:00:00+08:00",
+  "data_sources": [
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic order_activity worksheet.",
+      "id": "source.order_activity",
+      "name": {
+        "en": "Order Activity",
+        "zh": "order_activity"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Unique identifier for each normalized order activity event.",
+              "name": "activity_id",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Business trading date assigned by the market calendar.",
+              "name": "trading_date",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Code identifying the exchange, ATS or trading venue.",
+              "name": "venue_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Trading board, market segment or order book segment.",
+              "name": "market_segment",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Enterprise identifier for the traded cash-market instrument.",
+              "name": "instrument_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Native or industry security identifier used by the venue.",
+              "name": "security_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Type of identifier stored in security_id.",
+              "name": "security_id_type",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Venue trading symbol or ticker.",
+              "name": "symbol",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Trading currency of price fields.",
+              "name": "currency_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Venue-assigned identifier for the order.",
+              "name": "order_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the parent order for child or routed orders.",
+              "name": "parent_order_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Client or broker-assigned order identifier, if provided.",
+              "name": "client_order_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Market participant or member identifier associated with the order.",
+              "name": "participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Trader or operator identifier associated with order entry.",
+              "name": "trader_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Trading account classification.",
+              "name": "account_type",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Monotonically increasing sequence number within the source channel or partition.",
+              "name": "event_sequence_no",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the source feed channel, partition or matching-engine stream.",
+              "name": "channel_id",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Timestamp assigned by the venue or matching engine when the event occurred.",
+              "name": "transaction_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Original source timestamp before timezone normalization.",
+              "name": "source_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Timestamp when the event was received by the capture system.",
+              "name": "receive_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Timestamp when the record was loaded into the analytical platform.",
+              "name": "ingestion_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Sortable composite representation of timestamp and sequence for deterministic ordering.",
+              "name": "event_date_time_key",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Normalized type of order book activity.",
+              "name": "activity_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Normalized execution-report event type.",
+              "name": "execution_type",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Order status immediately after applying the event.",
+              "name": "order_status",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Order side.",
+              "name": "side",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Order pricing or behavior type.",
+              "name": "order_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Unmodified venue-specific order type code.",
+              "name": "native_order_type",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Instruction controlling how long the order remains active.",
+              "name": "time_in_force",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Scheduled expiry time for GTD or time-bounded orders.",
+              "name": "expire_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Specified limit price for the order.",
+              "name": "limit_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Trigger price for stop or stop-limit orders.",
+              "name": "stop_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Price offset used by a pegged order.",
+              "name": "peg_offset",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Reference price used for a pegged order.",
+              "name": "peg_reference",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Original or revised total quantity of the order after this event.",
+              "name": "order_quantity",
+              "nullable": false,
+              "unit": "SHARE"
+            },
+            {
+              "data_type": "integer",
+              "description": "Maximum quantity displayed to the market for reserve/iceberg orders.",
+              "name": "display_quantity",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Minimum executable quantity condition.",
+              "name": "minimum_quantity",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Quantity executed by this activity event.",
+              "name": "executed_quantity",
+              "nullable": false,
+              "unit": "SHARE"
+            },
+            {
+              "data_type": "integer",
+              "description": "Total quantity executed for the order up to and including this event.",
+              "name": "cumulative_executed_quantity",
+              "nullable": false,
+              "unit": "SHARE"
+            },
+            {
+              "data_type": "integer",
+              "description": "Unexecuted quantity remaining after this event.",
+              "name": "unfilled_quantity",
+              "nullable": false,
+              "unit": "SHARE"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Price of the execution represented by this event.",
+              "name": "execution_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Volume-weighted average execution price for the order up to this event.",
+              "name": "average_execution_price",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Venue-assigned identifier for an execution or trade.",
+              "name": "trade_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier linking the buy and sell sides of a matched execution.",
+              "name": "match_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether the order added or removed displayed liquidity for an execution.",
+              "name": "liquidity_indicator",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Price level occupied by the order immediately after the event.",
+              "name": "book_level",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Order priority position or venue priority sequence at its price level.",
+              "name": "priority_sequence",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Best displayed bid price immediately after applying the activity event.",
+              "name": "best_bid_price",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Aggregate displayed quantity at best bid immediately after the event.",
+              "name": "best_bid_quantity",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Best displayed ask price immediately after applying the activity event.",
+              "name": "best_ask_price",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Aggregate displayed quantity at best ask immediately after the event.",
+              "name": "best_ask_quantity",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Midpoint of best bid and best ask after the event.",
+              "name": "mid_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Absolute bid-ask spread after the event.",
+              "name": "spread",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Bid-ask spread expressed in basis points of the midpoint.",
+              "name": "spread_bps",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether the order is non-displayed.",
+              "name": "is_hidden",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether the order has reserve quantity.",
+              "name": "is_iceberg",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates that the activity belongs to an auction or call market phase.",
+              "name": "is_auction",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Trading session phase at the event time.",
+              "name": "session_phase",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Special handling or regulatory restriction applied to the order.",
+              "name": "order_restriction",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier used by the venue to prevent self-matching.",
+              "name": "self_trade_prevention_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Code explaining why an order or request was rejected.",
+              "name": "reject_reason_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Code explaining cancellation, deletion or expiry.",
+              "name": "cancel_reason_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether the event corrects or reverses a prior event.",
+              "name": "correction_indicator",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the prior activity being replaced, corrected or canceled.",
+              "name": "reference_activity_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Name of the originating feed, gateway or source application.",
+              "name": "source_system",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Name of the source file or stream object containing the event.",
+              "name": "source_file_name",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Record position within the source file or message batch.",
+              "name": "source_record_no",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Hash used to detect duplicate or changed source records.",
+              "name": "record_hash",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic order_activity row",
+          "name": "order_activity",
+          "primary_key": [
+            "activity_id"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic trading_activity worksheet.",
+      "id": "source.trading_activity",
+      "name": {
+        "en": "Trading Activity",
+        "zh": "trading_activity"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Unique identifier for each normalized cash-market trade or execution activity.",
+              "name": "trading_activity_id",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Trading-calendar date to which the execution is assigned.",
+              "name": "business_date",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Exchange, ATS or venue where the trade occurred.",
+              "name": "venue_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Board or market segment where the trade occurred.",
+              "name": "market_segment",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Enterprise identifier of the traded instrument.",
+              "name": "instrument_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Participant responsible for or associated with the activity, where available.",
+              "name": "participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Buying participant identifier, where disclosed.",
+              "name": "buy_participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Selling participant identifier, where disclosed.",
+              "name": "sell_participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Venue-assigned trade or execution identifier.",
+              "name": "trade_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier linking the two sides of a matched transaction.",
+              "name": "match_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Order identifier associated with the activity, where order-level data is available.",
+              "name": "order_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the buy order involved in the trade.",
+              "name": "buy_order_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the sell order involved in the trade.",
+              "name": "sell_order_id",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Source sequence used to order activities deterministically.",
+              "name": "event_sequence_no",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Feed channel, partition or matching-engine stream identifier.",
+              "name": "channel_id",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Venue or matching-engine timestamp for the activity.",
+              "name": "transaction_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "Timestamp when the activity was received by the capture platform.",
+              "name": "receive_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Normalized type of trading activity.",
+              "name": "activity_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Execution classification for the activity.",
+              "name": "execution_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Post-event status of the trade record.",
+              "name": "trade_status",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Side that initiated the execution.",
+              "name": "aggressor_side",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Execution price in trade currency.",
+              "name": "trade_price",
+              "nullable": false
+            },
+            {
+              "data_type": "integer",
+              "description": "Executed quantity in the instrument trading unit.",
+              "name": "trade_quantity",
+              "nullable": false,
+              "unit": "SHARE"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Gross trade value in trade currency.",
+              "name": "trade_notional",
+              "nullable": false,
+              "unit": "HKD"
+            },
+            {
+              "data_type": "string",
+              "description": "Currency in which the trade price is quoted.",
+              "name": "trade_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Currency in which settlement is expected.",
+              "name": "settlement_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Expected contractual settlement date.",
+              "name": "settlement_date",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Exchange rate from trade_currency to the reporting base currency.",
+              "name": "fx_rate_to_base",
+              "nullable": true,
+              "unit": "USD_PER_HKD"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Currency or risk haircut rate applicable to the conversion.",
+              "name": "haircut_rate",
+              "nullable": true,
+              "unit": "RATIO"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Trade notional converted to reporting base currency before haircut.",
+              "name": "base_notional_before_haircut",
+              "nullable": true,
+              "unit": "USD"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Converted trade notional after applying the haircut.",
+              "name": "base_notional_after_haircut",
+              "nullable": true,
+              "unit": "USD"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Best bid immediately before or at the execution according to the selected snapshot convention.",
+              "name": "best_bid_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Best ask immediately before or at the execution according to the selected snapshot convention.",
+              "name": "best_ask_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Midpoint of the selected best bid and best ask.",
+              "name": "mid_price",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Execution cost relative to prevailing midpoint in basis points.",
+              "name": "effective_spread_bps",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Source trade-condition codes associated with the activity.",
+              "name": "trade_condition_codes",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates an auction execution.",
+              "name": "is_auction",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates that execution occurred outside the central limit order book.",
+              "name": "is_off_book",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates a correction to an earlier trade.",
+              "name": "is_correction",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the prior activity corrected, canceled or busted.",
+              "name": "reference_trading_activity_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Originating feed, gateway or application.",
+              "name": "source_system",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Source file or stream object containing the activity.",
+              "name": "source_file_name",
+              "nullable": true
+            },
+            {
+              "data_type": "integer",
+              "description": "Record position in the source file or batch.",
+              "name": "source_record_no",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "UTC timestamp when the record was loaded.",
+              "name": "ingestion_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Hash for duplicate detection and change control.",
+              "name": "record_hash",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic trading_activity row",
+          "name": "trading_activity",
+          "primary_key": [
+            "trading_activity_id"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic instrument_reference worksheet.",
+      "id": "source.instrument_reference",
+      "name": {
+        "en": "Instrument Reference",
+        "zh": "instrument_reference"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Unique enterprise identifier for an instrument.",
+              "name": "instrument_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Official or mastered instrument name.",
+              "name": "instrument_name",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Abbreviated display name.",
+              "name": "short_name",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "High-level asset classification.",
+              "name": "asset_class",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Detailed security type.",
+              "name": "security_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "International Securities Identification Number.",
+              "name": "isin",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Stock Exchange Daily Official List identifier.",
+              "name": "sedol",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "CUSIP identifier.",
+              "name": "cusip",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Primary listing or trading venue.",
+              "name": "primary_venue_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Primary trading symbol.",
+              "name": "primary_symbol",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Currency in which the instrument is quoted.",
+              "name": "trading_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Default settlement currency.",
+              "name": "settlement_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Issuer country of incorporation.",
+              "name": "country_of_incorporation",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Country primarily associated with investment risk.",
+              "name": "country_of_risk",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Enterprise issuer identifier.",
+              "name": "issuer_id",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Standard board-lot quantity.",
+              "name": "lot_size",
+              "nullable": false
+            },
+            {
+              "data_type": "decimal",
+              "description": "Minimum standard price increment.",
+              "name": "tick_size",
+              "nullable": false
+            },
+            {
+              "data_type": "integer",
+              "description": "Number of implied decimal places in encoded prices.",
+              "name": "price_scale",
+              "nullable": false
+            },
+            {
+              "data_type": "integer",
+              "description": "Number of decimal places allowed for quantity.",
+              "name": "quantity_scale",
+              "nullable": false
+            },
+            {
+              "data_type": "decimal",
+              "description": "Multiplier used to calculate notional value.",
+              "name": "contract_multiplier",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Regular-way settlement convention.",
+              "name": "settlement_cycle",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "First effective listing date.",
+              "name": "listing_date",
+              "nullable": true
+            },
+            {
+              "data_type": "date",
+              "description": "Last effective listing date.",
+              "name": "delisting_date",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Current mastered status.",
+              "name": "instrument_status",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "Start of validity for this reference version.",
+              "name": "valid_from_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "End of validity for this reference version.",
+              "name": "valid_to_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates the current effective record.",
+              "name": "is_current",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Originating reference-data provider or application.",
+              "name": "source_system",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic instrument_reference row",
+          "name": "instrument_reference",
+          "primary_key": [
+            "instrument_id"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic account_reference worksheet.",
+      "id": "source.account_reference",
+      "name": {
+        "en": "Account Reference",
+        "zh": "account_reference"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Unique enterprise identifier for a trading participant, member, client or account entity.",
+              "name": "participant_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Official or mastered participant name.",
+              "name": "participant_name",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Abbreviated participant name.",
+              "name": "participant_short_name",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Classification of participant.",
+              "name": "participant_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Venue or exchange member code.",
+              "name": "member_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Venue associated with member_code.",
+              "name": "venue_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Legal Entity Identifier.",
+              "name": "lei",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Operational or ownership account type.",
+              "name": "account_type",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Regulatory or commercial client category.",
+              "name": "client_category",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Participant domicile or registered country.",
+              "name": "country_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Default reporting or account currency.",
+              "name": "base_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier of the participant clearing the activity.",
+              "name": "clearing_member_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Parent entity in the participant hierarchy.",
+              "name": "parent_participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Identifier used to aggregate participants for risk controls.",
+              "name": "risk_group_id",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Approved monetary credit limit in limit_currency.",
+              "name": "credit_limit",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Currency of credit_limit.",
+              "name": "limit_currency",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Current status.",
+              "name": "participant_status",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "Start of validity for this reference version.",
+              "name": "valid_from_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "End of validity for this reference version.",
+              "name": "valid_to_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates current effective record.",
+              "name": "is_current",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Originating reference-data provider or application.",
+              "name": "source_system",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic account_reference row",
+          "name": "account_reference",
+          "primary_key": [
+            "participant_id"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic trading_calendar worksheet.",
+      "id": "source.trading_calendar",
+      "name": {
+        "en": "Trading Calendar",
+        "zh": "trading_calendar"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "date",
+              "description": "Business date represented by the calendar row.",
+              "name": "business_date",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Calendar applied to the date, e.g. venue or settlement calendar.",
+              "name": "calendar_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Venue associated with the calendar row.",
+              "name": "venue_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Day name for the business date.",
+              "name": "day_of_week",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates a business day for the canonical calendar.",
+              "name": "is_business_day",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether normal trading is scheduled.",
+              "name": "is_trading_day",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether settlement processing is scheduled.",
+              "name": "is_settlement_day",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates a full or partial market holiday.",
+              "name": "is_holiday",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Name of the holiday or special market day.",
+              "name": "holiday_name",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Overall trading-session classification.",
+              "name": "session_type",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "Scheduled continuous-market open in UTC.",
+              "name": "market_open_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Scheduled continuous-market close in UTC.",
+              "name": "market_close_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Scheduled opening-auction start in UTC.",
+              "name": "opening_auction_start_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "datetime",
+              "description": "Scheduled closing-auction end in UTC.",
+              "name": "closing_auction_end_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "IANA timezone used for local market times.",
+              "name": "timezone_name",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Previous date where is_business_day = Y.",
+              "name": "previous_business_date",
+              "nullable": true
+            },
+            {
+              "data_type": "date",
+              "description": "Next date where is_business_day = Y.",
+              "name": "next_business_date",
+              "nullable": true
+            },
+            {
+              "data_type": "date",
+              "description": "Previous date where is_trading_day = Y.",
+              "name": "previous_trading_date",
+              "nullable": true
+            },
+            {
+              "data_type": "date",
+              "description": "Next date where is_trading_day = Y.",
+              "name": "next_trading_date",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates last business day of month.",
+              "name": "month_end_flag",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates last business day of quarter.",
+              "name": "quarter_end_flag",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates last business day of year.",
+              "name": "year_end_flag",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Originating calendar provider or application.",
+              "name": "source_system",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic trading_calendar row",
+          "name": "trading_calendar",
+          "primary_key": [
+            "calendar_code",
+            "business_date"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic order_type_reference worksheet.",
+      "id": "source.order_type_reference",
+      "name": {
+        "en": "Order Type Reference",
+        "zh": "order_type_reference"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Normalized unique code for an available order type.",
+              "name": "order_type_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Human-readable order type name.",
+              "name": "order_type_name",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Concise description of pricing behavior and execution conditions.",
+              "name": "order_type_summary",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "High-level category.",
+              "name": "order_category",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Primary price instruction.",
+              "name": "price_instruction",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Supported time-in-force values.",
+              "name": "time_in_force_values",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether limit_price must be supplied.",
+              "name": "requires_limit_price",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether stop_price must be supplied.",
+              "name": "requires_stop_price",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether the order type supports reserve or displayed quantity.",
+              "name": "supports_display_quantity",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether a peg offset is supported.",
+              "name": "supports_peg_offset",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Session phases in which the order may be entered or executed.",
+              "name": "eligible_session_phases",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Summary of price/time or venue-specific priority treatment.",
+              "name": "execution_priority_summary",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Venue for which the order type is available.",
+              "name": "venue_code",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Market segment for availability.",
+              "name": "market_segment",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Availability status.",
+              "name": "availability_status",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "First business date of availability.",
+              "name": "effective_from_date",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Last business date of availability.",
+              "name": "effective_to_date",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Originating configuration or venue-rule source.",
+              "name": "source_system",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic order_type_reference row",
+          "name": "order_type_reference",
+          "primary_key": [
+            "order_type_code"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.source_classification"
+      ],
+      "definition": "Typed Parquet projection of the supplied constructed-synthetic exchange_rate worksheet.",
+      "id": "source.exchange_rate",
+      "name": {
+        "en": "Exchange Rate",
+        "zh": "exchange_rate"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Unique identifier for the effective exchange-rate record.",
+              "name": "exchange_rate_id",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Business date for which the rate is applicable.",
+              "name": "business_date",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Currency being converted.",
+              "name": "from_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Currency into which the amount is converted.",
+              "name": "to_currency",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Purpose or market convention of the rate.",
+              "name": "rate_type",
+              "nullable": false
+            },
+            {
+              "data_type": "decimal",
+              "description": "Multiplier converting one unit of from_currency into to_currency.",
+              "name": "exchange_rate",
+              "nullable": false,
+              "unit": "TO_CURRENCY_PER_FROM_CURRENCY"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Risk haircut applicable to the currency conversion.",
+              "name": "haircut_rate",
+              "nullable": false,
+              "unit": "RATIO"
+            },
+            {
+              "data_type": "string",
+              "description": "Explains how the haircut is applied.",
+              "name": "haircut_basis",
+              "nullable": false
+            },
+            {
+              "data_type": "decimal",
+              "description": "Exchange rate after applying a reduce-value haircut.",
+              "name": "adjusted_exchange_rate",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Reciprocal rate from to_currency to from_currency.",
+              "name": "inverse_exchange_rate",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "UTC timestamp at which the quoted rate was observed or fixed.",
+              "name": "rate_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "Start of rate validity.",
+              "name": "valid_from_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "End of rate validity.",
+              "name": "valid_to_timestamp",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Name or code of the rate provider.",
+              "name": "rate_provider",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Provider-assigned rate identifier.",
+              "name": "source_rate_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Indicates whether the rate is an official published fixing.",
+              "name": "is_official_rate",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Quality and approval status of the rate.",
+              "name": "quality_status",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Originating market-data or risk source.",
+              "name": "source_system",
+              "nullable": false
+            }
+          ],
+          "grain": "one constructed-synthetic exchange_rate row",
+          "name": "exchange_rate",
+          "primary_key": [
+            "exchange_rate_id"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "parquet",
+        "raw_projection"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [
+        "decision.self_trade_candidate",
+        "decision.trade_eligibility",
+        "decision.latency_convention",
+        "decision.notional_currency"
+      ],
+      "definition": "Adapter-owned deterministic view over the exact trading-activity Parquet source.",
+      "id": "source.cash_trade_analytics",
+      "name": {
+        "en": "Cash Trade Analytic View",
+        "zh": "现金交易分析视图"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "protocol": "tabular/v1",
+      "sources": [
+        "source.data_dictionary",
+        "source.assumption_register",
+        "source.compiler_sql"
+      ],
+      "status": "confirmed",
+      "tables": [
+        {
+          "fields": [
+            {
+              "data_type": "string",
+              "description": "Stable trade-activity identifier.",
+              "name": "trading_activity_id",
+              "nullable": false
+            },
+            {
+              "data_type": "date",
+              "description": "Venue-calendar business date.",
+              "name": "business_date",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Normalized venue code.",
+              "name": "venue_code",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Cash-market segment.",
+              "name": "market_segment",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Instrument identifier.",
+              "name": "instrument_id",
+              "nullable": false
+            },
+            {
+              "data_type": "string",
+              "description": "Associated participant identifier.",
+              "name": "participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Normalized buying participant identifier.",
+              "name": "buy_participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "string",
+              "description": "Normalized selling participant identifier.",
+              "name": "sell_participant_id",
+              "nullable": true
+            },
+            {
+              "data_type": "decimal",
+              "description": "Executed quantity.",
+              "name": "trade_quantity",
+              "nullable": false,
+              "unit": "SHARE"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Native executed notional in HKD.",
+              "name": "trade_notional_hkd",
+              "nullable": false,
+              "unit": "HKD"
+            },
+            {
+              "data_type": "decimal",
+              "description": "Converted notional before haircut in USD.",
+              "name": "base_notional_usd",
+              "nullable": false,
+              "unit": "USD"
+            },
+            {
+              "data_type": "datetime",
+              "description": "Matching-engine transaction timestamp in UTC.",
+              "name": "transaction_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "datetime",
+              "description": "Platform receive timestamp in UTC.",
+              "name": "receive_timestamp",
+              "nullable": false
+            },
+            {
+              "data_type": "boolean",
+              "description": "True when the provisional eligible-trade rule passes.",
+              "name": "is_eligible_trade",
+              "nullable": false
+            },
+            {
+              "data_type": "boolean",
+              "description": "True when both side participant IDs are populated.",
+              "name": "has_both_participant_ids",
+              "nullable": false
+            },
+            {
+              "data_type": "boolean",
+              "description": "True when both normalized side participant IDs are equal.",
+              "name": "is_potential_self_trade",
+              "nullable": false
+            },
+            {
+              "data_type": "boolean",
+              "description": "True when capture latency is non-negative.",
+              "name": "is_nonnegative_latency",
+              "nullable": false
+            },
+            {
+              "data_type": "integer",
+              "description": "Receive time minus transaction time in milliseconds.",
+              "name": "capture_latency_ms",
+              "nullable": true,
+              "unit": "MILLISECOND"
+            }
+          ],
+          "grain": "one normalized trading activity row",
+          "name": "cash_trade_analytics",
+          "primary_key": [
+            "trading_activity_id"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "adapter_view",
+        "executable"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "decisions": [
+    {
+      "affects": [
+        "scenario.cash_trading_activity_monitoring",
+        "source.order_activity",
+        "source.trading_activity",
+        "source.instrument_reference",
+        "source.account_reference",
+        "source.trading_calendar",
+        "source.order_type_reference",
+        "source.exchange_rate"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Treat the case as constructed synthetic and illustrative only.",
+      "id": "decision.source_classification",
+      "options": [
+        "HKEX validated",
+        "Deloitte confirmed",
+        "Constructed synthetic only"
+      ],
+      "question": "What claim can be made from the supplied packet?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "property.order.order_status"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use CANCELED and accept CANCELLED only as an input alias.",
+      "id": "decision.cancel_spelling",
+      "options": [
+        "CANCELED",
+        "CANCELLED"
+      ],
+      "question": "Which cancellation status spelling is canonical?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "entity.order_activity",
+        "property.order.order_id"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use venue_code + trading_date + order_id and disclose incomplete observed timelines.",
+      "id": "decision.order_lifecycle",
+      "options": [
+        "order_id",
+        "venue/date/order",
+        "activity_id"
+      ],
+      "question": "What is the observed order lifecycle key?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "property.trade.has_both_participant_ids",
+        "property.trade.is_potential_self_trade",
+        "rule.potential_self_trade",
+        "metric.potential_self_trade_count",
+        "metric.potential_self_trade_rate"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use same normalized buy and sell participant IDs as a triage candidate only.",
+      "id": "decision.self_trade_candidate",
+      "options": [
+        "same normalized side participants",
+        "same account",
+        "business-defined surveillance model"
+      ],
+      "question": "What constitutes the first demo self-trade candidate?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "rule.self_trade_eligible",
+        "metric.self_trade_eligible_trade_count",
+        "metric.potential_self_trade_rate"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use eligible active trades with both-side participant IDs.",
+      "id": "decision.self_trade_denominator",
+      "options": [
+        "all trades",
+        "eligible active trades with both participant IDs",
+        "all order events"
+      ],
+      "question": "What is the potential self-trade rate denominator?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "property.trade.is_eligible_trade",
+        "rule.eligible_trade",
+        "metric.eligible_trade_count"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use active TRADE rows and exclude cancel/bust/corrected originals.",
+      "id": "decision.trade_eligibility",
+      "options": [
+        "all rows",
+        "active TRADE rows",
+        "active rows excluding correction lineage"
+      ],
+      "question": "Which trade rows are eligible?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "property.trade.capture_latency_ms",
+        "property.trade.is_nonnegative_latency",
+        "rule.nonnegative_latency",
+        "metric.trade_capture_latency_ms",
+        "analysis.trade_latency_profile"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use receive minus transaction timestamp in integer milliseconds, nearest-rank p50/p95/p99, and separate negative exceptions.",
+      "id": "decision.latency_convention",
+      "options": [
+        "average",
+        "nearest-rank percentiles",
+        "continuous percentiles"
+      ],
+      "question": "How is capture latency calculated and summarized?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "property.trade.trade_notional_hkd",
+        "property.trade.base_notional_usd"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Label trade_notional as HKD and base_notional_before_haircut as USD.",
+      "id": "decision.notional_currency",
+      "options": [
+        "both HKD",
+        "native HKD and converted USD",
+        "USD only"
+      ],
+      "question": "How are supplied notional fields labelled?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "property.calendar.calendar_key"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Use calendar_code + business_date.",
+      "id": "decision.calendar_key",
+      "options": [
+        "business_date",
+        "calendar_code + business_date"
+      ],
+      "question": "What is the logical calendar key?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "scenario.cash_trading_activity_monitoring",
+        "property.trade.business_date",
+        "property.trade.transaction_timestamp",
+        "property.trade.receive_timestamp",
+        "property.order.trading_date",
+        "property.order.transaction_timestamp"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Interpret source wall time as Asia/Hong_Kong, persist UTC, retain venue business date.",
+      "id": "decision.time_convention",
+      "options": [
+        "already UTC",
+        "Hong Kong wall time then UTC",
+        "local only"
+      ],
+      "question": "How are source times interpreted?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    },
+    {
+      "affects": [
+        "policy.cash_surveillance_demo",
+        "policy.cash_markets_demo",
+        "process.cash_trading_analysis"
+      ],
+      "decided_by": "actor.cash_trading_domain_owner",
+      "decided_on": "2026-08-20",
+      "decision": "Apply the explicit synthetic-demo role projection and make no production IAM claim.",
+      "id": "decision.demo_policy",
+      "options": [
+        "all users all rows",
+        "demo role projection",
+        "no access"
+      ],
+      "question": "What access policy applies before production IAM exists?",
+      "residual_assumption": "Provisional synthetic decision; mapped to the versioned CT-ASM register and replaceable after external confirmation."
+    }
+  ],
+  "dimensions": [
+    {
+      "decisions": [],
+      "definition": "Daily reporting dimension.",
+      "entity": "entity.trading_day",
+      "hierarchy": [],
+      "id": "dimension.business_date",
+      "key_property": "property.calendar.business_date",
+      "label_property": "property.calendar.business_date",
+      "member_resolution": "exact",
+      "name": {
+        "en": "Business Date",
+        "zh": "业务日期"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "sources": [
+        "source.requirements",
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Instrument reporting dimension.",
+      "entity": "entity.instrument",
+      "hierarchy": [],
+      "id": "dimension.instrument",
+      "key_property": "property.instrument.instrument_id",
+      "label_property": "property.instrument.instrument_name",
+      "member_resolution": "exact",
+      "name": {
+        "en": "Instrument",
+        "zh": "证券"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "sources": [
+        "source.requirements",
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Synthetic participant reporting dimension subject to role projection.",
+      "entity": "entity.participant",
+      "hierarchy": [
+        "property.participant.participant_type"
+      ],
+      "id": "dimension.participant",
+      "key_property": "property.participant.participant_id",
+      "label_property": "property.participant.participant_name",
+      "member_resolution": "exact",
+      "name": {
+        "en": "Participant",
+        "zh": "参与者"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "sources": [
+        "source.requirements",
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Market-segment reporting dimension.",
+      "entity": "entity.market_segment",
+      "hierarchy": [],
+      "id": "dimension.market_segment",
+      "key_property": "property.market_segment.code",
+      "label_property": "property.market_segment.name",
+      "member_resolution": "exact",
+      "name": {
+        "en": "Market Segment",
+        "zh": "市场板块"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "sources": [
+        "source.requirements",
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "entities": [
+    {
+      "decisions": [],
+      "definition": "A normalized cash trade or execution activity.",
+      "grain": "one trade activity event",
+      "id": "entity.trade_activity",
+      "lifecycle": "append-only event with correction references",
+      "name": {
+        "en": "Trade Activity",
+        "zh": "成交活动"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "primary_key": "property.trade.trading_activity_id",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "An observed order-lifecycle event in the supplied reporting window.",
+      "grain": "one observed order activity event",
+      "id": "entity.order_activity",
+      "lifecycle": "event sequence may be incomplete in the sample",
+      "name": {
+        "en": "Order Activity",
+        "zh": "订单活动"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "primary_key": "property.order.activity_id",
+      "sources": [
+        "source.data_dictionary",
+        "source.sample_data"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "A participant, member, client or account-level party in the synthetic reference.",
+      "grain": "one participant reference row",
+      "id": "entity.participant",
+      "lifecycle": "effective-dated reference",
+      "name": {
+        "en": "Participant",
+        "zh": "参与者"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "primary_key": "property.participant.participant_id",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "A cash-market instrument in the synthetic reference.",
+      "grain": "one instrument reference row",
+      "id": "entity.instrument",
+      "lifecycle": "effective-dated reference",
+      "name": {
+        "en": "Instrument",
+        "zh": "证券"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "primary_key": "property.instrument.instrument_id",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "A venue calendar date and trading-day designation.",
+      "grain": "one calendar and business-date row",
+      "id": "entity.trading_day",
+      "lifecycle": "versioned calendar record",
+      "name": {
+        "en": "Trading Day",
+        "zh": "交易日"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "primary_key": "property.calendar.calendar_key",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "A normalized market-segment member used for analysis.",
+      "grain": "one segment code",
+      "id": "entity.market_segment",
+      "lifecycle": "controlled classification",
+      "name": {
+        "en": "Market Segment",
+        "zh": "市场板块"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "primary_key": "property.market_segment.code",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "joins": [
+    {
+      "decisions": [],
+      "definition": "Resolve each trade instrument.",
+      "expected_cardinality": "N:1",
+      "fanout_policy": "block",
+      "id": "join.trade_instrument",
+      "keys": [
+        {
+          "left_column": "instrument_id",
+          "right_column": "instrument_id"
+        }
+      ],
+      "left_source": "source.trading_activity",
+      "left_table": "trading_activity",
+      "name": {
+        "en": "Trade to Instrument",
+        "zh": "成交关联证券"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "right_source": "source.instrument_reference",
+      "right_table": "instrument_reference",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Resolve the buying participant where available.",
+      "expected_cardinality": "N:1",
+      "fanout_policy": "block",
+      "id": "join.trade_buy_participant",
+      "keys": [
+        {
+          "left_column": "buy_participant_id",
+          "right_column": "participant_id"
+        }
+      ],
+      "left_source": "source.trading_activity",
+      "left_table": "trading_activity",
+      "name": {
+        "en": "Trade to Buy Participant",
+        "zh": "成交关联买方参与者"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "right_source": "source.account_reference",
+      "right_table": "account_reference",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Resolve the selling participant where available.",
+      "expected_cardinality": "N:1",
+      "fanout_policy": "block",
+      "id": "join.trade_sell_participant",
+      "keys": [
+        {
+          "left_column": "sell_participant_id",
+          "right_column": "participant_id"
+        }
+      ],
+      "left_source": "source.trading_activity",
+      "left_table": "trading_activity",
+      "name": {
+        "en": "Trade to Sell Participant",
+        "zh": "成交关联卖方参与者"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "right_source": "source.account_reference",
+      "right_table": "account_reference",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "decisions": [],
+      "definition": "Resolve a trade to its venue calendar date.",
+      "expected_cardinality": "N:1",
+      "fanout_policy": "block",
+      "id": "join.trade_calendar",
+      "keys": [
+        {
+          "left_column": "venue_code",
+          "right_column": "venue_code"
+        },
+        {
+          "left_column": "business_date",
+          "right_column": "business_date"
+        }
+      ],
+      "left_source": "source.trading_activity",
+      "left_table": "trading_activity",
+      "name": {
+        "en": "Trade to Calendar",
+        "zh": "成交关联日历"
+      },
+      "owner": "actor.cash_trading_data_steward",
+      "right_source": "source.trading_calendar",
+      "right_table": "trading_calendar",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "metrics": [
+    {
+      "aggregation_semantics": "additive",
+      "allowed_dimensions": [
+        "dimension.business_date",
+        "dimension.instrument",
+        "dimension.participant",
+        "dimension.market_segment"
+      ],
+      "base_entity": "entity.trade_activity",
+      "decisions": [
+        "decision.trade_eligibility"
+      ],
+      "definition": "Distinct eligible active trades in the selected cohort.",
+      "formula": {
+        "args": [
+          {
+            "args": [],
+            "op": "field_ref",
+            "ref": "property.trade.trading_activity_id"
+          }
+        ],
+        "op": "count_distinct"
+      },
+      "id": "metric.eligible_trade_count",
+      "metric_type": "base",
+      "name": {
+        "en": "Eligible Trade Count",
+        "zh": "合格成交笔数"
+      },
+      "null_policy": "fail_validation",
+      "owner": "actor.cash_trading_domain_owner",
+      "query": {
+        "base_source": "source.cash_trade_analytics",
+        "date_property": "property.trade.business_date",
+        "filters": [
+          "rule.eligible_trade"
+        ],
+        "measure_property": "property.trade.trading_activity_id",
+        "period_property": "property.trade.business_date",
+        "population_property": "property.trade.is_eligible_trade",
+        "required_joins": []
+      },
+      "result_grain": [
+        "dimension.business_date"
+      ],
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "TRADE",
+      "value_type": "integer",
+      "version": "1.0.0",
+      "zero_denominator_policy": "refuse"
+    },
+    {
+      "aggregation_semantics": "additive",
+      "allowed_dimensions": [
+        "dimension.business_date",
+        "dimension.instrument",
+        "dimension.participant",
+        "dimension.market_segment"
+      ],
+      "base_entity": "entity.trade_activity",
+      "decisions": [
+        "decision.trade_eligibility",
+        "decision.self_trade_denominator"
+      ],
+      "definition": "Distinct eligible active trades with both-side participant identifiers available.",
+      "formula": {
+        "args": [
+          {
+            "args": [],
+            "op": "field_ref",
+            "ref": "property.trade.trading_activity_id"
+          }
+        ],
+        "op": "count_distinct"
+      },
+      "id": "metric.self_trade_eligible_trade_count",
+      "metric_type": "base",
+      "name": {
+        "en": "Self-Trade Eligible Trade Count",
+        "zh": "自成交合格成交笔数"
+      },
+      "null_policy": "fail_validation",
+      "owner": "actor.cash_trading_domain_owner",
+      "query": {
+        "base_source": "source.cash_trade_analytics",
+        "date_property": "property.trade.business_date",
+        "filters": [
+          "rule.eligible_trade",
+          "rule.self_trade_eligible"
+        ],
+        "measure_property": "property.trade.trading_activity_id",
+        "period_property": "property.trade.business_date",
+        "population_property": "property.trade.has_both_participant_ids",
+        "required_joins": []
+      },
+      "result_grain": [
+        "dimension.business_date"
+      ],
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "TRADE",
+      "value_type": "integer",
+      "version": "1.0.0",
+      "zero_denominator_policy": "refuse"
+    },
+    {
+      "aggregation_semantics": "additive",
+      "allowed_dimensions": [
+        "dimension.business_date",
+        "dimension.instrument",
+        "dimension.participant",
+        "dimension.market_segment"
+      ],
+      "base_entity": "entity.trade_activity",
+      "decisions": [
+        "decision.self_trade_candidate"
+      ],
+      "definition": "Distinct eligible trades whose normalized buy and sell participant IDs are equal.",
+      "formula": {
+        "args": [
+          {
+            "args": [],
+            "op": "field_ref",
+            "ref": "property.trade.trading_activity_id"
+          }
+        ],
+        "op": "count_distinct"
+      },
+      "id": "metric.potential_self_trade_count",
+      "metric_type": "base",
+      "name": {
+        "en": "Potential Self-Trade Candidate Count",
+        "zh": "潜在自成交候选笔数"
+      },
+      "null_policy": "fail_validation",
+      "owner": "actor.cash_trading_domain_owner",
+      "query": {
+        "base_source": "source.cash_trade_analytics",
+        "date_property": "property.trade.business_date",
+        "filters": [
+          "rule.eligible_trade",
+          "rule.self_trade_eligible",
+          "rule.potential_self_trade"
+        ],
+        "measure_property": "property.trade.trading_activity_id",
+        "period_property": "property.trade.business_date",
+        "population_property": "property.trade.is_potential_self_trade",
+        "required_joins": []
+      },
+      "result_grain": [
+        "dimension.business_date"
+      ],
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "TRADE",
+      "value_type": "integer",
+      "version": "1.0.0",
+      "zero_denominator_policy": "refuse"
+    },
+    {
+      "aggregation_semantics": "derived_non_additive",
+      "allowed_dimensions": [
+        "dimension.business_date",
+        "dimension.instrument",
+        "dimension.participant",
+        "dimension.market_segment"
+      ],
+      "base_entity": "entity.trade_activity",
+      "decisions": [
+        "decision.self_trade_candidate",
+        "decision.self_trade_denominator"
+      ],
+      "definition": "Candidate trades divided by eligible trades with both-side participant IDs; a triage measure only.",
+      "formula": {
+        "args": [
+          {
+            "args": [],
+            "op": "metric_ref",
+            "ref": "metric.potential_self_trade_count"
+          },
+          {
+            "args": [],
+            "op": "metric_ref",
+            "ref": "metric.self_trade_eligible_trade_count"
+          }
+        ],
+        "op": "divide"
+      },
+      "id": "metric.potential_self_trade_rate",
+      "metric_type": "derived",
+      "name": {
+        "en": "Potential Self-Trade Candidate Rate",
+        "zh": "潜在自成交候选率"
+      },
+      "null_policy": "fail_validation",
+      "owner": "actor.cash_trading_domain_owner",
+      "query": {
+        "filters": [],
+        "required_joins": []
+      },
+      "result_grain": [
+        "dimension.business_date"
+      ],
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "PERCENT",
+      "value_type": "percentage",
+      "version": "1.0.0",
+      "zero_denominator_policy": "refuse"
+    },
+    {
+      "aggregation_semantics": "non_additive",
+      "allowed_dimensions": [
+        "dimension.business_date",
+        "dimension.instrument",
+        "dimension.market_segment"
+      ],
+      "base_entity": "entity.trade_activity",
+      "decisions": [
+        "decision.latency_convention"
+      ],
+      "definition": "Per-trade capture latency used by the latency-profile operator to report count, min, p50, p95, p99 and max.",
+      "formula": {
+        "args": [],
+        "op": "field_ref",
+        "ref": "property.trade.capture_latency_ms"
+      },
+      "id": "metric.trade_capture_latency_ms",
+      "metric_type": "base",
+      "name": {
+        "en": "Trade Capture Latency",
+        "zh": "成交捕获延迟"
+      },
+      "null_policy": "exclude",
+      "owner": "actor.cash_trading_domain_owner",
+      "query": {
+        "base_source": "source.cash_trade_analytics",
+        "date_property": "property.trade.business_date",
+        "filters": [
+          "rule.eligible_trade",
+          "rule.nonnegative_latency"
+        ],
+        "measure_property": "property.trade.capture_latency_ms",
+        "period_property": "property.trade.business_date",
+        "population_property": "property.trade.is_nonnegative_latency",
+        "required_joins": []
+      },
+      "result_grain": [
+        "dimension.business_date"
+      ],
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "MILLISECOND",
+      "value_type": "integer",
+      "version": "1.0.0",
+      "zero_denominator_policy": "refuse"
+    }
+  ],
+  "package_id": "ontology.exchange_analytics.cash_trading",
+  "policies": [
+    {
+      "allowed_grains": [
+        "aggregate",
+        "daily",
+        "participant",
+        "trade_event",
+        "order_event"
+      ],
+      "allowed_roles": [
+        "MarketSurveillanceDemo",
+        "TradingDemo"
+      ],
+      "decisions": [
+        "decision.demo_policy"
+      ],
+      "definition": "Allow synthetic row evidence for surveillance triage for at most three months.",
+      "denied_fields": [],
+      "denied_roles": [
+        "MarketsDemo",
+        "ExternalUser"
+      ],
+      "id": "policy.cash_surveillance_demo",
+      "minimum_group_size": 1,
+      "name": {
+        "en": "Cash Surveillance Demo Policy",
+        "zh": "现金监察演示策略"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "allowed_grains": [
+        "aggregate",
+        "daily",
+        "instrument",
+        "market_segment"
+      ],
+      "allowed_roles": [
+        "MarketsDemo"
+      ],
+      "decisions": [
+        "decision.demo_policy"
+      ],
+      "definition": "Allow only aggregate synthetic trends with participant names and row evidence denied.",
+      "denied_fields": [
+        "participant_id",
+        "participant_name",
+        "trading_activity_id",
+        "order_id"
+      ],
+      "denied_roles": [
+        "ExternalUser"
+      ],
+      "id": "policy.cash_markets_demo",
+      "minimum_group_size": 3,
+      "name": {
+        "en": "Cash Markets Aggregate Demo Policy",
+        "zh": "现金市场汇总演示策略"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "processes": [
+    {
+      "decisions": [
+        "decision.demo_policy",
+        "decision.source_classification"
+      ],
+      "definition": "From a natural-language question to a policy-scoped deterministic result and evidence-backed explanation.",
+      "exception_paths": [
+        "ambiguous_time_to_clarify",
+        "unsupported_suspicion_rule_to_clarify",
+        "misconduct_conclusion_to_refuse",
+        "unauthorized_detail_to_refuse",
+        "validation_failure_to_no_answer"
+      ],
+      "id": "process.cash_trading_analysis",
+      "name": {
+        "en": "Governed Cash Trading Analysis",
+        "zh": "受治理现金交易分析"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "process_type": "analysis",
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "steps": [
+        {
+          "actor": "actor.ontology_agent",
+          "governed_refs": [
+            "policy.cash_surveillance_demo",
+            "policy.cash_markets_demo"
+          ],
+          "id": "authorize",
+          "name": "Resolve role, time window and output grain",
+          "on_failure": "refuse",
+          "operation": "PolicyGate",
+          "output_artifacts": [
+            "policy_decision"
+          ]
+        },
+        {
+          "actor": "actor.ontology_agent",
+          "governed_refs": [
+            "analysis.self_trade_summary",
+            "analysis.self_trade_trend",
+            "analysis.self_trade_timeline",
+            "analysis.trade_latency_profile",
+            "analysis.cash_evidence_audit"
+          ],
+          "id": "bind",
+          "name": "Bind the question to a registered analysis pattern and metrics",
+          "on_failure": "clarify",
+          "operation": "SemanticBinding",
+          "output_artifacts": [
+            "analysis_plan"
+          ]
+        },
+        {
+          "actor": "actor.ontology_agent",
+          "governed_refs": [
+            "source.cash_trade_analytics",
+            "rule.eligible_trade",
+            "rule.self_trade_eligible",
+            "rule.potential_self_trade",
+            "rule.nonnegative_latency"
+          ],
+          "id": "execute",
+          "name": "Execute bounded DuckDB tools over verified Parquet",
+          "on_failure": "stop",
+          "operation": "DeterministicExecution",
+          "output_artifacts": [
+            "verified_fact_set"
+          ]
+        },
+        {
+          "actor": "actor.ontology_agent",
+          "governed_refs": [
+            "analysis.cash_evidence_audit"
+          ],
+          "id": "evidence",
+          "name": "Attach claims to metrics, decisions, data and query identities",
+          "on_failure": "stop",
+          "operation": "EvidenceAssembly",
+          "output_artifacts": [
+            "answer",
+            "claim_evidence",
+            "limitation_disclosure"
+          ]
+        }
+      ],
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "trigger": "An authorized demo user asks a supported self-trade, latency or evidence question.",
+      "version": "1.0.0"
+    }
+  ],
+  "properties": [
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Stable normalized trade-activity identifier.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.trading_activity_id",
+      "name": {
+        "en": "Trading Activity ID",
+        "zh": "成交活动ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "date",
+      "decisions": [
+        "decision.time_convention"
+      ],
+      "definition": "Venue-calendar business date for the trade.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.business_date",
+      "name": {
+        "en": "Business Date",
+        "zh": "业务日期"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Normalized venue identifier.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.venue_code",
+      "name": {
+        "en": "Venue Code",
+        "zh": "交易场所代码"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Normalized market segment.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.market_segment",
+      "name": {
+        "en": "Market Segment",
+        "zh": "市场板块"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": false,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Instrument join key.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.instrument_id",
+      "name": {
+        "en": "Instrument ID",
+        "zh": "证券ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Associated participant identifier where available.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.participant_id",
+      "name": {
+        "en": "Participant ID",
+        "zh": "参与者ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": false,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Normalized buying participant identifier.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.buy_participant_id",
+      "name": {
+        "en": "Buy Participant ID",
+        "zh": "买方参与者ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": false,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Normalized selling participant identifier.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.sell_participant_id",
+      "name": {
+        "en": "Sell Participant ID",
+        "zh": "卖方参与者ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": false,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "decimal",
+      "decisions": [],
+      "definition": "Executed trade quantity.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.trade_quantity",
+      "name": {
+        "en": "Trade Quantity",
+        "zh": "成交数量"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "SHARE",
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "decimal",
+      "decisions": [
+        "decision.notional_currency"
+      ],
+      "definition": "Native trade notional reported in HKD for the supplied sample.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.trade_notional_hkd",
+      "name": {
+        "en": "Native Trade Notional",
+        "zh": "原币成交名义金额"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "HKD",
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "decimal",
+      "decisions": [
+        "decision.notional_currency"
+      ],
+      "definition": "Base notional before haircut reported in USD for the supplied sample.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.base_notional_usd",
+      "name": {
+        "en": "Converted Base Notional",
+        "zh": "转换后基础名义金额"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "USD",
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "datetime",
+      "decisions": [
+        "decision.time_convention"
+      ],
+      "definition": "Matching-engine timestamp normalized to UTC.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.transaction_timestamp",
+      "name": {
+        "en": "Transaction Timestamp",
+        "zh": "交易时间戳"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "datetime",
+      "decisions": [
+        "decision.time_convention"
+      ],
+      "definition": "Platform receive timestamp normalized to UTC.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.receive_timestamp",
+      "name": {
+        "en": "Receive Timestamp",
+        "zh": "接收时间戳"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "boolean",
+      "decisions": [
+        "decision.trade_eligibility"
+      ],
+      "definition": "Adapter-derived flag for the provisional active-trade population.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.is_eligible_trade",
+      "name": {
+        "en": "Eligible Trade Flag",
+        "zh": "合格成交标志"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.assumption_register",
+        "source.compiler_sql"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "boolean",
+      "decisions": [
+        "decision.self_trade_candidate"
+      ],
+      "definition": "True when both normalized side participant identifiers are present.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.has_both_participant_ids",
+      "name": {
+        "en": "Both Participants Available",
+        "zh": "双方参与者可用"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.assumption_register",
+        "source.compiler_sql"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "boolean",
+      "decisions": [
+        "decision.self_trade_candidate"
+      ],
+      "definition": "Deterministic triage flag; not a misconduct conclusion.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.is_potential_self_trade",
+      "name": {
+        "en": "Potential Self-Trade Flag",
+        "zh": "潜在自成交标志"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register",
+        "source.compiler_sql"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "boolean",
+      "decisions": [
+        "decision.latency_convention"
+      ],
+      "definition": "True when capture latency is non-negative.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.is_nonnegative_latency",
+      "name": {
+        "en": "Valid Latency Flag",
+        "zh": "有效延迟标志"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "integer",
+      "decisions": [
+        "decision.latency_convention"
+      ],
+      "definition": "Receive timestamp minus transaction timestamp in milliseconds.",
+      "entity": "entity.trade_activity",
+      "enum_values": [],
+      "id": "property.trade.capture_latency_ms",
+      "name": {
+        "en": "Capture Latency",
+        "zh": "捕获延迟"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": false,
+      "sources": [
+        "source.metric_logic",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "unit": "MILLISECOND",
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Stable order-event identifier.",
+      "entity": "entity.order_activity",
+      "enum_values": [],
+      "id": "property.order.activity_id",
+      "name": {
+        "en": "Order Activity ID",
+        "zh": "订单活动ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [
+        "decision.order_lifecycle"
+      ],
+      "definition": "Order identifier within venue and trading date.",
+      "entity": "entity.order_activity",
+      "enum_values": [],
+      "id": "property.order.order_id",
+      "name": {
+        "en": "Order ID",
+        "zh": "订单ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "date",
+      "decisions": [
+        "decision.time_convention"
+      ],
+      "definition": "Trading date of the observed order event.",
+      "entity": "entity.order_activity",
+      "enum_values": [],
+      "id": "property.order.trading_date",
+      "name": {
+        "en": "Order Trading Date",
+        "zh": "订单交易日"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "enum",
+      "decisions": [
+        "decision.cancel_spelling"
+      ],
+      "definition": "Canonical post-event status using CANCELED spelling.",
+      "entity": "entity.order_activity",
+      "enum_values": [
+        "NEW",
+        "PARTIALLY_FILLED",
+        "FILLED",
+        "CANCELED",
+        "REPLACED",
+        "REJECTED",
+        "EXPIRED",
+        "SUSPENDED",
+        "PENDING",
+        "UNKNOWN"
+      ],
+      "id": "property.order.order_status",
+      "name": {
+        "en": "Order Status",
+        "zh": "订单状态"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "datetime",
+      "decisions": [
+        "decision.time_convention"
+      ],
+      "definition": "Observed order-event transaction timestamp.",
+      "entity": "entity.order_activity",
+      "enum_values": [],
+      "id": "property.order.transaction_timestamp",
+      "name": {
+        "en": "Order Transaction Timestamp",
+        "zh": "订单交易时间戳"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Stable synthetic participant identifier.",
+      "entity": "entity.participant",
+      "enum_values": [],
+      "id": "property.participant.participant_id",
+      "name": {
+        "en": "Participant ID",
+        "zh": "参与者ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic participant display name.",
+      "entity": "entity.participant",
+      "enum_values": [],
+      "id": "property.participant.participant_name",
+      "name": {
+        "en": "Participant Name",
+        "zh": "参与者名称"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "enum",
+      "decisions": [],
+      "definition": "Controlled participant classification.",
+      "entity": "entity.participant",
+      "enum_values": [
+        "BROKER",
+        "DEALER",
+        "BANK",
+        "MARKET_MAKER",
+        "CLIENT",
+        "FUND",
+        "INTERNAL_DESK",
+        "CLEARING_MEMBER",
+        "OTHER"
+      ],
+      "id": "property.participant.participant_type",
+      "name": {
+        "en": "Participant Type",
+        "zh": "参与者类型"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Stable synthetic instrument identifier.",
+      "entity": "entity.instrument",
+      "enum_values": [],
+      "id": "property.instrument.instrument_id",
+      "name": {
+        "en": "Instrument ID",
+        "zh": "证券ID"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Synthetic instrument display name.",
+      "entity": "entity.instrument",
+      "enum_values": [],
+      "id": "property.instrument.instrument_name",
+      "name": {
+        "en": "Instrument Name",
+        "zh": "证券名称"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Primary venue symbol.",
+      "entity": "entity.instrument",
+      "enum_values": [],
+      "id": "property.instrument.primary_symbol",
+      "name": {
+        "en": "Primary Symbol",
+        "zh": "主要代码"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [
+        "decision.calendar_key"
+      ],
+      "definition": "Logical calendar_code + business_date key.",
+      "entity": "entity.trading_day",
+      "enum_values": [],
+      "id": "property.calendar.calendar_key",
+      "name": {
+        "en": "Calendar Key",
+        "zh": "日历键"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "date",
+      "decisions": [],
+      "definition": "Business date represented by the calendar row.",
+      "entity": "entity.trading_day",
+      "enum_values": [],
+      "id": "property.calendar.business_date",
+      "name": {
+        "en": "Calendar Business Date",
+        "zh": "日历业务日期"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "enum",
+      "decisions": [],
+      "definition": "Trading-day indicator.",
+      "entity": "entity.trading_day",
+      "enum_values": [
+        "Y",
+        "N"
+      ],
+      "id": "property.calendar.is_trading_day",
+      "name": {
+        "en": "Is Trading Day",
+        "zh": "是否交易日"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Normalized market-segment code.",
+      "entity": "entity.market_segment",
+      "enum_values": [],
+      "id": "property.market_segment.code",
+      "name": {
+        "en": "Market Segment Code",
+        "zh": "市场板块代码"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "data_type": "string",
+      "decisions": [],
+      "definition": "Display label for the market segment.",
+      "entity": "entity.market_segment",
+      "enum_values": [],
+      "id": "property.market_segment.name",
+      "name": {
+        "en": "Market Segment Name",
+        "zh": "市场板块名称"
+      },
+      "null_meaning": "not_allowed",
+      "owner": "actor.cash_trading_data_steward",
+      "required": true,
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "questions": [
+    {
+      "analysis_pattern": "analysis.self_trade_summary",
+      "decisions": [],
+      "definition": "Summarize potential self-trade candidates for a specified business date.",
+      "examples": [
+        "Analyze potential self-trades for 2026-08-07.",
+        "What was the potential self-trade rate yesterday?"
+      ],
+      "expected_answer": "Eligible trade count, candidate count, rate, candidate participants/instruments and the triage-only limitation.",
+      "id": "question.self_trade_yesterday",
+      "name": {
+        "en": "Self-Trades Yesterday",
+        "zh": "昨日自成交分析"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "required_inputs": [
+        "business_date"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "analysis_pattern": "analysis.self_trade_trend",
+      "decisions": [],
+      "definition": "Show the potential self-trade trend over the selected week.",
+      "examples": [
+        "Show the daily potential self-trade trend for 2026-08-03 to 2026-08-07."
+      ],
+      "expected_answer": "One row per business date with counts and percentage.",
+      "id": "question.self_trade_weekly_trend",
+      "name": {
+        "en": "Self-Trade Daily Trend",
+        "zh": "自成交日趋势"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "required_inputs": [
+        "start_date",
+        "end_date"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "analysis_pattern": "analysis.self_trade_timeline",
+      "decisions": [],
+      "definition": "Show the observed timeline for one candidate participant.",
+      "examples": [
+        "Show the evidence timeline for PART001 on 2026-08-03."
+      ],
+      "expected_answer": "Chronological candidate trade and linked observed order events, with lifecycle completeness disclosed.",
+      "id": "question.self_trade_participant_timeline",
+      "name": {
+        "en": "Participant Evidence Timeline",
+        "zh": "参与者证据时间线"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "required_inputs": [
+        "participant_id",
+        "business_date"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "analysis_pattern": "analysis.trade_latency_profile",
+      "decisions": [],
+      "definition": "Profile valid trade capture latency for a selected period.",
+      "examples": [
+        "What were p50, p95 and p99 trade capture latency for the sample week?"
+      ],
+      "expected_answer": "Count, min, p50, p95, p99, max and exception count in milliseconds; no SLA claim.",
+      "id": "question.trade_latency",
+      "name": {
+        "en": "Trade Capture Latency",
+        "zh": "成交捕获延迟"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "required_inputs": [
+        "start_date",
+        "end_date"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "analysis_pattern": "analysis.cash_evidence_audit",
+      "decisions": [],
+      "definition": "Explain the exact governed definitions and computations behind a prior answer.",
+      "examples": [
+        "Show the evidence behind that self-trade rate."
+      ],
+      "expected_answer": "Claim-level links to metrics, decisions, dataset and query identity.",
+      "id": "question.evidence",
+      "name": {
+        "en": "Answer Evidence",
+        "zh": "答案证据"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "required_inputs": [
+        "execution_id"
+      ],
+      "sources": [
+        "source.requirements",
+        "source.assumption_register"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "relationships": [
+    {
+      "cardinality": "N:1",
+      "decisions": [],
+      "definition": "A trade activity references one instrument.",
+      "from_entity": "entity.trade_activity",
+      "id": "relationship.trade_instrument",
+      "name": {
+        "en": "Trade has instrument",
+        "zh": "成交对应证券"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "predicate": "hasInstrument",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "to_entity": "entity.instrument",
+      "version": "1.0.0"
+    },
+    {
+      "cardinality": "N:1",
+      "decisions": [],
+      "definition": "A trade activity may reference an associated participant.",
+      "from_entity": "entity.trade_activity",
+      "id": "relationship.trade_participant",
+      "name": {
+        "en": "Trade has participant",
+        "zh": "成交对应参与者"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "predicate": "hasParticipant",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "to_entity": "entity.participant",
+      "version": "1.0.0"
+    },
+    {
+      "cardinality": "N:1",
+      "decisions": [],
+      "definition": "An order activity may reference a participant.",
+      "from_entity": "entity.order_activity",
+      "id": "relationship.order_participant",
+      "name": {
+        "en": "Order has participant",
+        "zh": "订单对应参与者"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "predicate": "hasParticipant",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "to_entity": "entity.participant",
+      "version": "1.0.0"
+    },
+    {
+      "cardinality": "N:1",
+      "decisions": [],
+      "definition": "A trade activity is assigned to one business date.",
+      "from_entity": "entity.trade_activity",
+      "id": "relationship.trade_day",
+      "name": {
+        "en": "Trade occurs on day",
+        "zh": "成交发生于交易日"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "predicate": "occursOn",
+      "sources": [
+        "source.data_dictionary"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "to_entity": "entity.trading_day",
+      "version": "1.0.0"
+    }
+  ],
+  "rules": [
+    {
+      "all": [
+        {
+          "op": "is_true",
+          "property": "property.trade.is_eligible_trade"
+        }
+      ],
+      "decisions": [
+        "decision.trade_eligibility"
+      ],
+      "definition": "Include only active TRADE rows that are not corrected originals.",
+      "failure_behavior": "exclude",
+      "id": "rule.eligible_trade",
+      "name": {
+        "en": "Eligible Trade",
+        "zh": "合格成交"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "rule_type": "eligibility",
+      "sources": [
+        "source.assumption_register",
+        "source.metric_logic"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "all": [
+        {
+          "op": "is_true",
+          "property": "property.trade.has_both_participant_ids"
+        }
+      ],
+      "decisions": [
+        "decision.self_trade_denominator"
+      ],
+      "definition": "An eligible trade with both normalized side participant identifiers available.",
+      "failure_behavior": "exclude",
+      "id": "rule.self_trade_eligible",
+      "name": {
+        "en": "Self-Trade Eligible Population",
+        "zh": "自成交合格总体"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "rule_type": "eligibility",
+      "sources": [
+        "source.assumption_register",
+        "source.metric_logic"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "all": [
+        {
+          "op": "is_true",
+          "property": "property.trade.is_potential_self_trade"
+        }
+      ],
+      "decisions": [
+        "decision.self_trade_candidate"
+      ],
+      "definition": "Both normalized side participant IDs are present and equal.",
+      "failure_behavior": "exclude",
+      "id": "rule.potential_self_trade",
+      "name": {
+        "en": "Potential Self-Trade Candidate",
+        "zh": "潜在自成交候选"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "rule_type": "eligibility",
+      "sources": [
+        "source.assumption_register",
+        "source.metric_logic"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "all": [
+        {
+          "op": "is_true",
+          "property": "property.trade.is_nonnegative_latency"
+        }
+      ],
+      "decisions": [
+        "decision.latency_convention"
+      ],
+      "definition": "Exclude negative latency observations from KPI values and count them as exceptions.",
+      "failure_behavior": "exclude",
+      "id": "rule.nonnegative_latency",
+      "name": {
+        "en": "Non-Negative Capture Latency",
+        "zh": "非负捕获延迟"
+      },
+      "owner": "actor.cash_trading_domain_owner",
+      "rule_type": "eligibility",
+      "sources": [
+        "source.assumption_register",
+        "source.metric_logic"
+      ],
+      "status": "confirmed",
+      "tags": [
+        "constructed_synthetic",
+        "cash_trading"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "scenario": {
+    "data_window_end": "2026-08-09",
+    "data_window_start": "2026-08-03",
+    "decisions": [
+      "decision.source_classification",
+      "decision.time_convention",
+      "decision.demo_policy"
+    ],
+    "default_role": "MarketSurveillanceDemo",
+    "definition": "Constructed-synthetic scenario for potential self-trade triage and trade-capture latency analysis.",
+    "id": "scenario.cash_trading_activity_monitoring",
+    "market_id": "SYNTH-XHKG-CASH",
+    "name": {
+      "en": "Cash Market Order and Trading Activity Monitoring",
+      "zh": "现金市场订单与成交活动监控"
+    },
+    "owner": "actor.cash_trading_domain_owner",
+    "periods": [
+      {
+        "end": "2026-08-09",
+        "id": "sample-week-2026-08-03",
+        "inclusive": true,
+        "start": "2026-08-03"
+      }
+    ],
+    "sources": [
+      "source.requirements",
+      "source.metric_logic",
+      "source.assumption_register"
+    ],
+    "status": "confirmed",
+    "tags": [
+      "constructed_synthetic",
+      "cash_trading",
+      "surveillance_triage",
+      "latency"
+    ],
+    "timezone": "Asia/Hong_Kong",
+    "version": "1.0.0"
+  },
+  "sources": [
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.requirements",
+      "locator": "intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "notes": "Transcribed business context; not an exported HKEX source document.",
+      "owner": "Deloitte HK",
+      "source_type": "requirement_transcription",
+      "title": "Deloitte HK requirements transcription",
+      "trust": "secondary"
+    },
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.metric_logic",
+      "locator": "intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "notes": "Common metric examples; definitions remain subject to confirmation.",
+      "owner": "Deloitte HK",
+      "source_type": "metric_transcription",
+      "title": "Deloitte HK metric logic transcription",
+      "trust": "secondary"
+    },
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.data_dictionary",
+      "locator": "intake/source-manifest.json#SRC-DICT-001 sha256=2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a",
+      "notes": "Generated and field-existence cross-checked; physical production names may differ.",
+      "owner": "Deloitte HK",
+      "source_type": "data_dictionary",
+      "title": "Deloitte HK generated data dictionary",
+      "trust": "secondary"
+    },
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.sample_data",
+      "locator": "intake/source-manifest.json#SRC-SAMPLE-001 sha256=d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018",
+      "notes": "One-week constructed-synthetic sample; not HKEX production data.",
+      "owner": "Deloitte HK",
+      "source_type": "sample_data",
+      "title": "Deloitte HK constructed-synthetic sample data",
+      "trust": "assumption"
+    },
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.assumption_register",
+      "locator": "governance/assumption-register.json sha256=846c64265d5391a08e93046e0706f4892fce68c5bd66903d851d156e6675760c",
+      "notes": "Every correction, provisional definition and derived-control convention is versioned here.",
+      "owner": "PoC Product & Domain Team",
+      "source_type": "assumption_register",
+      "title": "PoC cash-trading assumption and decision register",
+      "trust": "assumption"
+    },
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.derived_oracle",
+      "locator": "golden/oracle.json sha256=dc842cc1f27dbf3fa80c3f18aa1a6c1e26e64614df6d8c1ceb6793edcc815fe0",
+      "notes": "Independently recomputed from typed Parquet; not Deloitte/HKEX known-correct evidence.",
+      "owner": "PoC Product & Domain Team",
+      "source_type": "derived_control",
+      "title": "Independent constructed-synthetic golden controls",
+      "trust": "assumption"
+    },
+    {
+      "captured_on": "2026-08-20",
+      "id": "source.compiler_sql",
+      "locator": "sql/reference_controls.sql sha256=e33d11e1b68d0f6f2c0cd6ae39aeb1dc3f30f1929ac93ea3e929001197b69751",
+      "notes": "Generated reference SQL; no existing SQL was supplied.",
+      "owner": "PoC Product & Domain Team",
+      "source_type": "sql",
+      "title": "Compiler-generated Cash Trading reference SQL",
+      "trust": "assumption"
+    }
+  ],
+  "status": "confirmed",
+  "version": "0.1.0"
+}

@@ -1,0 +1,52 @@
+{
+  "contract": "semantic-slot-manifest/v1",
+  "manifest_id": "slots.studio.cash-trading.reference.v1",
+  "version": "1.0.0",
+  "slots": [
+    {
+      "slot_id": "self-trade.definition",
+      "draft_path": "self_trade_definition",
+      "source_field": "self_trade_definition",
+      "value_kind": "STRING",
+      "required": true,
+      "allowed_values": []
+    },
+    {
+      "slot_id": "self-trade.identity-level",
+      "draft_path": "self_trade_identity_level",
+      "source_field": "self_trade_identity_level",
+      "value_kind": "STRING",
+      "required": true,
+      "allowed_values": ["participant_id"]
+    },
+    {
+      "slot_id": "self-trade.exclude-corrections",
+      "draft_path": "exclude_corrections",
+      "source_field": "exclude_corrections",
+      "value_kind": "BOOLEAN",
+      "required": true,
+      "allowed_values": []
+    },
+    {
+      "slot_id": "latency.percentile-method",
+      "draft_path": "latency_percentile_method",
+      "source_field": "latency_percentile_method",
+      "value_kind": "STRING",
+      "required": true,
+      "allowed_values": ["nearest_rank"]
+    },
+    {
+      "slot_id": "analysis.allowed-dimensions",
+      "draft_path": "allowed_dimensions",
+      "source_field": "allowed_dimensions",
+      "value_kind": "STRING_LIST",
+      "required": true,
+      "allowed_values": [
+        "dimension.business_date",
+        "dimension.instrument",
+        "dimension.participant",
+        "dimension.market_segment"
+      ]
+    }
+  ]
+}

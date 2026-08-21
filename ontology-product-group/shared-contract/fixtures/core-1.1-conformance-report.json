@@ -1,0 +1,277 @@
+{
+  "integrated_coverage": {
+    "assertion_count": 12,
+    "integrated_mutation_categories": {
+      "AUTHORITY": 4,
+      "COMPATIBILITY": 6,
+      "E01": 28,
+      "ELIGIBILITY": 9,
+      "FIVE_GATE": 30,
+      "RECEIPT": 10,
+      "SEAL": 4,
+      "SELECTED_LINEAGE": 16,
+      "TRUST_ROOT": 5,
+      "TRUTH": 8
+    },
+    "integrated_mutation_count": 120,
+    "subject_count": 102
+  },
+  "logical_transaction_coverage": {
+    "passed_trace_ids": [
+      "T01-exact-retry-before-expiry",
+      "T02-exact-retry-after-expiry",
+      "T03-conflict-a-then-b",
+      "T04-conflict-b-then-a",
+      "T05-invalid-first-does-not-reserve",
+      "T06-authority-expires-while-waiting",
+      "T07-legal-material-successor",
+      "T08-version-time-only-successor",
+      "T09-forked-successors",
+      "T10-stale-predecessor",
+      "T11-crash-before-append",
+      "T12-crash-mid-frame",
+      "T13-crash-after-write-before-sync",
+      "T14-crash-after-sync-before-response",
+      "T15-new-independent-series",
+      "T16-retry-read-denied-no-existence-leak"
+    ],
+    "trace_count": 16
+  },
+  "pins": {
+    "conformance_manifest_sha256": "5385d56b07dc1a7f733f25e10b134c52eaec9711ff4f40f64bb1ff996fd3e676",
+    "external_leaf_manifest_sha256": "5f1bb0ed383edefc212e8df715c180a1e740a4efa7cfff6dbf063ef1c1ac3600",
+    "vectors_sha256": "3296dac5be61358cae5bc67c847f2050da7bdb99bd019611849803cb3db9dbfc"
+  },
+  "profile": "synthetic-trusted-flow/core@1.1",
+  "reference_coverage": {
+    "checked_product_ref_occurrences": 254,
+    "external_class_counts": {
+      "BUILD_SCHEMA": 22,
+      "EVIDENCE": 14,
+      "INTEGRITY": 45,
+      "PRINCIPAL": 16,
+      "PRINCIPAL_CONTEXT": 1,
+      "PRINCIPAL_REGISTRY": 3,
+      "REQUEST": 2,
+      "ROLE_ASSIGNMENT": 14,
+      "SAFE_HANDLE": 4,
+      "SEMANTIC_DECISION": 2,
+      "STATIC_POLICY": 11,
+      "SUITE_CASE": 8,
+      "TRUSTED_SESSION": 14
+    },
+    "external_entry_count": 156,
+    "full_ref_occurrences": 545,
+    "generic_artifact_auto_success_count": 0,
+    "pinned_external_ref_occurrences": 291,
+    "unresolved_critical_ref_count": 0
+  },
+  "report_schema": "core-1.1-conformance-report/1",
+  "schema_coverage": {
+    "accepted_invalid_count": 0,
+    "conformance_only_schema_count": 1,
+    "cross_rule_count": 33,
+    "cross_rule_evidence": {
+      "cleared-input-authority": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G100-cleared-input-authority-deny"
+      },
+      "concept-resolution-evidence": {
+        "assertion_id": "I10-concept-not-bound-immutable-evidence",
+        "mutation_id": "G50-concept-not-well-formed"
+      },
+      "control-gate-selected-lineage": {
+        "assertion_id": "I06-selected-identity-downstream",
+        "mutation_id": "G112-control-gate-aux-oracle"
+      },
+      "control-manifest": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G116-control-author-reviewer-collapse"
+      },
+      "execution-eligibility": {
+        "assertion_id": "I07-gsr-vrs-activation-chain",
+        "mutation_id": "G105-activation-wrong-attempt"
+      },
+      "execution-evidence-boundary": {
+        "assertion_id": "I08-five-outcomes-release",
+        "mutation_id": "G135-concept-evidence-status-mismatch"
+      },
+      "execution-evidence-concept": {
+        "assertion_id": "I10-concept-not-bound-immutable-evidence",
+        "mutation_id": "G55-concept-evidence-ref-omitted"
+      },
+      "gate-evaluation": {
+        "assertion_id": "I07-gsr-vrs-activation-chain",
+        "mutation_id": "G36-gate-semantic-future-issued"
+      },
+      "generic-authority-decision": {
+        "assertion_id": "I04-authority-trust-roots",
+        "mutation_id": "G129-publish-wrong-purpose"
+      },
+      "gsr-publish-authority": {
+        "assertion_id": "I06-selected-identity-downstream",
+        "mutation_id": "G101-publish-authority-deny"
+      },
+      "gsr-selected-lineage": {
+        "assertion_id": "I06-selected-identity-downstream",
+        "mutation_id": "G70-gsr-unselected-manifest"
+      },
+      "oracle-provenance": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G117-oracle-author-reviewer-collapse"
+      },
+      "payload-disclosure-decision": {
+        "assertion_id": "I12-scr-chain-requires-release",
+        "mutation_id": "G134-disclosure-decision-wrong-authority"
+      },
+      "payload-disclosure-evaluation": {
+        "assertion_id": "I12-scr-chain-requires-release",
+        "mutation_id": "G59-disclosure-evaluation-deny"
+      },
+      "policy-decision": {
+        "assertion_id": "I08-five-outcomes-release",
+        "mutation_id": "G122-activation-policy-deny"
+      },
+      "reference-candidate": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G118-selected-candidate-wrong-control"
+      },
+      "reference-candidate-set": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G133-candidate-set-denominator-drift"
+      },
+      "reference-manifest-final": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G120-final-manifest-wrong-control"
+      },
+      "reference-reselection-transition": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G113-successor-false-changed-ref"
+      },
+      "reference-selection-authority": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G05-selection-trust-epoch"
+      },
+      "reference-selection-proposal": {
+        "assertion_id": "I03-truth-selection-chain",
+        "mutation_id": "G119-selected-proposal-nonmember"
+      },
+      "reference-selection-receipt": {
+        "assertion_id": "I05-committed-selection-receipt",
+        "mutation_id": "G102-selection-key-digest-forged"
+      },
+      "result-release-commit": {
+        "assertion_id": "I08-five-outcomes-release",
+        "mutation_id": "G126-release-wrong-projection"
+      },
+      "runtime-payload-selected-lineage": {
+        "assertion_id": "I06-selected-identity-downstream",
+        "mutation_id": "G111-payload-aux-oracle"
+      },
+      "scr-enqueue-proposal": {
+        "assertion_id": "I12-scr-chain-requires-release",
+        "mutation_id": "G110-scr-enqueue-wrong-resource"
+      },
+      "seal-proposal": {
+        "assertion_id": "I07-gsr-vrs-activation-chain",
+        "mutation_id": "G131-seal-attempt-alias"
+      },
+      "semantic-change-request": {
+        "assertion_id": "I12-scr-chain-requires-release",
+        "mutation_id": "G61-enqueue-authority-deny"
+      },
+      "semantic-content-lineage": {
+        "assertion_id": "I06-selected-identity-downstream",
+        "mutation_id": "G72-gsr-unselected-semantic-content"
+      },
+      "suite-denominator": {
+        "assertion_id": "I13-adt-suite-denominator-unchanged",
+        "mutation_id": "G121-suite-denominator-drift"
+      },
+      "unknown-concept-payload": {
+        "assertion_id": "I12-scr-chain-requires-release",
+        "mutation_id": "G56-unreleased-boundary-substitution"
+      },
+      "user-projection": {
+        "assertion_id": "I08-five-outcomes-release",
+        "mutation_id": "G127-projection-execution-mismatch"
+      },
+      "verification-attempt": {
+        "assertion_id": "I07-gsr-vrs-activation-chain",
+        "mutation_id": "G124-verification-attempt-wrong-authority"
+      },
+      "verified-runtime-snapshot": {
+        "assertion_id": "I07-gsr-vrs-activation-chain",
+        "mutation_id": "G125-vrs-wrong-seal-authority"
+      }
+    },
+    "cross_rule_evidence_count": 33,
+    "cross_rule_ids": [
+      "cleared-input-authority",
+      "concept-resolution-evidence",
+      "control-gate-selected-lineage",
+      "control-manifest",
+      "execution-eligibility",
+      "execution-evidence-boundary",
+      "execution-evidence-concept",
+      "gate-evaluation",
+      "generic-authority-decision",
+      "gsr-publish-authority",
+      "gsr-selected-lineage",
+      "oracle-provenance",
+      "payload-disclosure-decision",
+      "payload-disclosure-evaluation",
+      "policy-decision",
+      "reference-candidate",
+      "reference-candidate-set",
+      "reference-manifest-final",
+      "reference-reselection-transition",
+      "reference-selection-authority",
+      "reference-selection-proposal",
+      "reference-selection-receipt",
+      "result-release-commit",
+      "runtime-payload-selected-lineage",
+      "scr-enqueue-proposal",
+      "seal-proposal",
+      "semantic-change-request",
+      "semantic-content-lineage",
+      "suite-denominator",
+      "unknown-concept-payload",
+      "user-projection",
+      "verification-attempt",
+      "verified-runtime-snapshot"
+    ],
+    "cross_rule_layer_counts": {
+      "integrated": 18,
+      "subject+integrated": 13,
+      "subject+integrated+logical": 1,
+      "subject+logical": 1
+    },
+    "field_rule_count": 659,
+    "mutation_operation_counts": {
+      "invalid_decimal": 1,
+      "invalid_identifier": 51,
+      "invalid_ref_target": 210,
+      "locator_path_injection": 1,
+      "malformed_timestamp": 31,
+      "nonascii_version": 44,
+      "noncanonical_set": 36,
+      "remove": 659,
+      "remove_map_key": 3,
+      "unknown_enum": 60,
+      "wildcard_scope": 45,
+      "wrong_type": 659
+    },
+    "positive_schema_count": 43,
+    "product_schema_count": 42,
+    "schema_mutation_count": 1800
+  },
+  "status": "PASS",
+  "toolchain": {
+    "predecessor_helper_filename": "generate_vectors.py",
+    "predecessor_helper_sha256": "dcabbb415dd29308c17e8c7c775a43315591d6e7ba24a65da0abd48a06709485",
+    "python_implementation": "CPython",
+    "python_version": "3.14.6",
+    "unicode_data_version": "16.0.0"
+  }
+}

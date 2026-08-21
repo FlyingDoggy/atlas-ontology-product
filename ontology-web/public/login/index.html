@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>登录 · Atlas Ontology Analytics</title>
+    <link rel="stylesheet" href="/login/login.css" />
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="story" aria-labelledby="story-title">
+        <div class="brand"><span>A</span><b>Atlas</b></div>
+        <div class="story-copy">
+          <p class="eyebrow">ONTOLOGY ANALYTICS · SECURE ACCESS</p>
+          <h1 id="story-title">让业务语义，<br />进入每一次分析。</h1>
+          <p>配置 Ontology，并在同一个已激活语境中完成分析、问数与证据说明。</p>
+          <ol>
+            <li><i>01</i><span><b>Cleared input</b><small>安全转写的业务材料</small></span></li>
+            <li><i>02</i><span><b>Reviewed ontology</b><small>定义、映射与人工决策</small></span></li>
+            <li><i>03</i><span><b>Bound analysis</b><small>计算、证据与边界</small></span></li>
+          </ol>
+        </div>
+        <small class="boundary">Restricted workspace · Authorized users only</small>
+      </section>
+      <section class="access" aria-labelledby="access-title">
+        <form id="login-form" novalidate>
+          <p class="access-label">SHARED WORKSPACE</p>
+          <h2 id="access-title">进入工作区</h2>
+          <p class="hint">使用项目团队提供的访问账号。</p>
+          <div class="destinations" role="group" aria-label="选择产品">
+            <button type="button" class="destination is-selected" data-destination="/ontology-agent/">
+              <b>Analytic Agent</b><small>分析、受控问数与证据</small>
+            </button>
+            <button type="button" class="destination" data-destination="/ontology-studio/">
+              <b>Ontology Studio</b><small>配置、审核与发布</small>
+            </button>
+          </div>
+          <label for="username">用户名</label>
+          <input id="username" autocomplete="username" autocapitalize="none" required />
+          <label for="password">密码</label>
+          <div class="password-row">
+            <input id="password" type="password" autocomplete="current-password" required />
+            <button id="toggle-password" type="button" aria-label="显示密码">显示</button>
+          </div>
+          <p id="form-message" class="message" role="alert" aria-live="polite"></p>
+          <button id="submit-button" class="submit" type="submit"><span>继续</span><b>→</b></button>
+          <p class="session-note">会话保存在安全的 HTTP-only Cookie 中；本页面不会保存密码。</p>
+        </form>
+      </section>
+    </main>
+    <script src="/login/login.js"></script>
+  </body>
+</html>

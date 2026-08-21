@@ -1,0 +1,184 @@
+name: ontology-adt-demo
+
+x-backend-env: &backend-env
+  ONTOLOGY_AGENT_PROJECT_ROOT: /app
+  ONTOLOGY_DEMO_VERSION: ${ONTOLOGY_DEMO_VERSION:-0.3.0-studio-llm-demo.1}
+
+x-backend: &backend
+  image: ontology-adt-demo-backend:${ONTOLOGY_DEMO_VERSION:-0.3.0-studio-llm-demo.1}
+  build:
+    context: ../../ontology-agent-poc
+  environment:
+    <<: *backend-env
+  init: true
+
+services:
+  bootstrap:
+    <<: *backend
+    command: ["ontology-agent", "bootstrap-demo"]
+    restart: "no"
+    volumes:
+      - published:/app/published
+      - outputs:/app/outputs
+
+  runtime:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.api:app", "--host", "0.0.0.0", "--port", "8790"]
+    restart: unless-stopped
+    read_only: true
+    environment:
+      <<: *backend-env
+      ONTOLOGY_LLM_MODE: active-question-family-canary
+      ONTOLOGY_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/egress-decision.json
+      ONTOLOGY_LLM_PROFILE_PATH: /app/scenarios/adt/llm/engineering-profile.json
+      ONTOLOGY_LLM_ROLLOUT_PATH: /run/ontology-llm/rollout.json
+      ONTOLOGY_LLM_EVALUATION_MANIFEST_PATH: /run/ontology-llm/evaluation-manifest.json
+      ONTOLOGY_LLM_STATE_PATH: /app/outputs/llm-engineering.sqlite3
+      ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      model-gateway:
+        condition: service_healthy
+    volumes:
+      - published:/app/published:ro
+      - outputs:/app/outputs
+      - ./config/llm/egress-decision.json:/run/ontology-llm/egress-decision.json:ro
+      - ./config/llm/rollout.json:/run/ontology-llm/rollout.json:ro
+      - ./config/llm/evaluation-manifest.json:/run/ontology-llm/evaluation-manifest.json:ro
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8790/api/readyz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+
+  model-gateway:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.model_gateway:app", "--host", "0.0.0.0", "--port", "8794", "--no-access-log"]
+    restart: unless-stopped
+    read_only: true
+    env_file:
+      - ./secrets/llm/qwen.env
+    environment:
+      <<: *backend-env
+      ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+      ONTOLOGY_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/egress-decision.json
+      ONTOLOGY_LLM_PROFILE_PATH: /app/scenarios/adt/llm/engineering-profile.json
+      ONTOLOGY_LLM_QUESTION_FAMILY_PATH: /app/scenarios/adt/llm/question-family.json
+      ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
+      ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/adt/llm/studio/engineering-profile.json
+      ONTOLOGY_STUDIO_LLM_SLOT_MANIFEST_PATH: /app/scenarios/adt/llm/studio/semantic-slot-manifest.json
+    volumes:
+      - ./config/llm/egress-decision.json:/run/ontology-llm/egress-decision.json:ro
+      - ./config/llm/studio-egress-decision.json:/run/ontology-llm/studio-egress-decision.json:ro
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8794/model/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+
+  studio:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.api:control_app", "--host", "0.0.0.0", "--port", "8791"]
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      ONTOLOGY_STUDIO_LLM_MODE: active-observation-canary
+      ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
+      ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/adt/llm/studio/engineering-profile.json
+      ONTOLOGY_STUDIO_LLM_SLOT_MANIFEST_PATH: /app/scenarios/adt/llm/studio/semantic-slot-manifest.json
+      ONTOLOGY_STUDIO_LLM_ROLLOUT_PATH: /run/ontology-llm/studio-rollout.json
+      ONTOLOGY_STUDIO_LLM_EVALUATION_MANIFEST_PATH: /run/ontology-llm/studio-evaluation-manifest.json
+      ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      model-gateway:
+        condition: service_healthy
+    volumes:
+      - published:/app/published
+      - studio:/app/studio
+      - ./config/llm/studio-egress-decision.json:/run/ontology-llm/studio-egress-decision.json:ro
+      - ./config/llm/studio-rollout.json:/run/ontology-llm/studio-rollout.json:ro
+      - ./config/llm/studio-evaluation-manifest.json:/run/ontology-llm/studio-evaluation-manifest.json:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8791/control/readyz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+
+  agent-control:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.api:agent_control_app", "--host", "0.0.0.0", "--port", "8792"]
+    restart: unless-stopped
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    volumes:
+      - published:/app/published
+      - outputs:/app/outputs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8792/agent-control/readyz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+
+  auth:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.demo_auth:app", "--host", "0.0.0.0", "--port", "8793", "--no-access-log"]
+    restart: unless-stopped
+    read_only: true
+    env_file:
+      - ./secrets/auth/auth.env
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8793/auth/readyz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+
+  console:
+    image: ontology-adt-demo-console:${ONTOLOGY_DEMO_VERSION:-0.3.0-studio-llm-demo.1}
+    build:
+      context: ../../ontology-console
+    restart: unless-stopped
+    depends_on:
+      runtime:
+        condition: service_healthy
+      studio:
+        condition: service_healthy
+      agent-control:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${ONTOLOGY_DEMO_LOCAL_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.7.3
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--url", "http://console:8080"]
+    restart: unless-stopped
+    depends_on:
+      console:
+        condition: service_healthy
+
+volumes:
+  published:
+  studio:
+  outputs:

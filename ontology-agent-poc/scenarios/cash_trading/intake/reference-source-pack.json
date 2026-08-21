@@ -1,0 +1,85 @@
+{
+  "contract": "ontology-reference-source-pack/v1",
+  "pack_id": "cash-trading.deloitte-hk.reference.20260820",
+  "title": "Deloitte HK Cash Trading reference source pack",
+  "classification": "constructed_synthetic",
+  "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED",
+  "physical_file_count": 4,
+  "files": [
+    {
+      "file_id": "SRC-REQ-001",
+      "locator": "intake/reference-source-pack/HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "original_name": "HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sha256": "fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "size_bytes": 34495
+    },
+    {
+      "file_id": "SRC-DICT-001",
+      "locator": "intake/reference-source-pack/order_trade_activities_data_dictionary.xlsx",
+      "original_name": "order_trade_activities_data_dictionary.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sha256": "2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a",
+      "size_bytes": 52796
+    },
+    {
+      "file_id": "SRC-SAMPLE-001",
+      "locator": "intake/reference-source-pack/cash_trading_sample_data.xlsx",
+      "original_name": "cash_trading_sample_data.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "sha256": "d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018",
+      "size_bytes": 837951
+    },
+    {
+      "file_id": "SRC-EMAIL-001",
+      "locator": "intake/reference-source-pack/email screenshot.jpeg",
+      "original_name": "email screenshot.jpeg",
+      "media_type": "image/jpeg",
+      "sha256": "488ed1d5b718337236bca5b812bd6606d73888e5028d347671c2569bc798fb9c",
+      "size_bytes": 318582
+    }
+  ],
+  "registrations": [
+    {
+      "source_id": "asset.requirements",
+      "file_id": "SRC-REQ-001",
+      "kind": "requirement_transcription",
+      "title": "业务需求与端到端分析流程"
+    },
+    {
+      "source_id": "asset.metric_logic",
+      "file_id": "SRC-REQ-001",
+      "kind": "metric_transcription",
+      "title": "八项 Cash Trading 指标逻辑"
+    },
+    {
+      "source_id": "asset.cash_data_model",
+      "file_id": "SRC-DICT-001",
+      "kind": "data_model",
+      "title": "订单与成交逻辑数据模型"
+    },
+    {
+      "source_id": "asset.cash_data_dictionary",
+      "file_id": "SRC-DICT-001",
+      "kind": "data_dictionary",
+      "title": "订单与成交字段字典"
+    },
+    {
+      "source_id": "asset.cash_sample_data",
+      "file_id": "SRC-SAMPLE-001",
+      "kind": "other",
+      "title": "Cash Trading 构造型样例数据"
+    },
+    {
+      "source_id": "asset.cash_provenance_email",
+      "file_id": "SRC-EMAIL-001",
+      "kind": "other",
+      "title": "材料来源与限制说明"
+    }
+  ],
+  "limitations": [
+    "The pack contains Deloitte transcriptions and constructed-synthetic data, not exported HKEX source documents or production data.",
+    "One physical workbook is deliberately registered twice because it supplies two independently governed semantic roles: requirements and metric logic.",
+    "The source packet contains no existing calculation SQL; compiler-generated reference SQL is a derived artifact and is not installed as source evidence."
+  ]
+}

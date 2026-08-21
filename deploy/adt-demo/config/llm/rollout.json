@@ -1,0 +1,24 @@
+{
+  "contract": "task-rollout-record/v1",
+  "rollout_id": "rollout.adt.qwen.demo.v1",
+  "task": "adt-engineering-demo",
+  "mode": "active-question-family-canary",
+  "epoch": 1,
+  "status": "ACTIVE",
+  "profile_digest": "00bf0def0279cb09f965c35366ba90965d2f26a4cba5cecea93bd03258fcdeeb",
+  "question_family_checksum": "49539b9c004eb748c95d2e372fa84a231d9172ecc452ccfbdb3457ffeb15e8ae",
+  "egress_decision_digest": "3a63d36deb40a4cdacb46a5453b2e604263cfe88b371ce1212d415bcfbe88303",
+  "evaluation_manifest_ref": "eval-manifest.adt.llm.v1",
+  "evaluation_manifest_checksum": "f5ac89304f6a21c311f0c53c7008c9a17c5034ec8906230a3163a0bd7314f4ef",
+  "label_digest": "95ff90762d82c3b79ee2c7a3a2d02f20a11cc55fe3c56bcca3b07c78d6d54f27",
+  "auto_off_triggers": [
+    "PROFILE_MISMATCH",
+    "MODEL_IDENTITY_MISMATCH",
+    "SCHEMA_FAILURE",
+    "LEAK_DETECTED",
+    "DEADLINE_EXCEEDED"
+  ],
+  "approved_by": "decision-owner.muyu",
+  "issued_at": "2026-08-19T15:36:43Z",
+  "expires_at": "2026-09-18T23:00:00Z"
+}

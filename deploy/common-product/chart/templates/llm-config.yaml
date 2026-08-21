@@ -1,0 +1,10 @@
+{{- if .Values.llm.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ontology-solution-llm-activations
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "files/solution-activations/*.json").AsConfig | indent 2 }}
+{{- end }}

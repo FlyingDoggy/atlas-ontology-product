@@ -1,0 +1,19 @@
+{
+  "dataset_id": "adt-fixture-v1",
+  "files": {
+    "instrument_dim.csv": {
+      "rows": 4,
+      "sha256": "70a79f3bd71940041fa1fdadce54fdfdf78054cd1a0747d80ac37a643246cff5"
+    },
+    "trade_fact.csv": {
+      "rows": 100,
+      "sha256": "125dbabc95053fb2dd58e615b88cde164f1908818b9227cec451481fd7ce9355"
+    },
+    "trading_calendar.csv": {
+      "rows": 184,
+      "sha256": "3006881fd9d791de4ea30d28aa10d54d5006a0c3123ce5ac23910b83ed69663a"
+    }
+  },
+  "market_id": "SYNTH-CASH",
+  "synthetic": true
+}

@@ -1,0 +1,320 @@
+name: ontology-common-product
+
+x-backend-env: &backend-env
+  ONTOLOGY_AGENT_PROJECT_ROOT: /app
+  ONTOLOGY_DEMO_VERSION: ${ONTOLOGY_PRODUCT_VERSION:-0.16.2}
+  ONTOLOGY_PRODUCT_STATE_MODE: postgresql-s3
+  ONTOLOGY_LIFECYCLE_STATE_MODE: postgresql-s3
+  ONTOLOGY_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?set POSTGRES_USER}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB}
+  ONTOLOGY_S3_ENDPOINT_URL: http://minio:9000
+  ONTOLOGY_S3_REGION: us-east-1
+  ONTOLOGY_S3_BUCKET: ${ONTOLOGY_S3_BUCKET:-ontology-artifacts}
+  ONTOLOGY_S3_MANAGE_BUCKET: "true"
+  AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+  AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+
+x-backend: &backend
+  image: ontology-common-backend:${ONTOLOGY_PRODUCT_VERSION:-0.16.2}
+  environment:
+    <<: *backend-env
+  init: true
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [product]
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [product]
+
+  migrate:
+    <<: *backend
+    build:
+      context: ../../ontology-agent-poc
+    command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [product]
+
+  bootstrap-runtime:
+    <<: *backend
+    command: ["ontology-agent", "bootstrap-all-demo"]
+    restart: "no"
+    volumes:
+      - published:/app/published
+      - outputs:/app/outputs
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+    networks: [product]
+
+  bootstrap-context:
+    <<: *backend
+    command: ["ontology-agent", "bootstrap-product-context"]
+    restart: "no"
+    volumes:
+      - published:/app/published:ro
+    depends_on:
+      bootstrap-runtime:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+    networks: [product]
+
+  bootstrap-solution-catalog:
+    <<: *backend
+    command: ["ontology-agent", "bootstrap-solution-catalog"]
+    restart: "no"
+    depends_on:
+      bootstrap-context:
+        condition: service_completed_successfully
+    networks: [product]
+
+  runtime:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.api:app", "--host", "0.0.0.0", "--port", "8790"]
+    restart: unless-stopped
+    read_only: true
+    environment:
+      <<: *backend-env
+      ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
+    volumes:
+      - published:/app/published:ro
+      - outputs:/app/outputs
+      - studio-state:/app/studio
+      - ./config/llm/solution-activations:/run/ontology-llm/solution-activations:ro
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    depends_on:
+      bootstrap-solution-catalog:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8790/api/readyz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+    networks: [product]
+
+  model-gateway:
+    image: ontology-common-backend:${ONTOLOGY_PRODUCT_VERSION:-0.16.2}
+    command: ["uvicorn", "ontology_agent.model_gateway:app", "--host", "0.0.0.0", "--port", "8794", "--no-access-log"]
+    restart: unless-stopped
+    read_only: true
+    init: true
+    env_file:
+      - ${ONTOLOGY_QWEN_ENV_FILE:-../adt-demo/secrets/llm/qwen.env}
+    environment:
+      ONTOLOGY_AGENT_PROJECT_ROOT: /app
+      ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+      ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
+      ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
+      ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/adt/llm/studio/engineering-profile.json
+      ONTOLOGY_STUDIO_LLM_SLOT_MANIFEST_PATH: /app/scenarios/adt/llm/studio/semantic-slot-manifest.json
+    volumes:
+      - ./config/llm/solution-activations:/run/ontology-llm/solution-activations:ro
+      - ./config/llm/studio-egress-decision.json:/run/ontology-llm/studio-egress-decision.json:ro
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8794/model/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 10
+    networks: [product]
+
+  semantica-worker:
+    image: ontology-semantica-worker:${ONTOLOGY_SEMANTICA_VERSION:-0.1.0}
+    build:
+      context: ../../semantica-worker
+      args:
+        SEMANTICA_COMMIT: ${SEMANTICA_COMMIT:-c5d382ee81edc0727d07907c932970c762ec33bd}
+    restart: unless-stopped
+    read_only: true
+    init: true
+    environment:
+      SEMANTICA_BUILD_REF: ${SEMANTICA_COMMIT:-c5d382ee81edc0727d07907c932970c762ec33bd}
+      SEMANTICA_DISABLE_PROGRESS: "1"
+      SEMANTICA_DISABLE_JUPYTER_PROGRESS: "1"
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8795/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+    networks: [product]
+
+  studio:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.api:control_app", "--host", "0.0.0.0", "--port", "8791"]
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+      ONTOLOGY_STUDIO_LLM_MODE: active-observation-canary
+      ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
+      ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/adt/llm/studio/engineering-profile.json
+      ONTOLOGY_STUDIO_LLM_SLOT_MANIFEST_PATH: /app/scenarios/adt/llm/studio/semantic-slot-manifest.json
+      ONTOLOGY_STUDIO_LLM_ROLLOUT_PATH: /run/ontology-llm/studio-rollout.json
+      ONTOLOGY_STUDIO_LLM_EVALUATION_MANIFEST_PATH: /run/ontology-llm/studio-evaluation-manifest.json
+      ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795
+      ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS: "20"
+    volumes:
+      - published:/app/published
+      - studio-state:/app/studio
+      - ./config/llm/studio-egress-decision.json:/run/ontology-llm/studio-egress-decision.json:ro
+      - ./config/llm/studio-rollout.json:/run/ontology-llm/studio-rollout.json:ro
+      - ./config/llm/studio-evaluation-manifest.json:/run/ontology-llm/studio-evaluation-manifest.json:ro
+    depends_on:
+      bootstrap-solution-catalog:
+        condition: service_completed_successfully
+      model-gateway:
+        condition: service_healthy
+      semantica-worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8791/control/readyz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+    networks: [product]
+
+  construction-worker:
+    <<: *backend
+    command: ["ontology-agent", "construction-worker", "--poll-seconds", "1", "--lease-seconds", "120"]
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    environment:
+      <<: *backend-env
+      ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795
+      ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS: "20"
+    volumes:
+      - published:/app/published
+      - studio-state:/app/studio
+    depends_on:
+      bootstrap-solution-catalog:
+        condition: service_completed_successfully
+      semantica-worker:
+        condition: service_healthy
+    networks: [product]
+
+  agent-control:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.api:agent_control_app", "--host", "0.0.0.0", "--port", "8792"]
+    restart: unless-stopped
+    volumes:
+      - published:/app/published
+      - outputs:/app/outputs
+    depends_on:
+      bootstrap-solution-catalog:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8792/agent-control/readyz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+    networks: [product]
+
+  auth:
+    <<: *backend
+    command: ["uvicorn", "ontology_agent.demo_auth:app", "--host", "0.0.0.0", "--port", "8793", "--no-access-log"]
+    restart: unless-stopped
+    read_only: true
+    env_file:
+      - ${ONTOLOGY_AUTH_ENV_FILE:-../adt-demo/secrets/auth/auth.env}
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8793/auth/readyz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 10
+    networks: [product]
+
+  web:
+    image: ontology-common-web:${ONTOLOGY_WEB_VERSION:-0.16.2}
+    build:
+      context: ../../ontology-web
+    restart: unless-stopped
+    volumes:
+      - ../../ontology-web/nginx.compose.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      runtime:
+        condition: service_healthy
+        restart: true
+      studio:
+        condition: service_healthy
+        restart: true
+      agent-control:
+        condition: service_healthy
+        restart: true
+      auth:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "127.0.0.1:${ONTOLOGY_WEB_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/readyz"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 10
+    networks: [product]
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.7.3
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--url", "http://web:8080"]
+    restart: unless-stopped
+    profiles: [public]
+    depends_on:
+      web:
+        condition: service_healthy
+    networks: [product]
+
+volumes:
+  postgres-data:
+  minio-data:
+  published:
+  outputs:
+  studio-state:
+
+networks:
+  product:
+    internal: false

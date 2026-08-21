@@ -1,0 +1,16 @@
+{
+  "contract": "solution-llm-activation/v1",
+  "activation_id": "activation.adt.qwen.engineering-demo.v1",
+  "solution_id": "ontology.exchange_analytics.adt",
+  "mode": "ACTIVE",
+  "decision": "ALLOW",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "profile_checksum": "9fabd5a3b5be75cf0f8345d1f1d665bfba1eb4cd5be592935ba0d7470b465aa3",
+  "question_family_checksum": "d9e8311f6da9742a2ab4cf6a268e43ff3b6ea35a444305cbc2bb75ee320afebe",
+  "prompt_manifest_checksum": "23da832d5dce144e676d6f193db89b085606140c45fe84310c16610554772875",
+  "projection_policy_checksum": "a7ea2c6865287707d8b86f7356ae669985731eef14b33c40f9d13c3a7a123c8c",
+  "issued_at": "2026-08-20T00:00:00Z",
+  "expires_at": "2027-08-20T00:00:00Z",
+  "approved_by": "PoC Product & Delivery DRI"
+}

@@ -1,0 +1,30 @@
+{
+  "analysis_operations": [
+    "EvidenceAudit",
+    "ExactPeriodCompare",
+    "MetricFact",
+    "SegmentNetChangeShare",
+    "SequentialCalendarFirst",
+    "TurnoverDriverAnalysis"
+  ],
+  "binding_transformations": [
+    "identity"
+  ],
+  "contract": "ontology-runtime-requirements/v1",
+  "formula_operations": [
+    "count_distinct",
+    "divide",
+    "field_ref",
+    "metric_ref",
+    "sum"
+  ],
+  "physical_data_types": [
+    "boolean",
+    "date",
+    "decimal",
+    "string"
+  ],
+  "source_protocols": [
+    "tabular/v1"
+  ]
+}

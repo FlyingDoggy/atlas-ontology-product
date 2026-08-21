@@ -1,0 +1,110 @@
+{
+  "contract": "ontology-reviewed-baseline/v1",
+  "baseline_id": "cash-trading.internal-reviewed.0.2.0",
+  "package_id": "ontology.exchange_analytics.cash_trading",
+  "semantic_version": "0.2.0",
+  "review_status": "INTERNAL_REVIEWED_WITH_PROVISIONAL_ASSUMPTIONS",
+  "reviewed_on": "2026-08-21",
+  "reviewed_by": [
+    "PoC Product & Domain Team",
+    "Ontology Engineering"
+  ],
+  "classification": "constructed_synthetic",
+  "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED",
+  "source_manifest": "intake/source-manifest.json",
+  "assumption_register": "governance/assumption-register.json",
+  "external_confirmation_register": "governance/deloitte-confirmation-register.json",
+  "metric_set": [
+    {
+      "source_metric_id": "M-01",
+      "source_name": "Order rejection rate",
+      "canonical_metric_id": "metric.order_rejection_rate",
+      "formula_summary": "rejected submitted lifecycle count / submitted lifecycle count × 100",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-011", "CT-ASM-012"]
+    },
+    {
+      "source_metric_id": "M-02",
+      "source_name": "Order fill rate",
+      "canonical_metric_id": "metric.order_fill_rate",
+      "formula_summary": "sum(final cumulative executed quantity) / sum(final order quantity) × 100",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-011"]
+    },
+    {
+      "source_metric_id": "M-03",
+      "source_name": "Trade capture latency",
+      "canonical_metric_id": "metric.trade_capture_latency_ms",
+      "formula_summary": "receive timestamp − transaction timestamp in integer milliseconds; nearest-rank p50/p95/p99",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "SUPPORTED",
+      "assumption_ids": ["CT-ASM-007", "CT-ASM-008", "CT-ASM-020"]
+    },
+    {
+      "source_metric_id": "M-04",
+      "source_name": "Active client trading volume",
+      "canonical_metric_id": "metric.active_client_trading_volume",
+      "formula_summary": "eligible effective-CLIENT trade notional in native HKD / 1,000,000; quantity retained as companion measure",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "assumption_ids": ["CT-ASM-007", "CT-ASM-009", "CT-ASM-010"]
+    },
+    {
+      "source_metric_id": "M-05",
+      "source_name": "Client order completion rate",
+      "canonical_metric_id": "metric.client_order_completion_rate",
+      "formula_summary": "fully filled eligible client lifecycle count / eligible client submitted lifecycle count × 100",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-009", "CT-ASM-011", "CT-ASM-012"]
+    },
+    {
+      "source_metric_id": "M-06",
+      "source_name": "Cancel-to-trade ratio",
+      "canonical_metric_id": "metric.cancel_to_trade_ratio",
+      "formula_summary": "distinct observed lifecycles containing an eligible cancel / distinct eligible active trades × 100",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "assumption_ids": ["CT-ASM-002", "CT-ASM-004", "CT-ASM-007", "CT-ASM-013"]
+    },
+    {
+      "source_metric_id": "M-07",
+      "source_name": "Order-to-trade ratio",
+      "canonical_metric_id": "metric.order_to_trade_ratio",
+      "formula_summary": "submitted lifecycle count / (2 × distinct eligible active trades) × 100",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-007", "CT-ASM-011", "CT-ASM-014"]
+    },
+    {
+      "source_metric_id": "M-08",
+      "source_name": "Potential self-trade rate",
+      "canonical_metric_id": "metric.potential_self_trade_rate",
+      "formula_summary": "same normalized buy/sell participant candidate count / eligible trades with both participant IDs × 100",
+      "ontology_status": "REVIEWED",
+      "agent_runtime_status": "SUPPORTED",
+      "assumption_ids": ["CT-ASM-005", "CT-ASM-006", "CT-ASM-007"]
+    }
+  ],
+  "review_gates": {
+    "semantic_closure": "PASS",
+    "source_identity": "PASS",
+    "typed_data_and_quality": "PASS_WITH_DOCUMENTED_WARNINGS",
+    "formula_and_sql_traceability": "PASS_INTERNAL_CONTROL_ONLY",
+    "human_review": "PASS_WITH_PROVISIONAL_ASSUMPTIONS",
+    "external_hkex_validation": "NOT_PERFORMED",
+    "agent_runtime_coverage": "PARTIAL_2_OF_8"
+  },
+  "external_confirmations": {
+    "requested": 12,
+    "blocking_for_demo": 0,
+    "rule": "Responses improve a later semantic revision but do not block the internally controlled synthetic demonstration."
+  },
+  "limitations": [
+    "Reviewed means internally coherent and traceable for this constructed-synthetic case; it does not mean HKEX-approved.",
+    "Ontology review and Agent runtime support are independent states and must never be collapsed into one executable label.",
+    "The six ontology-reviewed metrics not listed as runtime-supported are unavailable to the current Agent until deterministic tools and evaluation cases are added."
+  ]
+}

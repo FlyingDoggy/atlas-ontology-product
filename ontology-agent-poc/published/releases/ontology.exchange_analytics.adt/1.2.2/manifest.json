@@ -1,0 +1,72 @@
+{
+  "artifact_inventory_checksum": "21e118f1ea1dd2f047e31095a3816152a4b9c9b4323f1beba66acba125d6eb8a",
+  "capability_requirements_checksum": "39e28036a14189d835c9f5701d706458e788f61a805e27408a4b8f035ce29850",
+  "limitations": [
+    "constructed synthetic; not HKEX validated",
+    "existing SQL registered for human comparison; not automatically reconciled"
+  ],
+  "package_checksum": "44e766027274525d33696a364c557de1be45f720aecf1a27f82ad800305e57fe",
+  "package_id": "ontology.exchange_analytics.adt",
+  "release_checksum": "4f6fec75bdb3bd713d53b6648655e478910d02d224037092ed72645959fecb86",
+  "safe_sources": [
+    {
+      "safe_locator": "submission.reference.adt / sheet=01_需求与流程",
+      "source_id": "source.requirements",
+      "source_type": "requirement_transcription",
+      "title": "ADT scenario requirements and end-to-end analysis process",
+      "trust": "primary"
+    },
+    {
+      "safe_locator": "submission.reference.adt / sheet=02_指标逻辑",
+      "source_id": "source.metric_logic",
+      "source_type": "metric_transcription",
+      "title": "ADT metric logic transcription",
+      "trust": "primary"
+    },
+    {
+      "safe_locator": "input/data_model.md",
+      "source_id": "source.data_model",
+      "source_type": "data_model",
+      "title": "Synthetic exchange data model",
+      "trust": "primary"
+    },
+    {
+      "safe_locator": "input/data_dictionary.csv",
+      "source_id": "source.data_dictionary",
+      "source_type": "data_dictionary",
+      "title": "Synthetic exchange data dictionary",
+      "trust": "primary"
+    },
+    {
+      "safe_locator": "sql/existing_adt.sql",
+      "source_id": "source.existing_sql",
+      "source_type": "sql",
+      "title": "Existing ADT calculation SQL sample",
+      "trust": "primary"
+    },
+    {
+      "safe_locator": "decision-log/ADT-001..ADT-005",
+      "source_id": "source.human_confirmation",
+      "source_type": "human_confirmation",
+      "title": "Synthetic ADT business decisions",
+      "trust": "primary"
+    },
+    {
+      "safe_locator": "local PDF supplied by project owner",
+      "source_id": "source.article_semantic_web",
+      "source_type": "public_reference",
+      "title": "RDF, OWL, SPARQL and SHACL overview",
+      "trust": "secondary"
+    },
+    {
+      "safe_locator": "local PDF supplied by project owner",
+      "source_id": "source.article_blocks",
+      "source_type": "public_reference",
+      "title": "Object, Link, Action, Function and Interface",
+      "trust": "secondary"
+    }
+  ],
+  "schema_version": "ontology-release/v1",
+  "semantic_validation_checksum": "92b5aca55d51fb3c3abfb318ac035ce4377066e21f7dc63aab276210935dfcd6",
+  "version": "1.2.2"
+}

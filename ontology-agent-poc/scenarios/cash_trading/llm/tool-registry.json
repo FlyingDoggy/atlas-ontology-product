@@ -1,0 +1,31 @@
+{
+  "contract": "cash-trading-llm-tool-registry/v1",
+  "registry_id": "cash-trading.agent.tools.v1",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "tool_id": "self_trade_summary",
+      "purpose": "Return eligible-trade count, potential self-trade candidate count/rate and bounded candidate dimensions.",
+      "required_parameters": ["start_date", "end_date", "population_id"],
+      "result_contract": "safe-self-trade-summary/v1"
+    },
+    {
+      "tool_id": "self_trade_trend",
+      "purpose": "Return daily eligible/candidate counts and candidate rate over an approved range.",
+      "required_parameters": ["start_date", "end_date", "population_id"],
+      "result_contract": "safe-self-trade-trend/v1"
+    },
+    {
+      "tool_id": "self_trade_timeline",
+      "purpose": "Return candidate trades and linked observed order events for one allowed synthetic participant.",
+      "required_parameters": ["participant_id", "start_date", "end_date", "population_id"],
+      "result_contract": "safe-self-trade-timeline/v1"
+    },
+    {
+      "tool_id": "trade_latency_profile",
+      "purpose": "Return count, min, nearest-rank p50/p95/p99, max and negative-latency exceptions.",
+      "required_parameters": ["start_date", "end_date", "population_id"],
+      "result_contract": "safe-trade-latency-profile/v1"
+    }
+  ]
+}

@@ -1,0 +1,1664 @@
+@prefix ex: <https://example.org/hkex/ontology/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:ontology.exchange_analytics.cash_trading a ex:OntologyPackage ;
+    ex:contains ex:actor.cash_trading_data_steward,
+        ex:actor.cash_trading_domain_owner,
+        ex:actor.external_user,
+        ex:actor.market_surveillance_user,
+        ex:actor.markets_user,
+        ex:actor.ontology_agent,
+        ex:actor.trading_user,
+        ex:analysis.cash_evidence_audit,
+        ex:analysis.self_trade_summary,
+        ex:analysis.self_trade_timeline,
+        ex:analysis.self_trade_trend,
+        ex:analysis.trade_latency_profile,
+        ex:binding.trade.base_notional_usd,
+        ex:binding.trade.business_date,
+        ex:binding.trade.buy_participant,
+        ex:binding.trade.capture_latency,
+        ex:binding.trade.eligible,
+        ex:binding.trade.has_both_participants,
+        ex:binding.trade.id,
+        ex:binding.trade.instrument,
+        ex:binding.trade.market_segment,
+        ex:binding.trade.nonnegative_latency,
+        ex:binding.trade.notional_hkd,
+        ex:binding.trade.participant,
+        ex:binding.trade.quantity,
+        ex:binding.trade.receive_timestamp,
+        ex:binding.trade.self_trade,
+        ex:binding.trade.sell_participant,
+        ex:binding.trade.transaction_timestamp,
+        ex:binding.trade.venue,
+        ex:dimension.business_date,
+        ex:dimension.instrument,
+        ex:dimension.market_segment,
+        ex:dimension.participant,
+        ex:entity.instrument,
+        ex:entity.market_segment,
+        ex:entity.order_activity,
+        ex:entity.participant,
+        ex:entity.trade_activity,
+        ex:entity.trading_day,
+        ex:join.trade_buy_participant,
+        ex:join.trade_calendar,
+        ex:join.trade_instrument,
+        ex:join.trade_sell_participant,
+        ex:metric.eligible_trade_count,
+        ex:metric.potential_self_trade_count,
+        ex:metric.potential_self_trade_rate,
+        ex:metric.self_trade_eligible_trade_count,
+        ex:metric.trade_capture_latency_ms,
+        ex:policy.cash_markets_demo,
+        ex:policy.cash_surveillance_demo,
+        ex:process.cash_trading_analysis,
+        ex:property.calendar.business_date,
+        ex:property.calendar.calendar_key,
+        ex:property.calendar.is_trading_day,
+        ex:property.instrument.instrument_id,
+        ex:property.instrument.instrument_name,
+        ex:property.instrument.primary_symbol,
+        ex:property.market_segment.code,
+        ex:property.market_segment.name,
+        ex:property.order.activity_id,
+        ex:property.order.order_id,
+        ex:property.order.order_status,
+        ex:property.order.trading_date,
+        ex:property.order.transaction_timestamp,
+        ex:property.participant.participant_id,
+        ex:property.participant.participant_name,
+        ex:property.participant.participant_type,
+        ex:property.trade.base_notional_usd,
+        ex:property.trade.business_date,
+        ex:property.trade.buy_participant_id,
+        ex:property.trade.capture_latency_ms,
+        ex:property.trade.has_both_participant_ids,
+        ex:property.trade.instrument_id,
+        ex:property.trade.is_eligible_trade,
+        ex:property.trade.is_nonnegative_latency,
+        ex:property.trade.is_potential_self_trade,
+        ex:property.trade.market_segment,
+        ex:property.trade.participant_id,
+        ex:property.trade.receive_timestamp,
+        ex:property.trade.sell_participant_id,
+        ex:property.trade.trade_notional_hkd,
+        ex:property.trade.trade_quantity,
+        ex:property.trade.trading_activity_id,
+        ex:property.trade.transaction_timestamp,
+        ex:property.trade.venue_code,
+        ex:question.evidence,
+        ex:question.self_trade_participant_timeline,
+        ex:question.self_trade_weekly_trend,
+        ex:question.self_trade_yesterday,
+        ex:question.trade_latency,
+        ex:relationship.order_participant,
+        ex:relationship.trade_day,
+        ex:relationship.trade_instrument,
+        ex:relationship.trade_participant,
+        ex:rule.eligible_trade,
+        ex:rule.nonnegative_latency,
+        ex:rule.potential_self_trade,
+        ex:rule.self_trade_eligible,
+        ex:scenario.cash_trading_activity_monitoring,
+        ex:source.account_reference,
+        ex:source.cash_trade_analytics,
+        ex:source.exchange_rate,
+        ex:source.instrument_reference,
+        ex:source.order_activity,
+        ex:source.order_type_reference,
+        ex:source.trading_activity,
+        ex:source.trading_calendar ;
+    ex:status "confirmed" ;
+    ex:version "0.1.0" .
+
+ex:source.derived_oracle a ex:SourceReference ;
+    rdfs:label "Independent constructed-synthetic golden controls" ;
+    ex:id "source.derived_oracle" ;
+    ex:locator "golden/oracle.json sha256=dc842cc1f27dbf3fa80c3f18aa1a6c1e26e64614df6d8c1ceb6793edcc815fe0" ;
+    ex:trust "assumption" .
+
+ex:actor.external_user a ex:Actor ;
+    rdfs:label "External User"@en,
+        "外部用户"@zh ;
+    ex:definition "A principal denied access to scenario data and evidence." ;
+    ex:id "actor.external_user" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:actor.market_surveillance_user a ex:Actor ;
+    rdfs:label "Market Surveillance User"@en,
+        "市场监察用户"@zh ;
+    ex:definition "Reviews potential self-trade candidates and their synthetic evidence." ;
+    ex:id "actor.market_surveillance_user" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:actor.markets_user a ex:Actor ;
+    rdfs:label "Markets User"@en,
+        "市场业务用户"@zh ;
+    ex:definition "Consumes aggregate market trends with participant identifiers redacted." ;
+    ex:id "actor.markets_user" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:actor.trading_user a ex:Actor ;
+    rdfs:label "Trading User"@en,
+        "交易用户"@zh ;
+    ex:definition "Reviews synthetic trading operations and latency analytics." ;
+    ex:id "actor.trading_user" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.base_notional_usd a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.base_notional_usd"@en,
+        "property.trade.base_notional_usd绑定"@zh ;
+    ex:column "base_notional_usd" ;
+    ex:definition "Synthetic runtime binding for property.trade.base_notional_usd." ;
+    ex:id "binding.trade.base_notional_usd" ;
+    ex:logicalTarget ex:property.trade.base_notional_usd ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.business_date a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.business_date"@en,
+        "property.trade.business_date绑定"@zh ;
+    ex:column "business_date" ;
+    ex:definition "Synthetic runtime binding for property.trade.business_date." ;
+    ex:id "binding.trade.business_date" ;
+    ex:logicalTarget ex:property.trade.business_date ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.buy_participant a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.buy_participant_id"@en,
+        "property.trade.buy_participant_id绑定"@zh ;
+    ex:column "buy_participant_id" ;
+    ex:definition "Synthetic runtime binding for property.trade.buy_participant_id." ;
+    ex:id "binding.trade.buy_participant" ;
+    ex:logicalTarget ex:property.trade.buy_participant_id ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.capture_latency a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.capture_latency_ms"@en,
+        "property.trade.capture_latency_ms绑定"@zh ;
+    ex:column "capture_latency_ms" ;
+    ex:definition "Synthetic runtime binding for property.trade.capture_latency_ms." ;
+    ex:id "binding.trade.capture_latency" ;
+    ex:logicalTarget ex:property.trade.capture_latency_ms ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.eligible a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.is_eligible_trade"@en,
+        "property.trade.is_eligible_trade绑定"@zh ;
+    ex:column "is_eligible_trade" ;
+    ex:definition "Synthetic runtime binding for property.trade.is_eligible_trade." ;
+    ex:id "binding.trade.eligible" ;
+    ex:logicalTarget ex:property.trade.is_eligible_trade ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.has_both_participants a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.has_both_participant_ids"@en,
+        "property.trade.has_both_participant_ids绑定"@zh ;
+    ex:column "has_both_participant_ids" ;
+    ex:definition "Synthetic runtime binding for property.trade.has_both_participant_ids." ;
+    ex:id "binding.trade.has_both_participants" ;
+    ex:logicalTarget ex:property.trade.has_both_participant_ids ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.id a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.trading_activity_id"@en,
+        "property.trade.trading_activity_id绑定"@zh ;
+    ex:column "trading_activity_id" ;
+    ex:definition "Synthetic runtime binding for property.trade.trading_activity_id." ;
+    ex:id "binding.trade.id" ;
+    ex:logicalTarget ex:property.trade.trading_activity_id ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.instrument a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.instrument_id"@en,
+        "property.trade.instrument_id绑定"@zh ;
+    ex:column "instrument_id" ;
+    ex:definition "Synthetic runtime binding for property.trade.instrument_id." ;
+    ex:id "binding.trade.instrument" ;
+    ex:logicalTarget ex:property.trade.instrument_id ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.market_segment a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.market_segment"@en,
+        "property.trade.market_segment绑定"@zh ;
+    ex:column "market_segment" ;
+    ex:definition "Synthetic runtime binding for property.trade.market_segment." ;
+    ex:id "binding.trade.market_segment" ;
+    ex:logicalTarget ex:property.trade.market_segment ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.nonnegative_latency a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.is_nonnegative_latency"@en,
+        "property.trade.is_nonnegative_latency绑定"@zh ;
+    ex:column "is_nonnegative_latency" ;
+    ex:definition "Synthetic runtime binding for property.trade.is_nonnegative_latency." ;
+    ex:id "binding.trade.nonnegative_latency" ;
+    ex:logicalTarget ex:property.trade.is_nonnegative_latency ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.notional_hkd a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.trade_notional_hkd"@en,
+        "property.trade.trade_notional_hkd绑定"@zh ;
+    ex:column "trade_notional_hkd" ;
+    ex:definition "Synthetic runtime binding for property.trade.trade_notional_hkd." ;
+    ex:id "binding.trade.notional_hkd" ;
+    ex:logicalTarget ex:property.trade.trade_notional_hkd ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.participant a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.participant_id"@en,
+        "property.trade.participant_id绑定"@zh ;
+    ex:column "participant_id" ;
+    ex:definition "Synthetic runtime binding for property.trade.participant_id." ;
+    ex:id "binding.trade.participant" ;
+    ex:logicalTarget ex:property.trade.participant_id ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.quantity a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.trade_quantity"@en,
+        "property.trade.trade_quantity绑定"@zh ;
+    ex:column "trade_quantity" ;
+    ex:definition "Synthetic runtime binding for property.trade.trade_quantity." ;
+    ex:id "binding.trade.quantity" ;
+    ex:logicalTarget ex:property.trade.trade_quantity ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.receive_timestamp a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.receive_timestamp"@en,
+        "property.trade.receive_timestamp绑定"@zh ;
+    ex:column "receive_timestamp" ;
+    ex:definition "Synthetic runtime binding for property.trade.receive_timestamp." ;
+    ex:id "binding.trade.receive_timestamp" ;
+    ex:logicalTarget ex:property.trade.receive_timestamp ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.self_trade a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.is_potential_self_trade"@en,
+        "property.trade.is_potential_self_trade绑定"@zh ;
+    ex:column "is_potential_self_trade" ;
+    ex:definition "Synthetic runtime binding for property.trade.is_potential_self_trade." ;
+    ex:id "binding.trade.self_trade" ;
+    ex:logicalTarget ex:property.trade.is_potential_self_trade ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.sell_participant a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.sell_participant_id"@en,
+        "property.trade.sell_participant_id绑定"@zh ;
+    ex:column "sell_participant_id" ;
+    ex:definition "Synthetic runtime binding for property.trade.sell_participant_id." ;
+    ex:id "binding.trade.sell_participant" ;
+    ex:logicalTarget ex:property.trade.sell_participant_id ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.transaction_timestamp a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.transaction_timestamp"@en,
+        "property.trade.transaction_timestamp绑定"@zh ;
+    ex:column "transaction_timestamp" ;
+    ex:definition "Synthetic runtime binding for property.trade.transaction_timestamp." ;
+    ex:id "binding.trade.transaction_timestamp" ;
+    ex:logicalTarget ex:property.trade.transaction_timestamp ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:binding.trade.venue a ex:PhysicalBinding ;
+    rdfs:label "Binding for property.trade.venue_code"@en,
+        "property.trade.venue_code绑定"@zh ;
+    ex:column "venue_code" ;
+    ex:definition "Synthetic runtime binding for property.trade.venue_code." ;
+    ex:id "binding.trade.venue" ;
+    ex:logicalTarget ex:property.trade.venue_code ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:source ex:source.cash_trade_analytics ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.data_dictionary ;
+    ex:table "cash_trade_analytics" ;
+    ex:version "1.0.0" .
+
+ex:decision.calendar_key a ex:Decision ;
+    ex:affects ex:property.calendar.calendar_key ;
+    ex:decisionText "Use calendar_code + business_date." ;
+    ex:id "decision.calendar_key" .
+
+ex:decision.cancel_spelling a ex:Decision ;
+    ex:affects ex:property.order.order_status ;
+    ex:decisionText "Use CANCELED and accept CANCELLED only as an input alias." ;
+    ex:id "decision.cancel_spelling" .
+
+ex:decision.order_lifecycle a ex:Decision ;
+    ex:affects ex:entity.order_activity,
+        ex:property.order.order_id ;
+    ex:decisionText "Use venue_code + trading_date + order_id and disclose incomplete observed timelines." ;
+    ex:id "decision.order_lifecycle" .
+
+ex:join.trade_buy_participant a ex:JoinContract ;
+    rdfs:label "Trade to Buy Participant"@en,
+        "成交关联买方参与者"@zh ;
+    ex:definition "Resolve the buying participant where available." ;
+    ex:id "join.trade_buy_participant" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:join.trade_calendar a ex:JoinContract ;
+    rdfs:label "Trade to Calendar"@en,
+        "成交关联日历"@zh ;
+    ex:definition "Resolve a trade to its venue calendar date." ;
+    ex:id "join.trade_calendar" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:join.trade_instrument a ex:JoinContract ;
+    rdfs:label "Trade to Instrument"@en,
+        "成交关联证券"@zh ;
+    ex:definition "Resolve each trade instrument." ;
+    ex:id "join.trade_instrument" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:join.trade_sell_participant a ex:JoinContract ;
+    rdfs:label "Trade to Sell Participant"@en,
+        "成交关联卖方参与者"@zh ;
+    ex:definition "Resolve the selling participant where available." ;
+    ex:id "join.trade_sell_participant" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:process.cash_trading_analysis.authorize a ex:ProcessStep ;
+    rdfs:label "Resolve role, time window and output grain" ;
+    ex:actor ex:actor.ontology_agent ;
+    ex:operation "PolicyGate" ;
+    ex:uses ex:policy.cash_markets_demo,
+        ex:policy.cash_surveillance_demo .
+
+ex:process.cash_trading_analysis.bind a ex:ProcessStep ;
+    rdfs:label "Bind the question to a registered analysis pattern and metrics" ;
+    ex:actor ex:actor.ontology_agent ;
+    ex:operation "SemanticBinding" ;
+    ex:uses ex:analysis.cash_evidence_audit,
+        ex:analysis.self_trade_summary,
+        ex:analysis.self_trade_timeline,
+        ex:analysis.self_trade_trend,
+        ex:analysis.trade_latency_profile .
+
+ex:process.cash_trading_analysis.evidence a ex:ProcessStep ;
+    rdfs:label "Attach claims to metrics, decisions, data and query identities" ;
+    ex:actor ex:actor.ontology_agent ;
+    ex:operation "EvidenceAssembly" ;
+    ex:uses ex:analysis.cash_evidence_audit .
+
+ex:process.cash_trading_analysis.execute a ex:ProcessStep ;
+    rdfs:label "Execute bounded DuckDB tools over verified Parquet" ;
+    ex:actor ex:actor.ontology_agent ;
+    ex:operation "DeterministicExecution" ;
+    ex:uses ex:rule.eligible_trade,
+        ex:rule.nonnegative_latency,
+        ex:rule.potential_self_trade,
+        ex:rule.self_trade_eligible,
+        ex:source.cash_trade_analytics .
+
+ex:property.calendar.business_date a ex:Property ;
+    rdfs:label "Calendar Business Date"@en,
+        "日历业务日期"@zh ;
+    ex:dataType "date" ;
+    ex:definition "Business date represented by the calendar row." ;
+    ex:id "property.calendar.business_date" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trading_day ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.calendar.is_trading_day a ex:Property ;
+    rdfs:label "Is Trading Day"@en,
+        "是否交易日"@zh ;
+    ex:dataType "enum" ;
+    ex:definition "Trading-day indicator." ;
+    ex:id "property.calendar.is_trading_day" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trading_day ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.instrument.instrument_id a ex:Property ;
+    rdfs:label "Instrument ID"@en,
+        "证券ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Stable synthetic instrument identifier." ;
+    ex:id "property.instrument.instrument_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.instrument ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.instrument.instrument_name a ex:Property ;
+    rdfs:label "Instrument Name"@en,
+        "证券名称"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Synthetic instrument display name." ;
+    ex:id "property.instrument.instrument_name" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.instrument ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.instrument.primary_symbol a ex:Property ;
+    rdfs:label "Primary Symbol"@en,
+        "主要代码"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Primary venue symbol." ;
+    ex:id "property.instrument.primary_symbol" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.instrument ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.market_segment.code a ex:Property ;
+    rdfs:label "Market Segment Code"@en,
+        "市场板块代码"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Normalized market-segment code." ;
+    ex:id "property.market_segment.code" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.market_segment ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.market_segment.name a ex:Property ;
+    rdfs:label "Market Segment Name"@en,
+        "市场板块名称"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Display label for the market segment." ;
+    ex:id "property.market_segment.name" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.market_segment ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.order.activity_id a ex:Property ;
+    rdfs:label "Order Activity ID"@en,
+        "订单活动ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Stable order-event identifier." ;
+    ex:id "property.order.activity_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.order_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.participant.participant_id a ex:Property ;
+    rdfs:label "Participant ID"@en,
+        "参与者ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Stable synthetic participant identifier." ;
+    ex:id "property.participant.participant_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.participant ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.participant.participant_name a ex:Property ;
+    rdfs:label "Participant Name"@en,
+        "参与者名称"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Synthetic participant display name." ;
+    ex:id "property.participant.participant_name" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.participant ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.participant.participant_type a ex:Property ;
+    rdfs:label "Participant Type"@en,
+        "参与者类型"@zh ;
+    ex:dataType "enum" ;
+    ex:definition "Controlled participant classification." ;
+    ex:id "property.participant.participant_type" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.participant ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:question.evidence a ex:BusinessQuestion ;
+    rdfs:label "Answer Evidence"@en,
+        "答案证据"@zh ;
+    ex:definition "Explain the exact governed definitions and computations behind a prior answer." ;
+    ex:id "question.evidence" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:usesPattern ex:analysis.cash_evidence_audit ;
+    ex:version "1.0.0" .
+
+ex:question.self_trade_participant_timeline a ex:BusinessQuestion ;
+    rdfs:label "Participant Evidence Timeline"@en,
+        "参与者证据时间线"@zh ;
+    ex:definition "Show the observed timeline for one candidate participant." ;
+    ex:id "question.self_trade_participant_timeline" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:usesPattern ex:analysis.self_trade_timeline ;
+    ex:version "1.0.0" .
+
+ex:question.self_trade_weekly_trend a ex:BusinessQuestion ;
+    rdfs:label "Self-Trade Daily Trend"@en,
+        "自成交日趋势"@zh ;
+    ex:definition "Show the potential self-trade trend over the selected week." ;
+    ex:id "question.self_trade_weekly_trend" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:usesPattern ex:analysis.self_trade_trend ;
+    ex:version "1.0.0" .
+
+ex:question.self_trade_yesterday a ex:BusinessQuestion ;
+    rdfs:label "Self-Trades Yesterday"@en,
+        "昨日自成交分析"@zh ;
+    ex:definition "Summarize potential self-trade candidates for a specified business date." ;
+    ex:id "question.self_trade_yesterday" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:usesPattern ex:analysis.self_trade_summary ;
+    ex:version "1.0.0" .
+
+ex:question.trade_latency a ex:BusinessQuestion ;
+    rdfs:label "Trade Capture Latency"@en,
+        "成交捕获延迟"@zh ;
+    ex:definition "Profile valid trade capture latency for a selected period." ;
+    ex:id "question.trade_latency" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:usesPattern ex:analysis.trade_latency_profile ;
+    ex:version "1.0.0" .
+
+ex:relationship.order_participant a ex:Relationship ;
+    rdfs:label "Order has participant"@en,
+        "订单对应参与者"@zh ;
+    ex:cardinality "N:1" ;
+    ex:definition "An order activity may reference a participant." ;
+    ex:fromEntity ex:entity.order_activity ;
+    ex:id "relationship.order_participant" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:toEntity ex:entity.participant ;
+    ex:version "1.0.0" .
+
+ex:relationship.trade_day a ex:Relationship ;
+    rdfs:label "Trade occurs on day"@en,
+        "成交发生于交易日"@zh ;
+    ex:cardinality "N:1" ;
+    ex:definition "A trade activity is assigned to one business date." ;
+    ex:fromEntity ex:entity.trade_activity ;
+    ex:id "relationship.trade_day" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:toEntity ex:entity.trading_day ;
+    ex:version "1.0.0" .
+
+ex:relationship.trade_instrument a ex:Relationship ;
+    rdfs:label "Trade has instrument"@en,
+        "成交对应证券"@zh ;
+    ex:cardinality "N:1" ;
+    ex:definition "A trade activity references one instrument." ;
+    ex:fromEntity ex:entity.trade_activity ;
+    ex:id "relationship.trade_instrument" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:toEntity ex:entity.instrument ;
+    ex:version "1.0.0" .
+
+ex:relationship.trade_participant a ex:Relationship ;
+    rdfs:label "Trade has participant"@en,
+        "成交对应参与者"@zh ;
+    ex:cardinality "N:1" ;
+    ex:definition "A trade activity may reference an associated participant." ;
+    ex:fromEntity ex:entity.trade_activity ;
+    ex:id "relationship.trade_participant" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:toEntity ex:entity.participant ;
+    ex:version "1.0.0" .
+
+ex:metric.eligible_trade_count a ex:Metric ;
+    rdfs:label "Eligible Trade Count"@en,
+        "合格成交笔数"@zh ;
+    ex:allowedDimension ex:dimension.business_date,
+        ex:dimension.instrument,
+        ex:dimension.market_segment,
+        ex:dimension.participant ;
+    ex:definition "Distinct eligible active trades in the selected cohort." ;
+    ex:formulaJson "{\"args\": [{\"args\": [], \"op\": \"field_ref\", \"ref\": \"property.trade.trading_activity_id\", \"value\": null}], \"op\": \"count_distinct\", \"ref\": null, \"value\": null}" ;
+    ex:governedByDecision ex:decision.trade_eligibility ;
+    ex:id "metric.eligible_trade_count" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:unit "TRADE" ;
+    ex:version "1.0.0" .
+
+ex:process.cash_trading_analysis a ex:Process ;
+    rdfs:label "Governed Cash Trading Analysis"@en,
+        "受治理现金交易分析"@zh ;
+    ex:definition "From a natural-language question to a policy-scoped deterministic result and evidence-backed explanation." ;
+    ex:governedByDecision ex:decision.demo_policy,
+        ex:decision.source_classification ;
+    ex:hasStep ex:process.cash_trading_analysis.authorize,
+        ex:process.cash_trading_analysis.bind,
+        ex:process.cash_trading_analysis.evidence,
+        ex:process.cash_trading_analysis.execute ;
+    ex:id "process.cash_trading_analysis" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:trigger "An authorized demo user asks a supported self-trade, latency or evidence question." ;
+    ex:version "1.0.0" .
+
+ex:property.calendar.calendar_key a ex:Property ;
+    rdfs:label "Calendar Key"@en,
+        "日历键"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Logical calendar_code + business_date key." ;
+    ex:governedByDecision ex:decision.calendar_key ;
+    ex:id "property.calendar.calendar_key" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trading_day ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.order.order_id a ex:Property ;
+    rdfs:label "Order ID"@en,
+        "订单ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Order identifier within venue and trading date." ;
+    ex:governedByDecision ex:decision.order_lifecycle ;
+    ex:id "property.order.order_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.order_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.order.order_status a ex:Property ;
+    rdfs:label "Order Status"@en,
+        "订单状态"@zh ;
+    ex:dataType "enum" ;
+    ex:definition "Canonical post-event status using CANCELED spelling." ;
+    ex:governedByDecision ex:decision.cancel_spelling ;
+    ex:id "property.order.order_status" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.order_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.order.trading_date a ex:Property ;
+    rdfs:label "Order Trading Date"@en,
+        "订单交易日"@zh ;
+    ex:dataType "date" ;
+    ex:definition "Trading date of the observed order event." ;
+    ex:governedByDecision ex:decision.time_convention ;
+    ex:id "property.order.trading_date" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.order_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.order.transaction_timestamp a ex:Property ;
+    rdfs:label "Order Transaction Timestamp"@en,
+        "订单交易时间戳"@zh ;
+    ex:dataType "datetime" ;
+    ex:definition "Observed order-event transaction timestamp." ;
+    ex:governedByDecision ex:decision.time_convention ;
+    ex:id "property.order.transaction_timestamp" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.order_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.buy_participant_id a ex:Property ;
+    rdfs:label "Buy Participant ID"@en,
+        "买方参与者ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Normalized buying participant identifier." ;
+    ex:id "property.trade.buy_participant_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.instrument_id a ex:Property ;
+    rdfs:label "Instrument ID"@en,
+        "证券ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Instrument join key." ;
+    ex:id "property.trade.instrument_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.market_segment a ex:Property ;
+    rdfs:label "Market Segment"@en,
+        "市场板块"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Normalized market segment." ;
+    ex:id "property.trade.market_segment" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.participant_id a ex:Property ;
+    rdfs:label "Participant ID"@en,
+        "参与者ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Associated participant identifier where available." ;
+    ex:id "property.trade.participant_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.sell_participant_id a ex:Property ;
+    rdfs:label "Sell Participant ID"@en,
+        "卖方参与者ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Normalized selling participant identifier." ;
+    ex:id "property.trade.sell_participant_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.trade_quantity a ex:Property ;
+    rdfs:label "Trade Quantity"@en,
+        "成交数量"@zh ;
+    ex:dataType "decimal" ;
+    ex:definition "Executed trade quantity." ;
+    ex:id "property.trade.trade_quantity" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.trading_activity_id a ex:Property ;
+    rdfs:label "Trading Activity ID"@en,
+        "成交活动ID"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Stable normalized trade-activity identifier." ;
+    ex:id "property.trade.trading_activity_id" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.venue_code a ex:Property ;
+    rdfs:label "Venue Code"@en,
+        "交易场所代码"@zh ;
+    ex:dataType "string" ;
+    ex:definition "Normalized venue identifier." ;
+    ex:id "property.trade.venue_code" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:source.account_reference a ex:DataSource ;
+    rdfs:label "Account Reference"@en,
+        "account_reference"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic account_reference worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.account_reference" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.exchange_rate a ex:DataSource ;
+    rdfs:label "Exchange Rate"@en,
+        "exchange_rate"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic exchange_rate worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.exchange_rate" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.instrument_reference a ex:DataSource ;
+    rdfs:label "Instrument Reference"@en,
+        "instrument_reference"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic instrument_reference worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.instrument_reference" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.order_activity a ex:DataSource ;
+    rdfs:label "Order Activity"@en,
+        "order_activity"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic order_activity worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.order_activity" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.order_type_reference a ex:DataSource ;
+    rdfs:label "Order Type Reference"@en,
+        "order_type_reference"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic order_type_reference worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.order_type_reference" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.trading_activity a ex:DataSource ;
+    rdfs:label "Trading Activity"@en,
+        "trading_activity"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic trading_activity worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.trading_activity" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.trading_calendar a ex:DataSource ;
+    rdfs:label "Trading Calendar"@en,
+        "trading_calendar"@zh ;
+    ex:definition "Typed Parquet projection of the supplied constructed-synthetic trading_calendar worksheet." ;
+    ex:governedByDecision ex:decision.source_classification ;
+    ex:id "source.trading_calendar" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:analysis.self_trade_summary a ex:AnalysisPattern ;
+    rdfs:label "Potential Self-Trade Summary"@en,
+        "潜在自成交汇总"@zh ;
+    ex:definition "Return eligible count, candidate count, rate and top candidate dimensions." ;
+    ex:id "analysis.self_trade_summary" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:requiresMetric ex:metric.potential_self_trade_count,
+        ex:metric.potential_self_trade_rate,
+        ex:metric.self_trade_eligible_trade_count ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:analysis.self_trade_timeline a ex:AnalysisPattern ;
+    rdfs:label "Potential Self-Trade Evidence Timeline"@en,
+        "潜在自成交证据时间线"@zh ;
+    ex:definition "Return the selected participant's candidate trades and linked observed order events in chronological order." ;
+    ex:id "analysis.self_trade_timeline" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:requiresDimension ex:dimension.participant ;
+    ex:requiresMetric ex:metric.potential_self_trade_count ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:analysis.self_trade_trend a ex:AnalysisPattern ;
+    rdfs:label "Potential Self-Trade Trend"@en,
+        "潜在自成交趋势"@zh ;
+    ex:definition "Return the candidate count and rate by business date." ;
+    ex:id "analysis.self_trade_trend" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:requiresDimension ex:dimension.business_date ;
+    ex:requiresMetric ex:metric.potential_self_trade_count,
+        ex:metric.potential_self_trade_rate,
+        ex:metric.self_trade_eligible_trade_count ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:decision.notional_currency a ex:Decision ;
+    ex:affects ex:property.trade.base_notional_usd,
+        ex:property.trade.trade_notional_hkd ;
+    ex:decisionText "Label trade_notional as HKD and base_notional_before_haircut as USD." ;
+    ex:id "decision.notional_currency" .
+
+ex:decision.self_trade_denominator a ex:Decision ;
+    ex:affects ex:metric.potential_self_trade_rate,
+        ex:metric.self_trade_eligible_trade_count,
+        ex:rule.self_trade_eligible ;
+    ex:decisionText "Use eligible active trades with both-side participant IDs." ;
+    ex:id "decision.self_trade_denominator" .
+
+ex:entity.market_segment a ex:Entity ;
+    rdfs:label "Market Segment"@en,
+        "市场板块"@zh ;
+    ex:definition "A normalized market-segment member used for analysis." ;
+    ex:id "entity.market_segment" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:policy.cash_markets_demo a ex:Policy ;
+    rdfs:label "Cash Markets Aggregate Demo Policy"@en,
+        "现金市场汇总演示策略"@zh ;
+    ex:definition "Allow only aggregate synthetic trends with participant names and row evidence denied." ;
+    ex:governedByDecision ex:decision.demo_policy ;
+    ex:id "policy.cash_markets_demo" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:policy.cash_surveillance_demo a ex:Policy ;
+    rdfs:label "Cash Surveillance Demo Policy"@en,
+        "现金监察演示策略"@zh ;
+    ex:definition "Allow synthetic row evidence for surveillance triage for at most three months." ;
+    ex:governedByDecision ex:decision.demo_policy ;
+    ex:id "policy.cash_surveillance_demo" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:property.trade.base_notional_usd a ex:Property ;
+    rdfs:label "Converted Base Notional"@en,
+        "转换后基础名义金额"@zh ;
+    ex:dataType "decimal" ;
+    ex:definition "Base notional before haircut reported in USD for the supplied sample." ;
+    ex:governedByDecision ex:decision.notional_currency ;
+    ex:id "property.trade.base_notional_usd" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.business_date a ex:Property ;
+    rdfs:label "Business Date"@en,
+        "业务日期"@zh ;
+    ex:dataType "date" ;
+    ex:definition "Venue-calendar business date for the trade." ;
+    ex:governedByDecision ex:decision.time_convention ;
+    ex:id "property.trade.business_date" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.capture_latency_ms a ex:Property ;
+    rdfs:label "Capture Latency"@en,
+        "捕获延迟"@zh ;
+    ex:dataType "integer" ;
+    ex:definition "Receive timestamp minus transaction timestamp in milliseconds." ;
+    ex:governedByDecision ex:decision.latency_convention ;
+    ex:id "property.trade.capture_latency_ms" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:property.trade.has_both_participant_ids a ex:Property ;
+    rdfs:label "Both Participants Available"@en,
+        "双方参与者可用"@zh ;
+    ex:dataType "boolean" ;
+    ex:definition "True when both normalized side participant identifiers are present." ;
+    ex:governedByDecision ex:decision.self_trade_candidate ;
+    ex:id "property.trade.has_both_participant_ids" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.compiler_sql ;
+    ex:version "1.0.0" .
+
+ex:property.trade.is_eligible_trade a ex:Property ;
+    rdfs:label "Eligible Trade Flag"@en,
+        "合格成交标志"@zh ;
+    ex:dataType "boolean" ;
+    ex:definition "Adapter-derived flag for the provisional active-trade population." ;
+    ex:governedByDecision ex:decision.trade_eligibility ;
+    ex:id "property.trade.is_eligible_trade" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.compiler_sql ;
+    ex:version "1.0.0" .
+
+ex:property.trade.is_nonnegative_latency a ex:Property ;
+    rdfs:label "Valid Latency Flag"@en,
+        "有效延迟标志"@zh ;
+    ex:dataType "boolean" ;
+    ex:definition "True when capture latency is non-negative." ;
+    ex:governedByDecision ex:decision.latency_convention ;
+    ex:id "property.trade.is_nonnegative_latency" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:property.trade.is_potential_self_trade a ex:Property ;
+    rdfs:label "Potential Self-Trade Flag"@en,
+        "潜在自成交标志"@zh ;
+    ex:dataType "boolean" ;
+    ex:definition "Deterministic triage flag; not a misconduct conclusion." ;
+    ex:governedByDecision ex:decision.self_trade_candidate ;
+    ex:id "property.trade.is_potential_self_trade" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.compiler_sql,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:property.trade.receive_timestamp a ex:Property ;
+    rdfs:label "Receive Timestamp"@en,
+        "接收时间戳"@zh ;
+    ex:dataType "datetime" ;
+    ex:definition "Platform receive timestamp normalized to UTC." ;
+    ex:governedByDecision ex:decision.time_convention ;
+    ex:id "property.trade.receive_timestamp" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.trade_notional_hkd a ex:Property ;
+    rdfs:label "Native Trade Notional"@en,
+        "原币成交名义金额"@zh ;
+    ex:dataType "decimal" ;
+    ex:definition "Native trade notional reported in HKD for the supplied sample." ;
+    ex:governedByDecision ex:decision.notional_currency ;
+    ex:id "property.trade.trade_notional_hkd" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:property.trade.transaction_timestamp a ex:Property ;
+    rdfs:label "Transaction Timestamp"@en,
+        "交易时间戳"@zh ;
+    ex:dataType "datetime" ;
+    ex:definition "Matching-engine timestamp normalized to UTC." ;
+    ex:governedByDecision ex:decision.time_convention ;
+    ex:id "property.trade.transaction_timestamp" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:propertyOf ex:entity.trade_activity ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:rule.eligible_trade a ex:Rule ;
+    rdfs:label "Eligible Trade"@en,
+        "合格成交"@zh ;
+    ex:definition "Include only active TRADE rows that are not corrected originals." ;
+    ex:governedByDecision ex:decision.trade_eligibility ;
+    ex:id "rule.eligible_trade" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:rule.nonnegative_latency a ex:Rule ;
+    rdfs:label "Non-Negative Capture Latency"@en,
+        "非负捕获延迟"@zh ;
+    ex:definition "Exclude negative latency observations from KPI values and count them as exceptions." ;
+    ex:governedByDecision ex:decision.latency_convention ;
+    ex:id "rule.nonnegative_latency" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:rule.potential_self_trade a ex:Rule ;
+    rdfs:label "Potential Self-Trade Candidate"@en,
+        "潜在自成交候选"@zh ;
+    ex:definition "Both normalized side participant IDs are present and equal." ;
+    ex:governedByDecision ex:decision.self_trade_candidate ;
+    ex:id "rule.potential_self_trade" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:rule.self_trade_eligible a ex:Rule ;
+    rdfs:label "Self-Trade Eligible Population"@en,
+        "自成交合格总体"@zh ;
+    ex:definition "An eligible trade with both normalized side participant identifiers available." ;
+    ex:governedByDecision ex:decision.self_trade_denominator ;
+    ex:id "rule.self_trade_eligible" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:version "1.0.0" .
+
+ex:scenario.cash_trading_activity_monitoring a ex:Scenario ;
+    rdfs:label "Cash Market Order and Trading Activity Monitoring"@en,
+        "现金市场订单与成交活动监控"@zh ;
+    ex:definition "Constructed-synthetic scenario for potential self-trade triage and trade-capture latency analysis." ;
+    ex:governedByDecision ex:decision.demo_policy,
+        ex:decision.source_classification,
+        ex:decision.time_convention ;
+    ex:id "scenario.cash_trading_activity_monitoring" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:analysis.cash_evidence_audit a ex:AnalysisPattern ;
+    rdfs:label "Cash Trading Evidence Audit"@en,
+        "现金交易证据审计"@zh ;
+    ex:definition "Expose exact metric, decision, dataset, SQL and control references for an answer." ;
+    ex:id "analysis.cash_evidence_audit" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:requiresMetric ex:metric.potential_self_trade_rate,
+        ex:metric.trade_capture_latency_ms ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:analysis.trade_latency_profile a ex:AnalysisPattern ;
+    rdfs:label "Trade Capture Latency Profile"@en,
+        "成交捕获延迟分布"@zh ;
+    ex:definition "Return count, minimum, nearest-rank p50/p95/p99, maximum and negative-latency exceptions." ;
+    ex:id "analysis.trade_latency_profile" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:requiresMetric ex:metric.trade_capture_latency_ms ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:decision.demo_policy a ex:Decision ;
+    ex:affects ex:policy.cash_markets_demo,
+        ex:policy.cash_surveillance_demo,
+        ex:process.cash_trading_analysis ;
+    ex:decisionText "Apply the explicit synthetic-demo role projection and make no production IAM claim." ;
+    ex:id "decision.demo_policy" .
+
+ex:metric.trade_capture_latency_ms a ex:Metric ;
+    rdfs:label "Trade Capture Latency"@en,
+        "成交捕获延迟"@zh ;
+    ex:allowedDimension ex:dimension.business_date,
+        ex:dimension.instrument,
+        ex:dimension.market_segment ;
+    ex:definition "Per-trade capture latency used by the latency-profile operator to report count, min, p50, p95, p99 and max." ;
+    ex:formulaJson "{\"args\": [], \"op\": \"field_ref\", \"ref\": \"property.trade.capture_latency_ms\", \"value\": null}" ;
+    ex:governedByDecision ex:decision.latency_convention ;
+    ex:id "metric.trade_capture_latency_ms" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:unit "MILLISECOND" ;
+    ex:version "1.0.0" .
+
+ex:source.compiler_sql a ex:SourceReference ;
+    rdfs:label "Compiler-generated Cash Trading reference SQL" ;
+    ex:id "source.compiler_sql" ;
+    ex:locator "sql/reference_controls.sql sha256=e33d11e1b68d0f6f2c0cd6ae39aeb1dc3f30f1929ac93ea3e929001197b69751" ;
+    ex:trust "assumption" .
+
+ex:actor.ontology_agent a ex:Actor ;
+    rdfs:label "Ontology Analytic Agent"@en,
+        "本体分析智能体"@zh ;
+    ex:definition "Deterministic and LLM-assisted service constrained by the active scenario package." ;
+    ex:id "actor.ontology_agent" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:decision.latency_convention a ex:Decision ;
+    ex:affects ex:analysis.trade_latency_profile,
+        ex:metric.trade_capture_latency_ms,
+        ex:property.trade.capture_latency_ms,
+        ex:property.trade.is_nonnegative_latency,
+        ex:rule.nonnegative_latency ;
+    ex:decisionText "Use receive minus transaction timestamp in integer milliseconds, nearest-rank p50/p95/p99, and separate negative exceptions." ;
+    ex:id "decision.latency_convention" .
+
+ex:decision.trade_eligibility a ex:Decision ;
+    ex:affects ex:metric.eligible_trade_count,
+        ex:property.trade.is_eligible_trade,
+        ex:rule.eligible_trade ;
+    ex:decisionText "Use active TRADE rows and exclude cancel/bust/corrected originals." ;
+    ex:id "decision.trade_eligibility" .
+
+ex:entity.instrument a ex:Entity ;
+    rdfs:label "Instrument"@en,
+        "证券"@zh ;
+    ex:definition "A cash-market instrument in the synthetic reference." ;
+    ex:id "entity.instrument" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:entity.trading_day a ex:Entity ;
+    rdfs:label "Trading Day"@en,
+        "交易日"@zh ;
+    ex:definition "A venue calendar date and trading-day designation." ;
+    ex:id "entity.trading_day" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:metric.self_trade_eligible_trade_count a ex:Metric ;
+    rdfs:label "Self-Trade Eligible Trade Count"@en,
+        "自成交合格成交笔数"@zh ;
+    ex:allowedDimension ex:dimension.business_date,
+        ex:dimension.instrument,
+        ex:dimension.market_segment,
+        ex:dimension.participant ;
+    ex:definition "Distinct eligible active trades with both-side participant identifiers available." ;
+    ex:formulaJson "{\"args\": [{\"args\": [], \"op\": \"field_ref\", \"ref\": \"property.trade.trading_activity_id\", \"value\": null}], \"op\": \"count_distinct\", \"ref\": null, \"value\": null}" ;
+    ex:governedByDecision ex:decision.self_trade_denominator,
+        ex:decision.trade_eligibility ;
+    ex:id "metric.self_trade_eligible_trade_count" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:unit "TRADE" ;
+    ex:version "1.0.0" .
+
+ex:decision.self_trade_candidate a ex:Decision ;
+    ex:affects ex:metric.potential_self_trade_count,
+        ex:metric.potential_self_trade_rate,
+        ex:property.trade.has_both_participant_ids,
+        ex:property.trade.is_potential_self_trade,
+        ex:rule.potential_self_trade ;
+    ex:decisionText "Use same normalized buy and sell participant IDs as a triage candidate only." ;
+    ex:id "decision.self_trade_candidate" .
+
+ex:decision.time_convention a ex:Decision ;
+    ex:affects ex:property.order.trading_date,
+        ex:property.order.transaction_timestamp,
+        ex:property.trade.business_date,
+        ex:property.trade.receive_timestamp,
+        ex:property.trade.transaction_timestamp,
+        ex:scenario.cash_trading_activity_monitoring ;
+    ex:decisionText "Interpret source wall time as Asia/Hong_Kong, persist UTC, retain venue business date." ;
+    ex:id "decision.time_convention" .
+
+ex:dimension.instrument a ex:Dimension ;
+    rdfs:label "Instrument"@en,
+        "证券"@zh ;
+    ex:definition "Instrument reporting dimension." ;
+    ex:id "dimension.instrument" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:dimension.market_segment a ex:Dimension ;
+    rdfs:label "Market Segment"@en,
+        "市场板块"@zh ;
+    ex:definition "Market-segment reporting dimension." ;
+    ex:id "dimension.market_segment" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:dimension.participant a ex:Dimension ;
+    rdfs:label "Participant"@en,
+        "参与者"@zh ;
+    ex:definition "Synthetic participant reporting dimension subject to role projection." ;
+    ex:id "dimension.participant" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:entity.participant a ex:Entity ;
+    rdfs:label "Participant"@en,
+        "参与者"@zh ;
+    ex:definition "A participant, member, client or account-level party in the synthetic reference." ;
+    ex:id "entity.participant" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:metric.potential_self_trade_count a ex:Metric ;
+    rdfs:label "Potential Self-Trade Candidate Count"@en,
+        "潜在自成交候选笔数"@zh ;
+    ex:allowedDimension ex:dimension.business_date,
+        ex:dimension.instrument,
+        ex:dimension.market_segment,
+        ex:dimension.participant ;
+    ex:definition "Distinct eligible trades whose normalized buy and sell participant IDs are equal." ;
+    ex:formulaJson "{\"args\": [{\"args\": [], \"op\": \"field_ref\", \"ref\": \"property.trade.trading_activity_id\", \"value\": null}], \"op\": \"count_distinct\", \"ref\": null, \"value\": null}" ;
+    ex:governedByDecision ex:decision.self_trade_candidate ;
+    ex:id "metric.potential_self_trade_count" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:unit "TRADE" ;
+    ex:version "1.0.0" .
+
+ex:metric.potential_self_trade_rate a ex:Metric ;
+    rdfs:label "Potential Self-Trade Candidate Rate"@en,
+        "潜在自成交候选率"@zh ;
+    ex:allowedDimension ex:dimension.business_date,
+        ex:dimension.instrument,
+        ex:dimension.market_segment,
+        ex:dimension.participant ;
+    ex:definition "Candidate trades divided by eligible trades with both-side participant IDs; a triage measure only." ;
+    ex:dependsOn ex:metric.potential_self_trade_count,
+        ex:metric.self_trade_eligible_trade_count ;
+    ex:formulaJson "{\"args\": [{\"args\": [], \"op\": \"metric_ref\", \"ref\": \"metric.potential_self_trade_count\", \"value\": null}, {\"args\": [], \"op\": \"metric_ref\", \"ref\": \"metric.self_trade_eligible_trade_count\", \"value\": null}], \"op\": \"divide\", \"ref\": null, \"value\": null}" ;
+    ex:governedByDecision ex:decision.self_trade_candidate,
+        ex:decision.self_trade_denominator ;
+    ex:id "metric.potential_self_trade_rate" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.metric_logic ;
+    ex:unit "PERCENT" ;
+    ex:version "1.0.0" .
+
+ex:dimension.business_date a ex:Dimension ;
+    rdfs:label "Business Date"@en,
+        "业务日期"@zh ;
+    ex:definition "Daily reporting dimension." ;
+    ex:id "dimension.business_date" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:entity.order_activity a ex:Entity ;
+    rdfs:label "Order Activity"@en,
+        "订单活动"@zh ;
+    ex:definition "An observed order-lifecycle event in the supplied reporting window." ;
+    ex:id "entity.order_activity" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary,
+        ex:source.sample_data ;
+    ex:version "1.0.0" .
+
+ex:source.sample_data a ex:SourceReference ;
+    rdfs:label "Deloitte HK constructed-synthetic sample data" ;
+    ex:id "source.sample_data" ;
+    ex:locator "intake/source-manifest.json#SRC-SAMPLE-001 sha256=d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018" ;
+    ex:trust "assumption" .
+
+ex:decision.source_classification a ex:Decision ;
+    ex:affects ex:scenario.cash_trading_activity_monitoring,
+        ex:source.account_reference,
+        ex:source.exchange_rate,
+        ex:source.instrument_reference,
+        ex:source.order_activity,
+        ex:source.order_type_reference,
+        ex:source.trading_activity,
+        ex:source.trading_calendar ;
+    ex:decisionText "Treat the case as constructed synthetic and illustrative only." ;
+    ex:id "decision.source_classification" .
+
+ex:source.metric_logic a ex:SourceReference ;
+    rdfs:label "Deloitte HK metric logic transcription" ;
+    ex:id "source.metric_logic" ;
+    ex:locator "intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf" ;
+    ex:trust "secondary" .
+
+ex:source.cash_trade_analytics a ex:DataSource ;
+    rdfs:label "Cash Trade Analytic View"@en,
+        "现金交易分析视图"@zh ;
+    ex:definition "Adapter-owned deterministic view over the exact trading-activity Parquet source." ;
+    ex:governedByDecision ex:decision.latency_convention,
+        ex:decision.notional_currency,
+        ex:decision.self_trade_candidate,
+        ex:decision.trade_eligibility ;
+    ex:id "source.cash_trade_analytics" ;
+    ex:owner ex:actor.cash_trading_data_steward ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.assumption_register,
+        ex:source.compiler_sql,
+        ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:entity.trade_activity a ex:Entity ;
+    rdfs:label "Trade Activity"@en,
+        "成交活动"@zh ;
+    ex:definition "A normalized cash trade or execution activity." ;
+    ex:id "entity.trade_activity" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.data_dictionary ;
+    ex:version "1.0.0" .
+
+ex:source.requirements a ex:SourceReference ;
+    rdfs:label "Deloitte HK requirements transcription" ;
+    ex:id "source.requirements" ;
+    ex:locator "intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf" ;
+    ex:trust "secondary" .
+
+ex:actor.cash_trading_domain_owner a ex:Actor ;
+    rdfs:label "Cash Trading Demo Domain Owner"@en,
+        "现金交易演示业务负责人"@zh ;
+    ex:definition "Accountable owner for provisional synthetic definitions and demo claims." ;
+    ex:id "actor.cash_trading_domain_owner" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:source.assumption_register a ex:SourceReference ;
+    rdfs:label "PoC cash-trading assumption and decision register" ;
+    ex:id "source.assumption_register" ;
+    ex:locator "governance/assumption-register.json sha256=846c64265d5391a08e93046e0706f4892fce68c5bd66903d851d156e6675760c" ;
+    ex:trust "assumption" .
+
+ex:actor.cash_trading_data_steward a ex:Actor ;
+    rdfs:label "Cash Trading Data Steward"@en,
+        "现金交易数据管理员"@zh ;
+    ex:definition "Owner of typed schema, mappings and data-quality evidence." ;
+    ex:id "actor.cash_trading_data_steward" ;
+    ex:owner ex:actor.cash_trading_domain_owner ;
+    ex:status "confirmed" ;
+    ex:supportedBy ex:source.requirements ;
+    ex:version "1.0.0" .
+
+ex:source.data_dictionary a ex:SourceReference ;
+    rdfs:label "Deloitte HK generated data dictionary" ;
+    ex:id "source.data_dictionary" ;
+    ex:locator "intake/source-manifest.json#SRC-DICT-001 sha256=2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a" ;
+    ex:trust "secondary" .
+

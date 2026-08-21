@@ -1,0 +1,26 @@
+{
+  "contract": "studio-model-projection-policy/v1",
+  "policy_id": "cash-trading.studio.synthetic-projection.v1",
+  "version": "1.0.0",
+  "classification": "constructed_synthetic",
+  "allowed_fields": [
+    "contract",
+    "run_id",
+    "registered_slot_ids",
+    "current_provisional_values",
+    "redacted_source_excerpt",
+    "source_anchor_ids",
+    "allowed_values",
+    "mandatory_limitations"
+  ],
+  "denied_field_tokens": [
+    "raw_document",
+    "raw_workbook",
+    "production_table",
+    "production_column",
+    "sql",
+    "credential",
+    "api_key",
+    "participant_name"
+  ]
+}

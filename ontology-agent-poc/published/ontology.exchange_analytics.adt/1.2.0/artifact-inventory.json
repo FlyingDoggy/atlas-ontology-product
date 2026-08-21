@@ -1,0 +1,15 @@
+{
+  "capability-manifest.json": "a6ecea86bb26a1c7c770943c307af68fb5a9b0d341ed9019531b2c31bcb91308",
+  "control-manifest.json": "fdcdd2abd342a70baf4a277daf22210bb60ba0b4cc06e9d3071d3329e9faee26",
+  "dataset-manifest.json": "ffee890597dd13e44a3235a016e0eea5d5175d76677d7517622b04ea56c27a1f",
+  "graph/package.jsonld": "84942aa0585d7dd3baec27f2200adb2c391fb1c4b8abdc479a8aff9c93ef5be9",
+  "graph/package.ttl": "36ce7adf8ec497fc355ffc83c01058111c472425734f5417e40f624a0669a79a",
+  "graph/shacl-report.ttl": "4a53a3befd9bcdb7273ef3d6e47a83be519927771faee49ef0d2a44ee23be2be",
+  "graph/shacl-report.txt": "77debc800e6c973b66475968bdf71e2e667df8f4108e7f5299fe1651e6606dc9",
+  "graph/shapes.ttl": "99b1eb622da6acba93cb839480397820c0fa7908edcb9903511fc2c11c146462",
+  "package.json": "bda66ecfa7f5483daca38ec5114b13c2ecdd6bcf8e1c287737eef95c6fcd77c0",
+  "runtime-identity.json": "5731ea2894e817f495bd50723c9e1e0370398375b7db5189536f4927879a5d4a",
+  "toolchain-manifest.json": "3767926da3018fbf842b0d3a7df1a41b18d6289b9dda9e6c4cf77dcf8c6ead9b",
+  "validation-report.json": "f7c90e75b2b0268cd6f40c1753c4d6765fa9c4679dfed038228b2cbff1e83c6a",
+  "validation-signature.json": "d6e610e776ee620a39301d30a145b23d9575517c6701fad4ae0ff885e60a0ffd"
+}

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: ontology-common-product
+description: Common Ontology Studio solution-catalog and Analytic Agent lifecycle tracer
+type: application
+version: 0.10.2
+appVersion: "0.16.2"
+kubeVersion: ">=1.29.0-0"

@@ -1,0 +1,36 @@
+{
+  "contract": "registered-question-family/v1",
+  "family_id": "cash-trading.synthetic.analysis.v1",
+  "version": "1.0.0",
+  "classification": "constructed_synthetic",
+  "cases": [
+    {
+      "case_id": "cash.self-trade.summary.en.v1",
+      "language": "en",
+      "question": "Analyze potential self-trades for 2026-08-03 to 2026-08-07.",
+      "expected_intent": "anomaly_triage",
+      "required_tools": ["self_trade_summary"]
+    },
+    {
+      "case_id": "cash.self-trade.trend.zh.v1",
+      "language": "zh",
+      "question": "展示2026年8月3日至8月7日每天的潜在自成交趋势。",
+      "expected_intent": "time_series",
+      "required_tools": ["self_trade_trend"]
+    },
+    {
+      "case_id": "cash.self-trade.timeline.en.v1",
+      "language": "en",
+      "question": "Show the potential self-trade evidence timeline for PART001 on 2026-08-03.",
+      "expected_intent": "timeline_evidence",
+      "required_tools": ["self_trade_timeline"]
+    },
+    {
+      "case_id": "cash.latency.en.v1",
+      "language": "en",
+      "question": "What were p50, p95 and p99 trade capture latency for 2026-08-03 to 2026-08-07?",
+      "expected_intent": "latency_profile",
+      "required_tools": ["trade_latency_profile"]
+    }
+  ]
+}

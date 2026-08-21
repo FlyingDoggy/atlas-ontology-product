@@ -1,0 +1,41 @@
+questions:
+  - id: golden.fact.zh
+    role: MarketAnalyst
+    question: 2025年第三和第四季度的ADT是多少？
+    expected_status: ANSWERED
+    expected_intent: metric_fact
+  - id: golden.compare.en
+    role: MarketAnalyst
+    question: Compare Q4 ADT with Q3 in 2025.
+    expected_status: ANSWERED
+    expected_intent: period_compare
+  - id: golden.driver.zh
+    role: MarketAnalyst
+    question: 2025年第四季度总成交额为什么较第三季度下降，哪个板块贡献最大？
+    expected_status: ANSWERED
+    expected_intent: turnover_driver
+  - id: golden.evidence.en
+    role: ExecutiveViewer
+    question: Show the definition, mapping and evidence for ADT.
+    expected_status: ANSWERED
+    expected_intent: evidence_audit
+  - id: boundary.missing_period
+    role: MarketAnalyst
+    question: What was ADT?
+    expected_status: CLARIFY
+    expected_boundary_code: MISSING_PERIOD
+  - id: boundary.prediction
+    role: MarketAnalyst
+    question: Predict next quarter ADT.
+    expected_status: REFUSED
+    expected_boundary_code: UNSUPPORTED_PREDICTION
+  - id: boundary.raw_detail
+    role: MarketAnalyst
+    question: List every trade ID and instrument contributing to Q4 ADT.
+    expected_status: REFUSED
+    expected_boundary_code: RAW_DETAIL_DENIED
+  - id: boundary.role
+    role: ExternalUser
+    question: Compare Q4 ADT with Q3 in 2025.
+    expected_status: REFUSED
+    expected_boundary_code: ROLE_DENIED

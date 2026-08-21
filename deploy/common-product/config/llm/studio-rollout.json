@@ -1,0 +1,16 @@
+{
+  "approved_by": "decision-owner.muyu",
+  "contract": "studio-task-rollout-record/v1",
+  "egress_decision_digest": "cbcb25e87b6c0d1da083b1e8d7bd3fe243d1eee7ccc3f5dc82f310ebc85267b6",
+  "epoch": 1,
+  "evaluation_manifest_digest": "da56039984b182188508ad33d5bfa8ac90390c1b62812bf5da62132360473535",
+  "evaluation_manifest_ref": "eval-manifest.studio.adt.v1",
+  "expires_at": "2026-09-18T23:00:00Z",
+  "issued_at": "2026-08-19T17:07:08Z",
+  "mode": "active-observation-canary",
+  "profile_digest": "e7eb853736c686cc9be104dbbde9693fc09725bd3073d1729bde9a61eec6c006",
+  "rollout_id": "rollout.studio.adt.qwen.demo.v1",
+  "slot_manifest_digest": "428b2681fb9fa3679c29296252e933006bfc54f4ac707f8aea2d1e613dfe99ff",
+  "status": "ACTIVE",
+  "task": "adt-observation-tracer"
+}

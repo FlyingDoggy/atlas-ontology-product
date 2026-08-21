@@ -1,0 +1,10 @@
+{
+  "capability-requirements.json": "7129ea32acb3de5ae088d4b7584130551597ab5191c9bf6e84b26b87c7ad4dcf",
+  "graph/package.jsonld": "5f4ab69b451c2c10a715049ce4be7d90b58f5a138b5cfa4c8b13c20943418ec9",
+  "graph/package.ttl": "6e517d600f7d35470de1e7fe0e0438f8cf66abe3a3d2a4bf04f687aa792375ca",
+  "graph/shacl-report.ttl": "4a53a3befd9bcdb7273ef3d6e47a83be519927771faee49ef0d2a44ee23be2be",
+  "graph/shacl-report.txt": "77debc800e6c973b66475968bdf71e2e667df8f4108e7f5299fe1651e6606dc9",
+  "graph/shapes.ttl": "99b1eb622da6acba93cb839480397820c0fa7908edcb9903511fc2c11c146462",
+  "package.json": "f04b4beb8082b7b5b01c848ac2e88418668dbfd3af1793f3feca73714d6e3097",
+  "semantic-validation.json": "780110e0ed9bbd1b87010f7489cf665a5944b3913a3ebda2d54d61ca092e8b91"
+}

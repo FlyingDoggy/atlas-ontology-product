@@ -1,0 +1,22 @@
+{
+  "contract": "model-egress-decision/v1",
+  "decision_id": "egress.adt.qwen.demo.v1",
+  "decision": "ALLOW",
+  "product": "ontology-analytic-agent",
+  "task": "adt-engineering-demo",
+  "provider": "qwen",
+  "provider_account_ref": "operator.qwen.demo",
+  "endpoint_ref": "dashscope-compatible-cn",
+  "region": "cn-beijing",
+  "classification": "constructed_synthetic",
+  "question_family_id": "adt.synthetic.analysis.v1",
+  "question_family_checksum": "49539b9c004eb748c95d2e372fa84a231d9172ecc452ccfbdb3457ffeb15e8ae",
+  "allowed_projection_contracts": [
+    "model-question-projection/v1",
+    "model-evidence-projection/v1"
+  ],
+  "retention_profile": "provider-account-default-no-business-data",
+  "approved_by": "decision-owner.muyu",
+  "issued_at": "2026-08-19T00:00:00Z",
+  "expires_at": "2026-09-19T00:00:00Z"
+}

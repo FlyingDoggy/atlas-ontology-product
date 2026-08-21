@@ -1,0 +1,40 @@
+{
+  "contract": "model-projection-policy/v1",
+  "policy_id": "adt.synthetic.model-projection.v1",
+  "version": "1.0.0",
+  "classification": "constructed_synthetic",
+  "question_projection_fields": [
+    "contract",
+    "family_id",
+    "family_checksum",
+    "case_id",
+    "language",
+    "question",
+    "metric_aliases",
+    "period_ids",
+    "dimension_aliases",
+    "allowed_intents"
+  ],
+  "evidence_projection_fields": [
+    "contract",
+    "run_id",
+    "step_id",
+    "tool_id",
+    "result_contract",
+    "aggregate_values",
+    "claim_handles",
+    "mandatory_limitations"
+  ],
+  "denied_field_tokens": [
+    "table",
+    "column",
+    "sql",
+    "mapping_id",
+    "source_id",
+    "locator",
+    "filesystem_path",
+    "credential",
+    "api_key",
+    "policy_detail"
+  ]
+}

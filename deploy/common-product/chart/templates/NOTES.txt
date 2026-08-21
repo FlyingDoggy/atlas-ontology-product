@@ -1,0 +1,12 @@
+The Ontology Common Product infrastructure tracer has been installed.
+
+Routes:
+  /ontology-agent/
+  /ontology-studio/
+
+This chart requires two pre-created secrets:
+  {{ .Values.productState.existingSecret }}  PostgreSQL and S3 credentials/connection URL
+  {{ .Values.auth.existingSecret }}          Demo login verifier and session secret
+
+This is the single-node engineering-demo profile. It does not claim HA, enterprise IAM,
+HKEX validation, or production operational readiness.

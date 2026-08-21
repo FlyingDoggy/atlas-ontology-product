@@ -1,0 +1,35 @@
+{
+  "contract": "engineering-run-profile/v1",
+  "profile_id": "cash-trading.agent.qwen3.8max.v1",
+  "version": "1.0.0",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "accepted_response_models": ["qwen3.8-max"],
+  "provider_account_ref": "operator.qwen.demo",
+  "endpoint_ref": "dashscope-compatible-cn",
+  "region": "cn-beijing",
+  "artifact_pins": [
+    {"artifact_id": "prompt-manifest", "relative_path": "prompts.json", "checksum": "5622b6bc7d68eb9556cc9881ac6d1d6984663bbd0e7eef6cd1e020a11e8ba4ba"},
+    {"artifact_id": "tool-registry", "relative_path": "tool-registry.json", "checksum": "e1baba7334d7f0060f33302d9cc0abb48a01b5094293abf28b1bad43987ad1e7"},
+    {"artifact_id": "projection-policy", "relative_path": "projection-policy.json", "checksum": "b0017fbf0136937f30850a96fc624a9150e2fb12fd1878ab129c232d4f925873"},
+    {"artifact_id": "question-family", "relative_path": "question-family.json", "checksum": "43a5c7f38160c9499f92220d2a7e7ed23cab0ee88c73bcb2370666ecf6ac6297"}
+  ],
+  "input_contracts": ["model-question-projection/v1", "model-evidence-projection/v1"],
+  "output_contracts": ["bound-goal-candidate/v1", "next-tool-selection/v1", "presentation-selection/v1"],
+  "tool_ids": ["self_trade_summary", "self_trade_trend", "self_trade_timeline", "trade_latency_profile"],
+  "budgets": {
+    "absolute_timeout_ms": 9000,
+    "provider_timeout_ms": 3500,
+    "max_provider_calls": 3,
+    "max_tool_calls": 4,
+    "max_iterations": 4,
+    "max_input_tokens": 5000,
+    "max_output_tokens": 1200
+  },
+  "temperature": 0,
+  "thinking": false,
+  "fallback_policy": "restart-original-trusted-request/v1",
+  "outcome_contract": "engineering-demo-five-outcome/v1",
+  "renderer_policy": "closed-answer-clause-deterministic-renderer/v1",
+  "trace_policy": "safe-metadata-no-raw-content/v1"
+}

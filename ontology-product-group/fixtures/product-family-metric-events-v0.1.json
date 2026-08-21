@@ -1,0 +1,184 @@
+{
+  "fixture_id": "product-family-metric-events-v0.1",
+  "schema_version": "product-family-metric-event-fixture/0.1",
+  "authority": "product-reporting-test-only",
+  "duration_unit": "MINUTE",
+  "measurement_cutoff_at": "2026-08-04T09:00:00.000Z",
+  "events": [
+    {
+      "scenario_id": "scenario.completed",
+      "intake_registered_at": "2026-08-01T09:00:00.000Z",
+      "trusted_at": "2026-08-03T17:00:00.000Z",
+      "completion_state": "TRUSTED_COMPLETED",
+      "strategy_reporting_category": null,
+      "intake_condition_flags": [],
+      "internal_active_minutes": 960,
+      "deloitte_active_minutes": 240,
+      "client_confirmation_wait_minutes": 1440
+    },
+    {
+      "scenario_id": "scenario.clarify",
+      "intake_registered_at": "2026-08-01T09:05:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "CLARIFY",
+      "intake_condition_flags": [],
+      "internal_active_minutes": 120,
+      "deloitte_active_minutes": 60,
+      "client_confirmation_wait_minutes": 180
+    },
+    {
+      "scenario_id": "scenario.refuse",
+      "intake_registered_at": "2026-08-01T09:10:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "REFUSE",
+      "intake_condition_flags": [],
+      "internal_active_minutes": 90,
+      "deloitte_active_minutes": 0,
+      "client_confirmation_wait_minutes": 0
+    },
+    {
+      "scenario_id": "scenario.withheld",
+      "intake_registered_at": "2026-08-01T09:15:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "PAUSED",
+      "intake_condition_flags": ["WITHHELD"],
+      "internal_active_minutes": 60,
+      "deloitte_active_minutes": 30,
+      "client_confirmation_wait_minutes": 2880
+    },
+    {
+      "scenario_id": "scenario.failed",
+      "intake_registered_at": "2026-08-01T09:20:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "FAILED",
+      "intake_condition_flags": [],
+      "internal_active_minutes": 180,
+      "deloitte_active_minutes": 0,
+      "client_confirmation_wait_minutes": 120
+    },
+    {
+      "scenario_id": "scenario.unsupported",
+      "intake_registered_at": "2026-08-01T09:25:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "UNSUPPORTED",
+      "intake_condition_flags": [],
+      "internal_active_minutes": 45,
+      "deloitte_active_minutes": 0,
+      "client_confirmation_wait_minutes": 0
+    },
+    {
+      "scenario_id": "scenario.paused",
+      "intake_registered_at": "2026-08-01T09:30:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "PAUSED",
+      "intake_condition_flags": [],
+      "internal_active_minutes": 75,
+      "deloitte_active_minutes": 15,
+      "client_confirmation_wait_minutes": 720
+    },
+    {
+      "scenario_id": "scenario.scope-change",
+      "intake_registered_at": "2026-08-01T09:35:00.000Z",
+      "trusted_at": null,
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": "SCOPE_CHANGE",
+      "intake_condition_flags": [],
+      "internal_active_minutes": 30,
+      "deloitte_active_minutes": 30,
+      "client_confirmation_wait_minutes": 60
+    }
+  ],
+  "expected_summary": {
+    "denominator": 8,
+    "trusted_completed": 1,
+    "trusted_scenario_completion_rate": {
+      "coefficient": "125",
+      "scale": 3
+    },
+    "strategy_reporting_category_counts": {
+      "SCOPE_CHANGE": 1,
+      "PAUSED": 2,
+      "FAILED": 1,
+      "UNSUPPORTED": 1,
+      "CLARIFY": 1,
+      "REFUSE": 1
+    },
+    "intake_condition_flag_counts": {
+      "MISSING": 0,
+      "WITHHELD": 1,
+      "UNCONFIRMED": 0
+    },
+    "first_intake_registered_at": "2026-08-01T09:00:00.000Z",
+    "first_trusted_scenario_at": "2026-08-03T17:00:00.000Z",
+    "time_to_first_trusted_scenario_minutes": 3360,
+    "time_to_first_trusted_scenario_hours": {
+      "coefficient": "5600",
+      "scale": 2
+    },
+    "total_internal_active_minutes": 1560,
+    "total_internal_active_person_hours": {
+      "coefficient": "2600",
+      "scale": 2
+    },
+    "total_deloitte_active_minutes": 375,
+    "total_deloitte_active_person_hours": {
+      "coefficient": "625",
+      "scale": 2
+    },
+    "total_client_confirmation_wait_minutes": 5400,
+    "total_client_confirmation_wait_hours": {
+      "coefficient": "9000",
+      "scale": 2
+    },
+    "wall_clock_elapsed_minutes_by_scenario": {
+      "scenario.completed": 3360,
+      "scenario.clarify": 4315,
+      "scenario.refuse": 4310,
+      "scenario.withheld": 4305,
+      "scenario.failed": 4300,
+      "scenario.unsupported": 4295,
+      "scenario.paused": 4290,
+      "scenario.scope-change": 4285
+    }
+  },
+  "negative_events": [
+    {
+      "case_id": "unknown-category",
+      "strategy_reporting_category": "WITHHELD",
+      "expected_result": "REJECT_UNKNOWN_REPORTING_CATEGORY"
+    },
+    {
+      "case_id": "completed-with-failure-category",
+      "completion_state": "TRUSTED_COMPLETED",
+      "strategy_reporting_category": "FAILED",
+      "expected_result": "REJECT_AXIS_CONFLICT"
+    },
+    {
+      "case_id": "not-completed-without-category",
+      "completion_state": "NOT_COMPLETED",
+      "strategy_reporting_category": null,
+      "expected_result": "REJECT_MISSING_REPORTING_CATEGORY"
+    },
+    {
+      "case_id": "missing-effort-field",
+      "omitted_field": "deloitte_active_minutes",
+      "expected_result": "REJECT_MISSING_EFFORT_FIELD"
+    },
+    {
+      "case_id": "negative-effort",
+      "internal_active_minutes": -1,
+      "expected_result": "REJECT_NEGATIVE_DURATION"
+    },
+    {
+      "case_id": "unknown-duration-unit",
+      "duration_unit": "HOUR",
+      "expected_result": "REJECT_UNKNOWN_DURATION_UNIT"
+    }
+  ]
+}

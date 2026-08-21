@@ -1,0 +1,47 @@
+{
+  "contract": "semantic-slot-manifest/v1",
+  "manifest_id": "slots.studio.adt.reference.v1",
+  "version": "1.0.0",
+  "slots": [
+    {
+      "slot_id": "metric.definition",
+      "draft_path": "metric_definition",
+      "source_field": "metric_definition",
+      "value_kind": "STRING",
+      "required": true,
+      "allowed_values": []
+    },
+    {
+      "slot_id": "eligibility.include_status",
+      "draft_path": "eligibility_rule.include_status",
+      "source_field": "eligibility_rule",
+      "value_kind": "STRING",
+      "required": true,
+      "allowed_values": ["EXECUTED", "REJECTED"]
+    },
+    {
+      "slot_id": "eligibility.exclude_cancelled",
+      "draft_path": "eligibility_rule.exclude_cancelled",
+      "source_field": "eligibility_rule",
+      "value_kind": "BOOLEAN",
+      "required": true,
+      "allowed_values": []
+    },
+    {
+      "slot_id": "metric.allowed_dimensions",
+      "draft_path": "allowed_dimensions",
+      "source_field": "allowed_dimensions",
+      "value_kind": "STRING_LIST",
+      "required": true,
+      "allowed_values": ["dimension.period", "dimension.segment"]
+    },
+    {
+      "slot_id": "mapping.amount",
+      "draft_path": "amount_mapping",
+      "source_field": "amount_mapping",
+      "value_kind": "STRING",
+      "required": true,
+      "allowed_values": ["executed_value_hkd_mn", "order_value_hkd_mn"]
+    }
+  ]
+}

@@ -1,0 +1,4295 @@
+{
+  "annex_profile_id": "shared-contract-technical-profile/0.1.1",
+  "canonicalization_profile": "canonical-json-v1.0",
+  "compatibility": {
+    "accepted_schema_by_object_type": {
+      "activation-intent": "activation-intent-subject/1",
+      "activation-record": "activation-record-subject/1",
+      "authority-decision": "authority-decision-subject/1",
+      "binding-data-validation-subject": "binding-data-validation-subject/1",
+      "cleared-input": "cleared-input-subject/1",
+      "cleared-input-proposal": "cleared-input-proposal-subject/1",
+      "concept-resolution-evidence": "concept-resolution-evidence-subject/1",
+      "control-golden-subject": "control-golden-subject/1",
+      "control-manifest": "control-manifest-subject/1",
+      "data-identity": "data-identity-subject/1",
+      "disclosure-policy-subject": "disclosure-policy-subject/1",
+      "execution-eligibility-decision": "execution-eligibility-subject/1",
+      "execution-evidence-envelope": "execution-evidence-subject/2",
+      "gate-evaluation": "gate-evaluation-subject/1",
+      "governed-semantic-release": "governed-semantic-release-subject/1",
+      "gsr-publish-subject": "gsr-publish-subject/2",
+      "oracle-provenance": "oracle-provenance-subject/1",
+      "payload-disclosure-decision": "payload-disclosure-decision-subject/1",
+      "payload-disclosure-evaluation": "payload-disclosure-evaluation-subject/1",
+      "policy-decision": "policy-decision-subject/1",
+      "proposed-scr-payload": "unknown-concept-payload-subject/2",
+      "reference-candidate": "reference-candidate-subject/1",
+      "reference-candidate-set": "reference-candidate-set-subject/1",
+      "reference-manifest": "reference-manifest-subject/2",
+      "reference-reselection-transition": "reference-reselection-transition-subject/1",
+      "reference-selection-authority-decision": "reference-selection-authority-decision-subject/1",
+      "reference-selection-commit-receipt": "reference-selection-commit-receipt-subject/1",
+      "reference-selection-proposal": "reference-selection-proposal-subject/1",
+      "result-release-commit": "result-release-commit-subject/1",
+      "revocation-intent": "revocation-intent-subject/1",
+      "revocation-record": "revocation-record-subject/1",
+      "runtime-capability-subject": "runtime-capability-subject/1",
+      "runtime-snapshot-payload": "runtime-snapshot-payload-subject/1",
+      "scr-enqueue-proposal": "scr-enqueue-proposal-subject/1",
+      "semantic-approval-subject": "semantic-approval-subject/1",
+      "semantic-change-request": "semantic-change-request-subject/1",
+      "semantic-content-manifest": "semantic-content-manifest-subject/1",
+      "suite-manifest": "suite-manifest-subject/1",
+      "user-evidence-projection": "user-projection-subject/1",
+      "verification-attempt": "verification-attempt-subject/1",
+      "verified-runtime-snapshot": "verified-runtime-snapshot-subject/1",
+      "vrs-seal-proposal": "vrs-seal-proposal-subject/1"
+    },
+    "conformance_only_schemas": [
+      "canonical-test-subject/1"
+    ],
+    "migration_rule": "FRESH_SUBJECTS_ONLY_NO_RELABEL_NO_MIX",
+    "predecessor_only_rejected": {
+      "execution-evidence-envelope": "execution-evidence-subject/1",
+      "gsr-publish-subject": "gsr-publish-subject/1",
+      "proposed-scr-payload": "unknown-concept-payload-subject/1",
+      "reference-manifest": "reference-manifest-subject/1"
+    },
+    "unknown_profile_behavior": "FAIL_CLOSED"
+  },
+  "conformance_contract": {
+    "fixture_evaluation_time": "2026-08-19T00:04:00.000Z",
+    "logical_failure_symbol": "JOURNAL_CORRUPT_OR_NOT_DURABLE"
+  },
+  "contract_version": "shared-product-contract/0.1",
+  "external_leaf_manifest_schema": "external-leaf-manifest/1",
+  "manifest_schema": "core-profile-conformance-manifest/1",
+  "primitive_contract": {
+    "decimal_coefficient_pattern": "^(?:0|-?[1-9][0-9]*)$",
+    "digest_pattern": "^sha-256:[0-9a-f]{64}$",
+    "identifier_pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$",
+    "opaque_token_pattern": "^opaque-[a-z0-9-]{9,121}$",
+    "reserved_versions": [
+      "*",
+      "current",
+      "latest"
+    ],
+    "safe_integer_max": 9007199254740991,
+    "safe_integer_min": -9007199254740991,
+    "timestamp_pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+    "version_pattern": "^[0-9]+(?:\\.[0-9]+){0,2}(?:-[a-z0-9]+(?:[.-][a-z0-9]+)*)?$"
+  },
+  "profile_contract": {
+    "analytic_outcomes": [
+      "ANSWERED",
+      "CLARIFY",
+      "FAILED_EXECUTION",
+      "FAILED_PRECONDITION",
+      "REFUSED"
+    ],
+    "authority_action_contract": {
+      "ACTIVATE": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "channel",
+        "target_schemas": [
+          "activation-intent-subject/1"
+        ]
+      },
+      "APPROVE_CLEARED_INPUT": {
+        "purposes": [
+          "ontology-build"
+        ],
+        "scope_kind": "governance",
+        "target_schemas": [
+          "cleared-input-proposal-subject/1"
+        ]
+      },
+      "ATTEST": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "same_as_resource",
+        "target_schemas": [
+          "gate-evaluation-subject/1"
+        ]
+      },
+      "EVIDENCE_READ": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "channel",
+        "target_schemas": [
+          "execution-evidence-subject/2"
+        ]
+      },
+      "PRE_QUERY": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "channel",
+        "target_external_classes": [
+          "REQUEST"
+        ]
+      },
+      "PUBLISH": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "governance",
+        "target_schemas": [
+          "gsr-publish-subject/2"
+        ]
+      },
+      "RESOLVE": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "channel",
+        "target_external_classes": [
+          "REQUEST"
+        ]
+      },
+      "RESULT_RELEASE": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "channel",
+        "target_schemas": [
+          "execution-evidence-subject/2"
+        ]
+      },
+      "REVOKE_VRS": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "channel",
+        "target_schemas": [
+          "revocation-intent-subject/1"
+        ]
+      },
+      "SCR_DISCLOSE": {
+        "purposes": [
+          "semantic-change-triage"
+        ],
+        "scope_kind": "governance",
+        "target_schemas": [
+          "payload-disclosure-evaluation-subject/1"
+        ]
+      },
+      "SCR_ENQUEUE": {
+        "purposes": [
+          "semantic-change-triage"
+        ],
+        "scope_kind": "governance",
+        "target_schemas": [
+          "scr-enqueue-proposal-subject/1"
+        ]
+      },
+      "SCR_TRIAGE": {
+        "purposes": [
+          "semantic-change-triage"
+        ],
+        "scope_kind": "governance",
+        "target_schemas": [
+          "semantic-change-request-subject/1"
+        ]
+      },
+      "SEAL": {
+        "purposes": [
+          "governed-analysis-demo"
+        ],
+        "scope_kind": "runtime",
+        "target_schemas": [
+          "vrs-seal-proposal-subject/1"
+        ]
+      }
+    },
+    "claim_ceiling": [
+      "constructed-synthetic",
+      "non-hkex-validation",
+      "non-production",
+      "simulated-local-authority"
+    ],
+    "five_gates": [
+      "BINDING_DATA_VALIDATION",
+      "CONTROL_GOLDEN_EVALUATION",
+      "DISCLOSURE_POLICY_CLEARANCE",
+      "RUNTIME_CAPABILITY_COMPATIBILITY",
+      "SEMANTIC_APPROVAL"
+    ],
+    "fixed_scope": {
+      "channel": "active",
+      "environment_id": "synthetic-reference",
+      "tenant_id": "local-synthetic",
+      "workspace_id": "adt-poc"
+    },
+    "generic_authority_actions": [
+      "ACTIVATE",
+      "APPROVE_CLEARED_INPUT",
+      "ATTEST",
+      "EVIDENCE_READ",
+      "PRE_QUERY",
+      "PUBLISH",
+      "RESOLVE",
+      "RESULT_RELEASE",
+      "REVOKE_VRS",
+      "SCR_DISCLOSE",
+      "SCR_ENQUEUE",
+      "SCR_TRIAGE",
+      "SEAL"
+    ],
+    "selection_authority_action": "SELECT_REFERENCE",
+    "semantic_decision_profile": "recorded-semantic-decision",
+    "suite": {
+      "denominator": 8,
+      "status_counts": {
+        "ANSWERED": 4,
+        "CLARIFY": 1,
+        "REFUSED": 3
+      },
+      "suite_id": "adt.tracer.v1.suite"
+    }
+  },
+  "required_coverage": {
+    "accepted_invalid_count": 0,
+    "critical_unresolved_ref_count": 0,
+    "every_conformance_schema_has_positive": true,
+    "every_cross_rule_has_semantic_mutation": true,
+    "every_enum_has_unknown_value_mutation": true,
+    "every_field_has_remove_and_wrong_type_mutation": true,
+    "every_product_schema_has_positive": true,
+    "every_ref_field_has_target_or_external_resolution_mutation": true
+  },
+  "schema_contract": {
+    "base_fields": [
+      "subject_schema",
+      "contract_version",
+      "canonicalization_profile",
+      "object_type",
+      "object_id",
+      "object_version",
+      "scope"
+    ],
+    "schemas": {
+      "activation-intent-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "action": {
+            "enum": [
+              "ACTIVATE"
+            ],
+            "kind": "string"
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "expected_activation_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "expected_head_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "activation-record-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "idempotency_key": {
+            "kind": "opaque_token"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "activation-intent"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "reason_code": {
+            "enum": [
+              "INITIAL"
+            ],
+            "kind": "string"
+          },
+          "requested_at": {
+            "kind": "timestamp"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "activation-intent-subject/1"
+          },
+          "vrs_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verified-runtime-snapshot-subject/1"
+            ]
+          }
+        },
+        "object_type": "activation-intent",
+        "rule_ids": [],
+        "scope_kind": "channel"
+      },
+      "activation-record-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "activation_epoch": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "committed_at": {
+            "kind": "timestamp"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "eligibility_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "execution-eligibility-subject/1"
+            ]
+          },
+          "intent_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "activation-intent-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "activation-record"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "previous_record_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "activation-record-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "sequence": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "activation-record-subject/1"
+          }
+        },
+        "object_type": "activation-record",
+        "rule_ids": [],
+        "scope_kind": "channel"
+      },
+      "authority-decision-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "action": {
+            "enum": [
+              "ACTIVATE",
+              "APPROVE_CLEARED_INPUT",
+              "ATTEST",
+              "EVIDENCE_READ",
+              "PRE_QUERY",
+              "PUBLISH",
+              "RESOLVE",
+              "RESULT_RELEASE",
+              "REVOKE_VRS",
+              "SCR_DISCLOSE",
+              "SCR_ENQUEUE",
+              "SCR_TRIAGE",
+              "SEAL"
+            ],
+            "kind": "string"
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decision": {
+            "enum": [
+              "ALLOW",
+              "DENY"
+            ],
+            "kind": "string"
+          },
+          "expires_at": {
+            "kind": "timestamp"
+          },
+          "issued_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "authority-decision"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "obligations": {
+            "item": {
+              "enum": [
+                "ENFORCE_SCOPE",
+                "NO_RAW_QUESTION",
+                "REAUTHORIZE_REFS",
+                "WRITE_AUDIT"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "policy_refs": {
+            "item": {
+              "external_classes": [
+                "STATIC_POLICY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "principal_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "principal_registry_ref": {
+            "external_classes": [
+              "PRINCIPAL_REGISTRY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "proposed_action_subject_ref": {
+            "external_classes": [
+              "REQUEST"
+            ],
+            "kind": "full_ref",
+            "targets": [
+              "activation-intent-subject/1",
+              "cleared-input-proposal-subject/1",
+              "execution-evidence-subject/2",
+              "gate-evaluation-subject/1",
+              "gsr-publish-subject/2",
+              "payload-disclosure-evaluation-subject/1",
+              "revocation-intent-subject/1",
+              "scr-enqueue-proposal-subject/1",
+              "semantic-change-request-subject/1",
+              "vrs-seal-proposal-subject/1"
+            ]
+          },
+          "purpose": {
+            "enum": [
+              "governed-analysis-demo",
+              "ontology-build",
+              "semantic-change-triage"
+            ],
+            "kind": "string"
+          },
+          "reason_codes": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "role_assignment_ref": {
+            "external_classes": [
+              "ROLE_ASSIGNMENT"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance",
+              "runtime",
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "authority-decision-subject/1"
+          },
+          "trust_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "trusted_session_ref": {
+            "external_classes": [
+              "TRUSTED_SESSION"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "authority-decision",
+        "rule_ids": [
+          "generic-authority-decision"
+        ],
+        "scope_kind": "dynamic"
+      },
+      "binding-data-validation-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "binding_bundle_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "binding_validation_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "data_identity_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "data-identity-subject/1"
+            ]
+          },
+          "gsr_binding_requirements_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "binding-data-validation-subject"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "runtime_semantic_projection_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "binding-data-validation-subject/1"
+          }
+        },
+        "object_type": "binding-data-validation-subject",
+        "rule_ids": [],
+        "scope_kind": "runtime"
+      },
+      "canonical-test-subject/1": {
+        "acceptance_class": "conformance_only",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "chinese_nfc": {
+            "kind": "nonempty_string"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decimal_value": {
+            "kind": "decimal_value"
+          },
+          "enabled": {
+            "kind": "boolean"
+          },
+          "escaped": {
+            "kind": "nonempty_string"
+          },
+          "nullable": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "nullable"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "canonical-test"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "ordered_values": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "ordered",
+            "min_items": 0
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "canonical-test-subject/1"
+          }
+        },
+        "object_type": "canonical-test",
+        "rule_ids": [],
+        "scope_kind": "governance"
+      },
+      "cleared-input-proposal-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "allowed_uses": {
+            "item": {
+              "enum": [
+                "ontology_build",
+                "synthetic_demo"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "classification": {
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "CONFIDENTIAL",
+              "RESTRICTED"
+            ],
+            "kind": "string"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 0
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "cleared-input-proposal"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "opaque_source_locator_ref": {
+            "kind": "opaque_locator"
+          },
+          "origin": {
+            "enum": [
+              "manual_transcription",
+              "redacted_attachment",
+              "in_zone_locator",
+              "synthetic"
+            ],
+            "kind": "string"
+          },
+          "safe_content_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "cleared-input-proposal-subject/1"
+          }
+        },
+        "object_type": "cleared-input-proposal",
+        "rule_ids": [],
+        "scope_kind": "governance"
+      },
+      "cleared-input-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "input_disclosure_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "cleared-input"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "proposal_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "cleared-input-proposal-subject/1"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "cleared-input-subject/1"
+          }
+        },
+        "object_type": "cleared-input",
+        "rule_ids": [
+          "cleared-input-authority"
+        ],
+        "scope_kind": "governance"
+      },
+      "concept-resolution-evidence-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "alias_resolution_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "authorization_classification": {
+            "enum": [
+              "ELIGIBLE"
+            ],
+            "kind": "string"
+          },
+          "binding_count": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "evaluated_at": {
+            "kind": "timestamp"
+          },
+          "execution_id": {
+            "kind": "identifier"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "concept-resolution-evidence"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "policy_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "policy-decision-subject/1"
+            ]
+          },
+          "pre_query_eligibility_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "execution-eligibility-subject/1"
+            ]
+          },
+          "query_engine_access_count": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "resolution_completed": {
+            "kind": "boolean"
+          },
+          "resolver_build_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "safe_term_alias_ref": {
+            "external_classes": [
+              "SAFE_HANDLE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "semantic_area_code": {
+            "enum": [
+              "MARKET_METRICS"
+            ],
+            "kind": "string"
+          },
+          "semantic_area_status": {
+            "enum": [
+              "KNOWN"
+            ],
+            "kind": "string"
+          },
+          "semantic_registry_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "concept-resolution-evidence-subject/1"
+          },
+          "term_well_formed": {
+            "kind": "boolean"
+          }
+        },
+        "object_type": "concept-resolution-evidence",
+        "rule_ids": [
+          "concept-resolution-evidence"
+        ],
+        "scope_kind": "channel"
+      },
+      "control-golden-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "control_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "control-manifest-subject/1"
+            ]
+          },
+          "evaluation_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "evaluation_runner_manifest_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "control-golden-subject"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "oracle_provenance_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "oracle-provenance-subject/1"
+            ]
+          },
+          "reference_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-manifest-subject/2"
+            ]
+          },
+          "runtime_snapshot_payload_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "runtime-snapshot-payload-subject/1"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "control-golden-subject/1"
+          },
+          "suite_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "suite-manifest-subject/1"
+            ]
+          }
+        },
+        "object_type": "control-golden-subject",
+        "rule_ids": [
+          "control-gate-selected-lineage"
+        ],
+        "scope_kind": "runtime"
+      },
+      "control-manifest-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "allowed_claims": {
+            "item": {
+              "enum": [
+                "reviewed-constructed-synthetic-conformance"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "max_items": 1,
+            "min_items": 1
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "expected_result_refs": {
+            "item": {
+              "external_classes": [
+                "INTEGRITY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "ordered",
+            "min_items": 1
+          },
+          "expected_value_author_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "fixture_author_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "formula_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "control-manifest"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "oracle_class": {
+            "enum": [
+              "CONSTRUCTED_SYNTHETIC"
+            ],
+            "kind": "string"
+          },
+          "oracle_provenance_refs": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "oracle-provenance-subject/1"
+              ]
+            },
+            "kind": "set",
+            "max_items": 1,
+            "min_items": 1
+          },
+          "period_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "population_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "reference_case_id": {
+            "kind": "identifier"
+          },
+          "reviewer_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "rounding_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "control-manifest-subject/1"
+          },
+          "tolerance_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "truth_frozen_before_fixture": {
+            "kind": "boolean"
+          },
+          "unit_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "control-manifest",
+        "rule_ids": [
+          "control-manifest"
+        ],
+        "scope_kind": "governance"
+      },
+      "data-identity-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "dataset_manifest_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "data-identity"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "partition_identity_refs": {
+            "item": {
+              "external_classes": [
+                "INTEGRITY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "policy_scope_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "replay_level": {
+            "enum": [
+              "evidence_only"
+            ],
+            "kind": "string"
+          },
+          "row_count": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "schema_digest": {
+            "kind": "digest"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "source_engine_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "data-identity-subject/1"
+          },
+          "transformation_ref": {
+            "external_classes": [
+              "INTEGRITY",
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "data-identity",
+        "rule_ids": [],
+        "scope_kind": "runtime"
+      },
+      "disclosure-policy-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "audience_purpose_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "disclosure_validation_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "gsr_disclosure_labels_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "gsr_policy_requirements_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "disclosure-policy-subject"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "projection_fidelity_report_ref": {
+            "external_classes": [
+              "EVIDENCE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "projection_policy_bundle_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "projection_transformer_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "runtime_projection_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "runtime_semantic_projection_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "disclosure-policy-subject/1"
+          },
+          "user_projection_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "disclosure-policy-subject",
+        "rule_ids": [],
+        "scope_kind": "runtime"
+      },
+      "execution-eligibility-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "activation_head_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "activation-record-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decision": {
+            "enum": [
+              "ALLOW",
+              "DENY"
+            ],
+            "kind": "string"
+          },
+          "evaluated_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "execution-eligibility-decision"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "observed_revocation_set_digest": {
+            "kind": "digest"
+          },
+          "phase": {
+            "enum": [
+              "ACTIVATE",
+              "EVIDENCE_READ",
+              "PRE_QUERY",
+              "RESULT_RELEASE"
+            ],
+            "kind": "string"
+          },
+          "policy_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "policy-decision-subject/1"
+            ]
+          },
+          "purpose": {
+            "enum": [
+              "governed-analysis-demo"
+            ],
+            "kind": "string"
+          },
+          "reason_codes": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "request_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "revocation_scope_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "runtime_snapshot_payload_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "runtime-snapshot-payload-subject/1"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "execution-eligibility-subject/1"
+          },
+          "valid_until": {
+            "kind": "timestamp"
+          },
+          "verification_attempt_refs_by_gate": {
+            "keys": [
+              "BINDING_DATA_VALIDATION",
+              "CONTROL_GOLDEN_EVALUATION",
+              "DISCLOSURE_POLICY_CLEARANCE",
+              "RUNTIME_CAPABILITY_COMPATIBILITY",
+              "SEMANTIC_APPROVAL"
+            ],
+            "kind": "closed_ref_map",
+            "targets": [
+              "verification-attempt-subject/1"
+            ]
+          },
+          "vrs_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verified-runtime-snapshot-subject/1"
+            ]
+          }
+        },
+        "object_type": "execution-eligibility-decision",
+        "rule_ids": [
+          "execution-eligibility"
+        ],
+        "scope_kind": "channel"
+      },
+      "execution-evidence-subject/2": {
+        "acceptance_class": "product",
+        "fields": {
+          "activation_record_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "activation-record-subject/1"
+            ]
+          },
+          "boundary_code": {
+            "item": {
+              "enum": [
+                "CONCEPT_NOT_BOUND",
+                "MISSING_PERIOD",
+                "PARTIAL_RESULT",
+                "RAW_DETAIL_DENIED",
+                "ROLE_DENIED",
+                "SNAPSHOT_NOT_ACTIVE",
+                "UNSUPPORTED_PREDICTION"
+              ],
+              "kind": "string"
+            },
+            "kind": "nullable"
+          },
+          "candidate_status": {
+            "enum": [
+              "ANSWER_CANDIDATE",
+              "CLARIFY",
+              "FAILED_EXECUTION",
+              "FAILED_PRECONDITION",
+              "REFUSED"
+            ],
+            "kind": "string"
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "claims_ref": {
+            "item": {
+              "external_classes": [
+                "EVIDENCE"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "nullable"
+          },
+          "completed_at": {
+            "kind": "timestamp"
+          },
+          "concept_resolution_evidence_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "concept-resolution-evidence-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "data_identity_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "data-identity-subject/1"
+            ]
+          },
+          "execution_id": {
+            "kind": "identifier"
+          },
+          "facts_ref": {
+            "item": {
+              "external_classes": [
+                "EVIDENCE"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "nullable"
+          },
+          "gsr_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "governed-semantic-release-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "execution-evidence-envelope"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "operator_refs": {
+            "item": {
+              "external_classes": [
+                "BUILD_SCHEMA"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 0
+          },
+          "plan_ref": {
+            "item": {
+              "external_classes": [
+                "EVIDENCE"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "nullable"
+          },
+          "policy_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "policy-decision-subject/1"
+            ]
+          },
+          "pre_query_eligibility_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "execution-eligibility-subject/1"
+            ]
+          },
+          "principal_context_ref": {
+            "external_classes": [
+              "PRINCIPAL_CONTEXT"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "purpose": {
+            "enum": [
+              "governed-analysis-demo"
+            ],
+            "kind": "string"
+          },
+          "query_engine_access_count": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "query_ref": {
+            "item": {
+              "external_classes": [
+                "EVIDENCE"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "nullable"
+          },
+          "replay_level": {
+            "enum": [
+              "evidence_only"
+            ],
+            "kind": "string"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "started_at": {
+            "kind": "timestamp"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "execution-evidence-subject/2"
+          },
+          "user_projection_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "user-projection-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "vrs_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verified-runtime-snapshot-subject/1"
+            ]
+          }
+        },
+        "object_type": "execution-evidence-envelope",
+        "rule_ids": [
+          "execution-evidence-boundary",
+          "execution-evidence-concept"
+        ],
+        "scope_kind": "channel"
+      },
+      "gate-evaluation-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "evidence_refs": {
+            "item": {
+              "external_classes": [
+                "EVIDENCE"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "expires_at": {
+            "item": {
+              "kind": "timestamp"
+            },
+            "kind": "nullable"
+          },
+          "gate_subject_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "binding-data-validation-subject/1",
+              "control-golden-subject/1",
+              "disclosure-policy-subject/1",
+              "runtime-capability-subject/1",
+              "semantic-approval-subject/1"
+            ]
+          },
+          "gate_type": {
+            "enum": [
+              "BINDING_DATA_VALIDATION",
+              "CONTROL_GOLDEN_EVALUATION",
+              "DISCLOSURE_POLICY_CLEARANCE",
+              "RUNTIME_CAPABILITY_COMPATIBILITY",
+              "SEMANTIC_APPROVAL"
+            ],
+            "kind": "string"
+          },
+          "issued_at": {
+            "kind": "timestamp"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 0
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "gate-evaluation"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "outcome": {
+            "enum": [
+              "PASS",
+              "FAIL"
+            ],
+            "kind": "string"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance",
+              "runtime",
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "gate-evaluation-subject/1"
+          },
+          "validity_mode": {
+            "enum": [
+              "UNTIL"
+            ],
+            "kind": "string"
+          }
+        },
+        "object_type": "gate-evaluation",
+        "rule_ids": [
+          "gate-evaluation"
+        ],
+        "scope_kind": "dynamic"
+      },
+      "governed-semantic-release-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "governed-semantic-release"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "publish_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "publish_subject_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "gsr-publish-subject/2"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "semantic_approval_attempt_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verification-attempt-subject/1"
+            ]
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "governed-semantic-release-subject/1"
+          }
+        },
+        "object_type": "governed-semantic-release",
+        "rule_ids": [
+          "gsr-publish-authority"
+        ],
+        "scope_kind": "governance"
+      },
+      "gsr-publish-subject/2": {
+        "acceptance_class": "product",
+        "fields": {
+          "binding_requirements_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "cleared_input_refs": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "cleared-input-subject/1"
+              ]
+            },
+            "kind": "set",
+            "max_items": 1,
+            "min_items": 1
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decision_refs": {
+            "item": {
+              "external_classes": [
+                "SEMANTIC_DECISION"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "disclosure_labels_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "gsr-publish-subject"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "policy_requirements_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "required_capability_refs": {
+            "item": {
+              "external_classes": [
+                "INTEGRITY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "selected_reference_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-manifest-subject/2"
+            ]
+          },
+          "selection_commit_receipt_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-commit-receipt-subject/1"
+            ]
+          },
+          "semantic_content_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "semantic-content-manifest-subject/1"
+            ]
+          },
+          "semantic_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "semantic_version": {
+            "kind": "version"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "gsr-publish-subject/2"
+          },
+          "supersedes_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "governed-semantic-release-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          }
+        },
+        "object_type": "gsr-publish-subject",
+        "rule_ids": [
+          "gsr-selected-lineage"
+        ],
+        "scope_kind": "governance"
+      },
+      "oracle-provenance-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "author_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "cleared_input_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "cleared-input-subject/1"
+            ]
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "derivation_ref": {
+            "external_classes": [
+              "INTEGRITY",
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "oracle-provenance"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "oracle_class": {
+            "enum": [
+              "CONSTRUCTED_SYNTHETIC"
+            ],
+            "kind": "string"
+          },
+          "reference_case_id": {
+            "kind": "identifier"
+          },
+          "reviewer_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "source_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "oracle-provenance-subject/1"
+          }
+        },
+        "object_type": "oracle-provenance",
+        "rule_ids": [
+          "oracle-provenance"
+        ],
+        "scope_kind": "governance"
+      },
+      "payload-disclosure-decision-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "disclosure_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "evaluation_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "payload-disclosure-evaluation-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "payload-disclosure-decision"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "payload-disclosure-decision-subject/1"
+          }
+        },
+        "object_type": "payload-disclosure-decision",
+        "rule_ids": [
+          "payload-disclosure-decision"
+        ],
+        "scope_kind": "governance"
+      },
+      "payload-disclosure-evaluation-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "allowed_fields": {
+            "item": {
+              "enum": [
+                "reason_code",
+                "safe_detail_artifact_ref",
+                "safe_term_alias_ref",
+                "semantic_area_code"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "classification": {
+            "enum": [
+              "PUBLIC",
+              "INTERNAL",
+              "CONFIDENTIAL",
+              "RESTRICTED"
+            ],
+            "kind": "string"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decision": {
+            "enum": [
+              "ALLOW",
+              "DENY"
+            ],
+            "kind": "string"
+          },
+          "destination_scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "expires_at": {
+            "kind": "timestamp"
+          },
+          "issued_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "payload-disclosure-evaluation"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "obligations": {
+            "item": {
+              "enum": [
+                "ENFORCE_SCOPE",
+                "NO_RAW_QUESTION",
+                "REAUTHORIZE_REFS",
+                "WRITE_AUDIT"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "policy_refs": {
+            "item": {
+              "external_classes": [
+                "STATIC_POLICY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "proposed_payload_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "unknown-concept-payload-subject/2"
+            ]
+          },
+          "purpose": {
+            "enum": [
+              "semantic-change-triage"
+            ],
+            "kind": "string"
+          },
+          "reason_codes": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "receiving_audience_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "requester_principal_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "safe_detail_artifact_ref": {
+            "external_classes": [
+              "SAFE_HANDLE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "source_scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "payload-disclosure-evaluation-subject/1"
+          }
+        },
+        "object_type": "payload-disclosure-evaluation",
+        "rule_ids": [
+          "payload-disclosure-evaluation"
+        ],
+        "scope_kind": "governance"
+      },
+      "policy-decision-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decision": {
+            "enum": [
+              "ALLOW",
+              "DENY"
+            ],
+            "kind": "string"
+          },
+          "evaluated_at": {
+            "kind": "timestamp"
+          },
+          "input_context_digest": {
+            "kind": "digest"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "policy-decision"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "obligations": {
+            "item": {
+              "enum": [
+                "ENFORCE_SCOPE",
+                "NO_RAW_QUESTION",
+                "REAUTHORIZE_REFS",
+                "WRITE_AUDIT"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "policy_refs": {
+            "item": {
+              "external_classes": [
+                "STATIC_POLICY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "principal_context_ref": {
+            "external_classes": [
+              "PRINCIPAL_CONTEXT"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "purpose": {
+            "enum": [
+              "governed-analysis-demo",
+              "ontology-build",
+              "semantic-change-triage"
+            ],
+            "kind": "string"
+          },
+          "reason_codes": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "resource_refs": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "execution-evidence-subject/2",
+                "verified-runtime-snapshot-subject/1"
+              ]
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "policy-decision-subject/1"
+          },
+          "valid_until": {
+            "kind": "timestamp"
+          }
+        },
+        "object_type": "policy-decision",
+        "rule_ids": [
+          "policy-decision"
+        ],
+        "scope_kind": "channel"
+      },
+      "reference-candidate-set-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "candidate_refs": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "reference-candidate-subject/1"
+              ]
+            },
+            "kind": "set",
+            "max_items": 2,
+            "min_items": 2
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "denominator": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-candidate-set"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "selection_policy_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "shared_suite_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "suite-manifest-subject/1"
+            ]
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-candidate-set-subject/1"
+          }
+        },
+        "object_type": "reference-candidate-set",
+        "rule_ids": [
+          "reference-candidate-set"
+        ],
+        "scope_kind": "governance"
+      },
+      "reference-candidate-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "cleared_input_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "cleared-input-subject/1"
+            ]
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "control_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "control-manifest-subject/1"
+            ]
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-candidate"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "oracle_provenance_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "oracle-provenance-subject/1"
+            ]
+          },
+          "reference_case_id": {
+            "kind": "identifier"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-candidate-subject/1"
+          },
+          "suite_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "suite-manifest-subject/1"
+            ]
+          },
+          "verification_criteria_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "reference-candidate",
+        "rule_ids": [
+          "reference-candidate"
+        ],
+        "scope_kind": "governance"
+      },
+      "reference-manifest-subject/2": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "cleared_input_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "cleared-input-subject/1"
+            ]
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "control_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "control-manifest-subject/1"
+            ]
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-manifest"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "oracle_provenance_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "oracle-provenance-subject/1"
+            ]
+          },
+          "reference_case_id": {
+            "kind": "identifier"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "selection_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-authority-decision-subject/1"
+            ]
+          },
+          "selection_proposal_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-proposal-subject/1"
+            ]
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-manifest-subject/2"
+          },
+          "suite_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "suite-manifest-subject/1"
+            ]
+          }
+        },
+        "object_type": "reference-manifest",
+        "rule_ids": [
+          "reference-manifest-final"
+        ],
+        "scope_kind": "governance"
+      },
+      "reference-reselection-transition-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "change_reason_code": {
+            "enum": [
+              "MATERIAL_SEMANTIC_CHANGE",
+              "ORACLE_CORRECTION",
+              "POLICY_CHANGE",
+              "SOURCE_CORRECTION"
+            ],
+            "kind": "string"
+          },
+          "changed_component_refs": {
+            "item": {
+              "external_classes": [
+                "STATIC_POLICY"
+              ],
+              "kind": "full_ref",
+              "targets": [
+                "reference-candidate-subject/1",
+                "suite-manifest-subject/1"
+              ]
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "evaluated_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-reselection-transition"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "predecessor_candidate_set_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-candidate-set-subject/1"
+            ]
+          },
+          "predecessor_commit_receipt_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-commit-receipt-subject/1"
+            ]
+          },
+          "predecessor_reference_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-manifest-subject/2"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-reselection-transition-subject/1"
+          }
+        },
+        "object_type": "reference-reselection-transition",
+        "rule_ids": [
+          "reference-reselection-transition"
+        ],
+        "scope_kind": "governance"
+      },
+      "reference-selection-authority-decision-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "action": {
+            "enum": [
+              "SELECT_REFERENCE"
+            ],
+            "kind": "string"
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "decision": {
+            "enum": [
+              "ALLOW",
+              "DENY"
+            ],
+            "kind": "string"
+          },
+          "expires_at": {
+            "kind": "timestamp"
+          },
+          "issued_at": {
+            "kind": "timestamp"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-selection-authority-decision"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "obligations": {
+            "item": {
+              "enum": [
+                "ENFORCE_SCOPE",
+                "NO_RAW_QUESTION",
+                "REAUTHORIZE_REFS",
+                "WRITE_AUDIT"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "policy_refs": {
+            "item": {
+              "external_classes": [
+                "STATIC_POLICY"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "principal_ref": {
+            "external_classes": [
+              "PRINCIPAL"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "principal_registry_ref": {
+            "external_classes": [
+              "PRINCIPAL_REGISTRY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "proposed_action_subject_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-proposal-subject/1"
+            ]
+          },
+          "purpose": {
+            "enum": [
+              "ontology-build"
+            ],
+            "kind": "string"
+          },
+          "reason_codes": {
+            "item": {
+              "kind": "nonempty_string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "role_assignment_ref": {
+            "external_classes": [
+              "ROLE_ASSIGNMENT"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-selection-authority-decision-subject/1"
+          },
+          "trust_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "trusted_session_ref": {
+            "external_classes": [
+              "TRUSTED_SESSION"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "reference-selection-authority-decision",
+        "rule_ids": [
+          "reference-selection-authority"
+        ],
+        "scope_kind": "governance"
+      },
+      "reference-selection-commit-receipt-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "authority_policy_snapshot_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "authority_trust_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "candidate_set_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-candidate-set-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "commit_sequence": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "commit_status": {
+            "enum": [
+              "COMMITTED"
+            ],
+            "kind": "string"
+          },
+          "committed_at": {
+            "kind": "timestamp"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "journal_record_digest": {
+            "kind": "digest"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-selection-commit-receipt"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "predecessor_receipt_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "reference-selection-commit-receipt-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "reference_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-manifest-subject/2"
+            ]
+          },
+          "request_identity_digest": {
+            "kind": "digest"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "selection_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-authority-decision-subject/1"
+            ]
+          },
+          "selection_key_digest": {
+            "kind": "digest"
+          },
+          "selection_proposal_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-selection-proposal-subject/1"
+            ]
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-selection-commit-receipt-subject/1"
+          },
+          "transition_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "reference-reselection-transition-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          }
+        },
+        "object_type": "reference-selection-commit-receipt",
+        "rule_ids": [
+          "reference-selection-receipt"
+        ],
+        "scope_kind": "governance"
+      },
+      "reference-selection-proposal-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "candidate_set_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-candidate-set-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "reference-selection-proposal"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "reselection_transition_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "reference-reselection-transition-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "selected_candidate_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-candidate-subject/1"
+            ]
+          },
+          "selected_reference_case_id": {
+            "kind": "identifier"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "reference-selection-proposal-subject/1"
+          }
+        },
+        "object_type": "reference-selection-proposal",
+        "rule_ids": [
+          "reference-selection-proposal"
+        ],
+        "scope_kind": "governance"
+      },
+      "result-release-commit-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "activation_head_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "activation-record-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "commit_sequence": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "committed_at": {
+            "kind": "timestamp"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "execution_evidence_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "execution-evidence-subject/2"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "result-release-commit"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "policy_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "policy-decision-subject/1"
+            ]
+          },
+          "result_release_eligibility_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "execution-eligibility-subject/1"
+            ]
+          },
+          "revocation_scope_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "result-release-commit-subject/1"
+          },
+          "user_projection_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "user-projection-subject/1"
+            ]
+          },
+          "vrs_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verified-runtime-snapshot-subject/1"
+            ]
+          }
+        },
+        "object_type": "result-release-commit",
+        "rule_ids": [
+          "result-release-commit"
+        ],
+        "scope_kind": "channel"
+      },
+      "revocation-intent-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "enforcement": {
+            "enum": [
+              "BLOCK_NEW_AND_RESULT_RELEASE"
+            ],
+            "kind": "string"
+          },
+          "expected_head_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "revocation-record-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "expected_revocation_epoch": {
+            "kind": "integer",
+            "minimum": 0
+          },
+          "idempotency_key": {
+            "kind": "opaque_token"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "revocation-intent"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "reason_code": {
+            "enum": [
+              "INTEGRITY"
+            ],
+            "kind": "string"
+          },
+          "requested_at": {
+            "kind": "timestamp"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "revocation-intent-subject/1"
+          },
+          "target_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verified-runtime-snapshot-subject/1"
+            ]
+          }
+        },
+        "object_type": "revocation-intent",
+        "rule_ids": [],
+        "scope_kind": "channel"
+      },
+      "revocation-record-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "committed_at": {
+            "kind": "timestamp"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "intent_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "revocation-intent-subject/1"
+            ]
+          },
+          "new_revocation_epoch": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "revocation-record"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "previous_record_ref": {
+            "item": {
+              "kind": "full_ref",
+              "targets": [
+                "revocation-record-subject/1"
+              ]
+            },
+            "kind": "nullable"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "sequence": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "revocation-record-subject/1"
+          }
+        },
+        "object_type": "revocation-record",
+        "rule_ids": [],
+        "scope_kind": "channel"
+      },
+      "runtime-capability-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "compatibility_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "conformance_suite_ref": {
+            "external_classes": [
+              "SUITE_CASE",
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "failure_contract_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "gsr_capability_requirements_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "gsr_semantic_content_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "semantic-content-manifest-subject/1"
+            ]
+          },
+          "input_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "runtime-capability-subject"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "options_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "output_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "policy_obligations_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "projection_fidelity_report_ref": {
+            "external_classes": [
+              "EVIDENCE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "provider_build_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "runtime_capability_manifest_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "runtime_semantic_projection_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "runtime-capability-subject/1"
+          }
+        },
+        "object_type": "runtime-capability-subject",
+        "rule_ids": [],
+        "scope_kind": "runtime"
+      },
+      "runtime-snapshot-payload-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "binding_bundle_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "compatibility_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "control_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "control-manifest-subject/1"
+            ]
+          },
+          "data_identity_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "data-identity-subject/1"
+            ]
+          },
+          "evaluation_runner_manifest_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "gsr_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "governed-semantic-release-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "runtime-snapshot-payload"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "oracle_provenance_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "oracle-provenance-subject/1"
+            ]
+          },
+          "projection_policy_bundle_ref": {
+            "external_classes": [
+              "STATIC_POLICY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "projection_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "reference_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-manifest-subject/2"
+            ]
+          },
+          "runtime_capability_manifest_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "runtime_semantic_projection_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "runtime-snapshot-payload-subject/1"
+          },
+          "suite_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "suite-manifest-subject/1"
+            ]
+          }
+        },
+        "object_type": "runtime-snapshot-payload",
+        "rule_ids": [
+          "runtime-payload-selected-lineage"
+        ],
+        "scope_kind": "runtime"
+      },
+      "scr-enqueue-proposal-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "idempotency_key": {
+            "kind": "opaque_token"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 0
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "scr-enqueue-proposal"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "payload_disclosure_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "payload-disclosure-decision-subject/1"
+            ]
+          },
+          "proposed_payload_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "unknown-concept-payload-subject/2"
+            ]
+          },
+          "requested_at": {
+            "kind": "timestamp"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "scr-enqueue-proposal-subject/1"
+          }
+        },
+        "object_type": "scr-enqueue-proposal",
+        "rule_ids": [
+          "scr-enqueue-proposal"
+        ],
+        "scope_kind": "governance"
+      },
+      "semantic-approval-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "gsr_publish_subject_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "gsr-publish-subject/2"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "semantic-approval-subject"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "semantic_validation_profile_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "semantic-approval-subject/1"
+          }
+        },
+        "object_type": "semantic-approval-subject",
+        "rule_ids": [],
+        "scope_kind": "governance"
+      },
+      "semantic-change-request-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "enqueue_proposal_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "scr-enqueue-proposal-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "semantic-change-request"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "requester_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "semantic-change-request-subject/1"
+          }
+        },
+        "object_type": "semantic-change-request",
+        "rule_ids": [
+          "semantic-change-request"
+        ],
+        "scope_kind": "governance"
+      },
+      "semantic-content-manifest-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "built_at": {
+            "kind": "timestamp"
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "compiler_build_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "content_digest": {
+            "kind": "digest"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 1
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "semantic-content-manifest"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "reference_manifest_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "reference-manifest-subject/2"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "semantic_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "semantic-content-manifest-subject/1"
+          }
+        },
+        "object_type": "semantic-content-manifest",
+        "rule_ids": [
+          "semantic-content-lineage"
+        ],
+        "scope_kind": "governance"
+      },
+      "suite-manifest-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "cases": {
+            "item": {
+              "external_classes": [
+                "SUITE_CASE"
+              ],
+              "kind": "full_ref",
+              "targets": []
+            },
+            "kind": "ordered",
+            "max_items": 8,
+            "min_items": 8
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "denominator": {
+            "kind": "integer",
+            "minimum": 1
+          },
+          "frozen_at": {
+            "kind": "timestamp"
+          },
+          "mutation_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "suite-manifest"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "status_counts": {
+            "keys": [
+              "ANSWERED",
+              "CLARIFY",
+              "REFUSED"
+            ],
+            "kind": "closed_integer_map",
+            "minimum": 0
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "suite-manifest-subject/1"
+          },
+          "suite_id": {
+            "enum": [
+              "adt.tracer.v1.suite"
+            ],
+            "kind": "string"
+          }
+        },
+        "object_type": "suite-manifest",
+        "rule_ids": [
+          "suite-denominator"
+        ],
+        "scope_kind": "governance"
+      },
+      "unknown-concept-payload-subject/2": {
+        "acceptance_class": "product",
+        "fields": {
+          "boundary_execution_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "execution-evidence-subject/2"
+            ]
+          },
+          "boundary_release_commit_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "result-release-commit-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "interaction_handle_ref": {
+            "external_classes": [
+              "SAFE_HANDLE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "proposed-scr-payload"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "observed_gsr_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "governed-semantic-release-subject/1"
+            ]
+          },
+          "observed_vrs_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "verified-runtime-snapshot-subject/1"
+            ]
+          },
+          "reason_code": {
+            "enum": [
+              "CONCEPT_NOT_BOUND"
+            ],
+            "kind": "string"
+          },
+          "request_type": {
+            "enum": [
+              "UNKNOWN_CONCEPT"
+            ],
+            "kind": "string"
+          },
+          "requested_action_code": {
+            "enum": [
+              "ADD_ALIAS",
+              "CLARIFY_DEFINITION",
+              "REVIEW"
+            ],
+            "kind": "string"
+          },
+          "safe_context_codes": {
+            "item": {
+              "enum": [
+                "METRIC_TERM"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "max_items": 1,
+            "min_items": 1
+          },
+          "safe_detail_artifact_ref": {
+            "external_classes": [
+              "SAFE_HANDLE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "safe_term_alias_ref": {
+            "external_classes": [
+              "SAFE_HANDLE"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance"
+            ],
+            "kind": "scope"
+          },
+          "semantic_area_code": {
+            "enum": [
+              "MARKET_METRICS"
+            ],
+            "kind": "string"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "unknown-concept-payload-subject/2"
+          }
+        },
+        "object_type": "proposed-scr-payload",
+        "rule_ids": [
+          "unknown-concept-payload"
+        ],
+        "scope_kind": "governance"
+      },
+      "user-projection-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "classification_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "content_bytes_digest": {
+            "kind": "digest"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "execution_id": {
+            "kind": "identifier"
+          },
+          "locale": {
+            "enum": [
+              "en-HK"
+            ],
+            "kind": "string"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "user-evidence-projection"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "projection_schema_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "renderer_ref": {
+            "external_classes": [
+              "BUILD_SCHEMA"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "rounding_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          },
+          "scope": {
+            "allowed_kinds": [
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "user-projection-subject/1"
+          },
+          "timezone": {
+            "enum": [
+              "Asia/Hong_Kong"
+            ],
+            "kind": "string"
+          },
+          "unit_profile_ref": {
+            "external_classes": [
+              "INTEGRITY"
+            ],
+            "kind": "full_ref",
+            "targets": []
+          }
+        },
+        "object_type": "user-evidence-projection",
+        "rule_ids": [
+          "user-projection"
+        ],
+        "scope_kind": "channel"
+      },
+      "verification-attempt-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "gate_evaluation_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "gate-evaluation-subject/1"
+            ]
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "verification-attempt"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "governance",
+              "runtime",
+              "channel"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "verification-attempt-subject/1"
+          }
+        },
+        "object_type": "verification-attempt",
+        "rule_ids": [
+          "verification-attempt"
+        ],
+        "scope_kind": "dynamic"
+      },
+      "verified-runtime-snapshot-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "limitations": {
+            "item": {
+              "enum": [
+                "constructed-target-coupled",
+                "local-authority",
+                "no-raw-question",
+                "non-hkex-validation",
+                "public-style-synthetic",
+                "synthetic-data",
+                "synthetic-scope"
+              ],
+              "kind": "string"
+            },
+            "kind": "set",
+            "min_items": 0
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "verified-runtime-snapshot"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "seal_authority_decision_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "authority-decision-subject/1"
+            ]
+          },
+          "seal_proposal_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "vrs-seal-proposal-subject/1"
+            ]
+          },
+          "seal_status": {
+            "enum": [
+              "SEALED"
+            ],
+            "kind": "string"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "verified-runtime-snapshot-subject/1"
+          }
+        },
+        "object_type": "verified-runtime-snapshot",
+        "rule_ids": [
+          "verified-runtime-snapshot"
+        ],
+        "scope_kind": "runtime"
+      },
+      "vrs-seal-proposal-subject/1": {
+        "acceptance_class": "product",
+        "fields": {
+          "canonicalization_profile": {
+            "kind": "fixed",
+            "value": "canonical-json-v1.0"
+          },
+          "contract_version": {
+            "kind": "fixed",
+            "value": "shared-product-contract/0.1"
+          },
+          "object_id": {
+            "kind": "identifier"
+          },
+          "object_type": {
+            "kind": "fixed",
+            "value": "vrs-seal-proposal"
+          },
+          "object_version": {
+            "kind": "version"
+          },
+          "runtime_snapshot_payload_ref": {
+            "kind": "full_ref",
+            "targets": [
+              "runtime-snapshot-payload-subject/1"
+            ]
+          },
+          "scope": {
+            "allowed_kinds": [
+              "runtime"
+            ],
+            "kind": "scope"
+          },
+          "subject_schema": {
+            "kind": "fixed",
+            "value": "vrs-seal-proposal-subject/1"
+          },
+          "verification_attempt_refs_by_gate": {
+            "keys": [
+              "BINDING_DATA_VALIDATION",
+              "CONTROL_GOLDEN_EVALUATION",
+              "DISCLOSURE_POLICY_CLEARANCE",
+              "RUNTIME_CAPABILITY_COMPATIBILITY",
+              "SEMANTIC_APPROVAL"
+            ],
+            "kind": "closed_ref_map",
+            "targets": [
+              "verification-attempt-subject/1"
+            ]
+          }
+        },
+        "object_type": "vrs-seal-proposal",
+        "rule_ids": [
+          "seal-proposal"
+        ],
+        "scope_kind": "runtime"
+      }
+    }
+  },
+  "stage_profile_id": "synthetic-trusted-flow/core@1.1"
+}

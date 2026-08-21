@@ -1,0 +1,25 @@
+{
+  "contract": "adt-llm-tool-registry/v1",
+  "registry_id": "adt.agent.tools.v1",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "tool_id": "compare_periods",
+      "purpose": "Compare ADT and eligible turnover across exactly two governed periods.",
+      "required_parameters": ["metric_id", "previous_period_id", "current_period_id", "population_id"],
+      "result_contract": "safe-period-comparison/v1"
+    },
+    {
+      "tool_id": "rank_contributors",
+      "purpose": "Rank governed market segments by descriptive contribution to the verified net turnover change.",
+      "required_parameters": ["previous_period_id", "current_period_id", "dimension_id", "population_id"],
+      "result_contract": "safe-contributor-ranking/v1"
+    },
+    {
+      "tool_id": "decompose_change",
+      "purpose": "Decompose the verified turnover change into calendar-first trading-day and daily-activity effects.",
+      "required_parameters": ["previous_period_id", "current_period_id", "method_id", "population_id"],
+      "result_contract": "safe-sequential-decomposition/v1"
+    }
+  ]
+}

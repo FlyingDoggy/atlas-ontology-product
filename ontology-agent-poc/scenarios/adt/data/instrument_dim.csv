@@ -1,0 +1,5 @@
+instrument_id,segment_id,segment_name
+INST-MB,MB,Main Board
+INST-ETF,ETF,Exchange Traded Funds
+INST-STRUCT,STRUCT,Structured Products
+INST-OTHER,OTHER,Other Securities

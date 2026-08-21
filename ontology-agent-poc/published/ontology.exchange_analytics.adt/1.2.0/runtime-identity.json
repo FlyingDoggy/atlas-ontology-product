@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "PyYAML": "6.0.3",
+    "duckdb": "1.5.5",
+    "fastapi": "0.141.1",
+    "pydantic": "2.13.4",
+    "pyshacl": "0.40.1",
+    "rdflib": "7.6.0",
+    "uvicorn": "0.52.3"
+  },
+  "implementation": "CPython",
+  "machine": "arm64",
+  "python": "3.13.2",
+  "system": "Darwin"
+}

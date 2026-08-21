@@ -1,0 +1,100 @@
+backend:
+  replicaCount: 1
+  image:
+    repository: ontology-common-backend
+    tag: 0.16.2
+    pullPolicy: IfNotPresent
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+web:
+  replicaCount: 1
+  image:
+    repository: ontology-common-web
+    tag: 0.16.2
+    pullPolicy: IfNotPresent
+  resources:
+    requests: {cpu: 25m, memory: 32Mi}
+    limits: {cpu: 250m, memory: 128Mi}
+
+llm:
+  enabled: true
+  existingSecret: ontology-qwen
+  apiKeyKey: ONTOLOGY_QWEN_API_KEY
+  baseUrl: https://dashscope.aliyuncs.com/compatible-mode/v1
+  providerEgressCidrs: ["0.0.0.0/0"]
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+semantica:
+  enabled: true
+  image:
+    repository: ontology-semantica-worker
+    tag: 0.1.0
+    pullPolicy: IfNotPresent
+  buildRef: c5d382ee81edc0727d07907c932970c762ec33bd
+  timeoutSeconds: 20
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+productState:
+  existingSecret: ontology-product-state
+  databaseUrlKey: ONTOLOGY_DATABASE_URL
+  awsAccessKeyIdKey: AWS_ACCESS_KEY_ID
+  awsSecretAccessKeyKey: AWS_SECRET_ACCESS_KEY
+  postgresPasswordKey: POSTGRES_PASSWORD
+  minioRootUserKey: MINIO_ROOT_USER
+  minioRootPasswordKey: MINIO_ROOT_PASSWORD
+  database: ontology
+  databaseUser: ontology
+  bucket: ontology-artifacts
+  region: us-east-1
+  manageBucket: true
+  # Leave empty for AWS S3. The self-contained demo profile points at the
+  # in-cluster S3-compatible object store without changing application code.
+  s3EndpointUrl: http://minio:9000
+
+auth:
+  existingSecret: ontology-demo-auth
+
+postgres:
+  enabled: true
+  image: postgres:17-alpine
+  storage: 4Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+minio:
+  enabled: true
+  image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+  storage: 8Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+persistence:
+  published: 2Gi
+  outputs: 2Gi
+  studio: 2Gi
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+
+ingress:
+  enabled: true
+  className: traefik
+  host: ""
+  tlsSecretName: ""
+  annotations: {}
+
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: kube-system
+  # Enable only for a managed PostgreSQL/AWS S3 profile, then narrow the CIDRs
+  # to the actual VPC endpoints before external release.
+  externalServiceEgress:
+    enabled: false
+    cidrs: ["0.0.0.0/0"]

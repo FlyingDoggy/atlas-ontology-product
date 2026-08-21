@@ -1,0 +1,23 @@
+{
+  "contract": "studio-engineering-run-profile/v1",
+  "profile_id": "cash-trading.studio.qwen3.8max.v1",
+  "version": "1.0.0",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "accepted_response_models": ["qwen3.8-max"],
+  "provider_account_ref": "operator.qwen.demo",
+  "endpoint_ref": "dashscope-compatible-cn",
+  "region": "cn-beijing",
+  "slot_manifest_path": "semantic-slot-manifest.json",
+  "prompt_manifest_path": "prompts.json",
+  "prompt_manifest_digest": "7429cb96a1075a5e0a36b5addd6ca14fe05cc8857a727b646df2a5b86c4b16f0",
+  "projection_policy_path": "projection-policy.json",
+  "projection_policy_digest": "d09cf7e2dc7f2a6e6e768c2961488f7c1ae53989a044ad501a0e956545eb380c",
+  "absolute_timeout_ms": 25000,
+  "provider_timeout_ms": 20000,
+  "max_input_tokens": 5000,
+  "max_output_tokens": 1600,
+  "temperature": 0,
+  "thinking": false,
+  "trace_policy": "safe-metadata-no-raw-response/v1"
+}

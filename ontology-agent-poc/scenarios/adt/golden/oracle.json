@@ -1,0 +1,44 @@
+{
+  "dataset_id": "adt-fixture-v1",
+  "periods": {
+    "2025-Q3": {
+      "eligible_turnover_hkd_mn": 8210000.0,
+      "trading_day_count": 63,
+      "adt_hkd_mn_per_trading_day": 130317.46031746032,
+      "segments": {
+        "ETF": 1100000.0,
+        "MB": 6200000.0,
+        "OTHER": 300000.0,
+        "STRUCT": 610000.0
+      }
+    },
+    "2025-Q4": {
+      "eligible_turnover_hkd_mn": 6740000.0,
+      "trading_day_count": 61,
+      "adt_hkd_mn_per_trading_day": 110491.80327868852,
+      "segments": {
+        "ETF": 940000.0,
+        "MB": 5000000.0,
+        "OTHER": 240000.0,
+        "STRUCT": 560000.0
+      }
+    }
+  },
+  "comparison": {
+    "turnover_delta_hkd_mn": -1470000.0,
+    "turnover_delta_pct": -17.904993909866017,
+    "adt_delta_hkd_mn_per_trading_day": -19825.657038771793,
+    "adt_delta_pct": -15.213354365927198,
+    "largest_decline_segment": "MB",
+    "largest_decline_delta_hkd_mn": -1200000.0,
+    "largest_decline_contribution_pct": 81.63265306122449,
+    "calendar_effect_hkd_mn": -260634.92063492063,
+    "activity_effect_hkd_mn": -1209365.0793650793,
+    "decomposition_residual_hkd_mn": 0.0
+  },
+  "tolerances": {
+    "absolute": 0.000001,
+    "percentage_point": 0.000001
+  }
+}
+

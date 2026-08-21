@@ -1,0 +1,51 @@
+{
+  "contract": "engineering-run-profile/v1",
+  "profile_id": "adt.agent.qwen3.8max.v1",
+  "version": "1.0.0",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "accepted_response_models": ["qwen3.8-max"],
+  "provider_account_ref": "operator.qwen.demo",
+  "endpoint_ref": "dashscope-compatible-cn",
+  "region": "cn-beijing",
+  "artifact_pins": [
+    {
+      "artifact_id": "prompt-manifest",
+      "relative_path": "prompts.json",
+      "checksum": "23da832d5dce144e676d6f193db89b085606140c45fe84310c16610554772875"
+    },
+    {
+      "artifact_id": "tool-registry",
+      "relative_path": "tool-registry.json",
+      "checksum": "254922bc3d90aa60320dd89764197cc4d479febde83ea25dcdd5e16c8a85552a"
+    },
+    {
+      "artifact_id": "projection-policy",
+      "relative_path": "projection-policy.json",
+      "checksum": "a7ea2c6865287707d8b86f7356ae669985731eef14b33c40f9d13c3a7a123c8c"
+    },
+    {
+      "artifact_id": "question-family",
+      "relative_path": "question-family.json",
+      "checksum": "d9e8311f6da9742a2ab4cf6a268e43ff3b6ea35a444305cbc2bb75ee320afebe"
+    }
+  ],
+  "input_contracts": ["model-question-projection/v1", "model-evidence-projection/v1"],
+  "output_contracts": ["bound-goal-candidate/v1", "next-tool-selection/v1", "presentation-selection/v1"],
+  "tool_ids": ["compare_periods", "rank_contributors", "decompose_change"],
+  "budgets": {
+    "absolute_timeout_ms": 9000,
+    "provider_timeout_ms": 3500,
+    "max_provider_calls": 3,
+    "max_tool_calls": 3,
+    "max_iterations": 3,
+    "max_input_tokens": 5000,
+    "max_output_tokens": 1200
+  },
+  "temperature": 0,
+  "thinking": false,
+  "fallback_policy": "restart-original-trusted-request/v1",
+  "outcome_contract": "engineering-demo-five-outcome/v1",
+  "renderer_policy": "closed-answer-clause-deterministic-renderer/v1",
+  "trace_policy": "safe-metadata-no-raw-content/v1"
+}

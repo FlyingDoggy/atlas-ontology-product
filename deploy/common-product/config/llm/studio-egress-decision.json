@@ -1,0 +1,19 @@
+{
+  "allowed_projection_contract": "studio-cleared-input-projection/v1",
+  "approved_by": "decision-owner.muyu",
+  "classification": "constructed_synthetic",
+  "contract": "studio-model-egress-decision/v1",
+  "decision": "ALLOW",
+  "decision_id": "egress.studio.adt.qwen.demo.v1",
+  "endpoint_ref": "dashscope-compatible-cn",
+  "expires_at": "2026-09-19T00:00:00Z",
+  "intake_submission_id": "submission.reference.adt.v1",
+  "issued_at": "2026-08-19T00:00:00Z",
+  "product": "ontology-studio",
+  "profile_digest": "e7eb853736c686cc9be104dbbde9693fc09725bd3073d1729bde9a61eec6c006",
+  "provider": "qwen",
+  "provider_account_ref": "operator.qwen.demo",
+  "region": "cn-beijing",
+  "slot_manifest_digest": "428b2681fb9fa3679c29296252e933006bfc54f4ac707f8aea2d1e613dfe99ff",
+  "task": "adt-observation-tracer"
+}

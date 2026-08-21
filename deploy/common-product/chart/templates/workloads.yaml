@@ -1,0 +1,601 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: runtime
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: runtime
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: runtime
+  ports:
+    - name: http
+      port: 8790
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runtime
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: runtime
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: runtime
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: runtime
+    spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+      initContainers:
+        - name: wait-for-product-state
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["python", "-c"]
+          args:
+            - |
+              import os, time
+              from sqlalchemy import create_engine, text
+              from ontology_agent.product_context import ProductInfrastructureSettings, S3ArtifactStore
+              deadline = time.time() + 180
+              while time.time() < deadline:
+                  try:
+                      engine = create_engine(os.environ["ONTOLOGY_DATABASE_URL"], pool_pre_ping=True)
+                      with engine.connect() as connection:
+                          connection.execute(text("SELECT 1"))
+                      engine.dispose()
+                      S3ArtifactStore(ProductInfrastructureSettings.from_env()).ensure_bucket()
+                      break
+                  except Exception:
+                      time.sleep(2)
+              else:
+                  raise SystemExit("product state services did not become ready")
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+        - name: migrate
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+        - name: bootstrap-runtime
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["ontology-agent", "bootstrap-all-demo"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: published, mountPath: /app/published}
+            - {name: outputs, mountPath: /app/outputs}
+            - {name: tmp, mountPath: /tmp}
+        - name: bootstrap-context
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["ontology-agent", "bootstrap-product-context"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: published, mountPath: /app/published, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+        - name: bootstrap-solution-catalog
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["ontology-agent", "bootstrap-solution-catalog"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      containers:
+        - name: runtime
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["uvicorn"]
+          args: ["ontology_agent.api:app", "--host", "0.0.0.0", "--port", "8790"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+            {{- if .Values.llm.enabled }}
+            - name: ONTOLOGY_MODEL_GATEWAY_URL
+              value: http://model-gateway:8794
+            - name: ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR
+              value: /run/ontology-llm/solution-activations
+            {{- end }}
+          ports:
+            - {name: http, containerPort: 8790}
+          readinessProbe:
+            httpGet: {path: /api/readyz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet: {path: /api/healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: published, mountPath: /app/published, readOnly: true}
+            - {name: outputs, mountPath: /app/outputs}
+            - {name: tmp, mountPath: /tmp}
+            {{- if .Values.llm.enabled }}
+            - {name: solution-llm-activations, mountPath: /run/ontology-llm/solution-activations, readOnly: true}
+            {{- end }}
+      volumes:
+        - {name: published, persistentVolumeClaim: {claimName: ontology-published}}
+        - {name: outputs, persistentVolumeClaim: {claimName: ontology-outputs}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 64Mi}}
+        {{- if .Values.llm.enabled }}
+        - {name: solution-llm-activations, configMap: {name: ontology-solution-llm-activations}}
+        {{- end }}
+{{- if .Values.llm.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-gateway
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: model-gateway
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: model-gateway
+  ports:
+    - {name: http, port: 8794, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-gateway
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: model-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: model-gateway
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: model-gateway
+    spec:
+      containers:
+        - name: model-gateway
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["uvicorn"]
+          args: ["ontology_agent.model_gateway:app", "--host", "0.0.0.0", "--port", "8794", "--no-access-log"]
+          env:
+            - name: ONTOLOGY_AGENT_PROJECT_ROOT
+              value: /app
+            - name: ONTOLOGY_QWEN_BASE_URL
+              value: {{ .Values.llm.baseUrl | quote }}
+            - name: ONTOLOGY_QWEN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.llm.existingSecret | quote }}
+                  key: {{ .Values.llm.apiKeyKey | quote }}
+            - name: ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR
+              value: /run/ontology-llm/solution-activations
+          ports: [{name: http, containerPort: 8794}]
+          readinessProbe:
+            httpGet: {path: /model/healthz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /model/healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.llm.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: solution-llm-activations, mountPath: /run/ontology-llm/solution-activations, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: solution-llm-activations, configMap: {name: ontology-solution-llm-activations}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 32Mi}}
+{{- end }}
+---
+{{- if .Values.semantica.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: semantica-worker
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantica-worker
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: semantica-worker
+  ports:
+    - {name: http, port: 8795, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: semantica-worker
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantica-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: semantica-worker
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: semantica-worker
+    spec:
+      containers:
+        - name: semantica-worker
+          image: {{ printf "%s:%s" .Values.semantica.image.repository .Values.semantica.image.tag | quote }}
+          imagePullPolicy: {{ .Values.semantica.image.pullPolicy }}
+          env:
+            - name: SEMANTICA_BUILD_REF
+              value: {{ .Values.semantica.buildRef | quote }}
+            - name: SEMANTICA_DISABLE_PROGRESS
+              value: "1"
+            - name: SEMANTICA_DISABLE_JUPYTER_PROGRESS
+              value: "1"
+          ports: [{name: http, containerPort: 8795}]
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.semantica.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 128Mi}}
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: studio
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: studio
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: studio
+  ports:
+    - {name: http, port: 8791, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studio
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: studio
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: studio
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: studio
+    spec:
+      securityContext: {fsGroup: 10001, fsGroupChangePolicy: OnRootMismatch}
+      initContainers:
+        {{- include "ontology.waitForRuntime" . | nindent 8 }}
+      containers:
+        - name: studio
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["uvicorn"]
+          args: ["ontology_agent.api:control_app", "--host", "0.0.0.0", "--port", "8791"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+            {{- if .Values.llm.enabled }}
+            - name: ONTOLOGY_STUDIO_LLM_MODE
+              value: active-observation-canary
+            - name: ONTOLOGY_MODEL_GATEWAY_URL
+              value: http://model-gateway:8794
+            {{- end }}
+            {{- if .Values.semantica.enabled }}
+            - name: ONTOLOGY_SEMANTICA_WORKER_URL
+              value: http://semantica-worker:8795
+            - name: ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS
+              value: {{ .Values.semantica.timeoutSeconds | quote }}
+            {{- end }}
+          ports: [{name: http, containerPort: 8791}]
+          readinessProbe:
+            httpGet: {path: /control/readyz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /control/healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: published, mountPath: /app/published}
+            - {name: studio-state, mountPath: /app/studio}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: published, persistentVolumeClaim: {claimName: ontology-published}}
+        - {name: studio-state, persistentVolumeClaim: {claimName: ontology-studio-state}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 64Mi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: construction-worker
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: construction-worker
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: construction-worker
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: construction-worker
+    spec:
+      securityContext: {fsGroup: 10001, fsGroupChangePolicy: OnRootMismatch}
+      initContainers:
+        {{- include "ontology.waitForRuntime" . | nindent 8 }}
+      containers:
+        - name: construction-worker
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["ontology-agent"]
+          args: ["construction-worker", "--poll-seconds", "1", "--lease-seconds", "120"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+            {{- if .Values.semantica.enabled }}
+            - name: ONTOLOGY_SEMANTICA_WORKER_URL
+              value: http://semantica-worker:8795
+            - name: ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS
+              value: {{ .Values.semantica.timeoutSeconds | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: published, mountPath: /app/published}
+            - {name: studio-state, mountPath: /app/studio}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: published, persistentVolumeClaim: {claimName: ontology-published}}
+        - {name: studio-state, persistentVolumeClaim: {claimName: ontology-studio-state}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 64Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-control
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-control
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-control
+  ports:
+    - {name: http, port: 8792, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-control
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-control
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent-control
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent-control
+    spec:
+      securityContext: {fsGroup: 10001, fsGroupChangePolicy: OnRootMismatch}
+      initContainers:
+        {{- include "ontology.waitForRuntime" . | nindent 8 }}
+      containers:
+        - name: agent-control
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["uvicorn"]
+          args: ["ontology_agent.api:agent_control_app", "--host", "0.0.0.0", "--port", "8792"]
+          env:
+            {{- include "ontology.backendEnv" . | nindent 12 }}
+          ports: [{name: http, containerPort: 8792}]
+          readinessProbe:
+            httpGet: {path: /agent-control/readyz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /agent-control/healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: published, mountPath: /app/published}
+            - {name: outputs, mountPath: /app/outputs}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: published, persistentVolumeClaim: {claimName: ontology-published}}
+        - {name: outputs, persistentVolumeClaim: {claimName: ontology-outputs}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 64Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auth
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: auth
+  ports:
+    - {name: http, port: 8793, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: auth
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: auth
+    spec:
+      containers:
+        - name: auth
+          image: {{ include "ontology.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["uvicorn"]
+          args: ["ontology_agent.demo_auth:app", "--host", "0.0.0.0", "--port", "8793", "--no-access-log"]
+          envFrom:
+            - secretRef: {name: {{ .Values.auth.existingSecret | quote }}}
+          ports: [{name: http, containerPort: 8793}]
+          readinessProbe:
+            httpGet: {path: /auth/readyz, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /auth/healthz, port: http}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- include "ontology.backendSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 16Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    {{- include "ontology.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    {{- include "ontology.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ontology.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        {{- include "ontology.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: web
+          image: {{ printf "%s:%s" .Values.web.image.repository .Values.web.image.tag | quote }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: ready, containerPort: 8081}
+          readinessProbe:
+            httpGet: {path: /readyz, port: ready}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+            seccompProfile: {type: RuntimeDefault}

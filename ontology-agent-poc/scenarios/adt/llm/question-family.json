@@ -1,0 +1,36 @@
+{
+  "contract": "registered-question-family/v1",
+  "family_id": "adt.synthetic.analysis.v1",
+  "version": "1.0.0",
+  "classification": "constructed_synthetic",
+  "cases": [
+    {
+      "case_id": "adt.compare.en.v1",
+      "language": "en",
+      "question": "How did the daily market activity measure move between the two configured quarters?",
+      "expected_intent": "period_compare",
+      "required_tools": ["compare_periods"]
+    },
+    {
+      "case_id": "adt.driver.en.v1",
+      "language": "en",
+      "question": "Can you unpack the shift between the two configured quarters and tell me which market board mattered most?",
+      "expected_intent": "turnover_driver",
+      "required_tools": ["compare_periods", "rank_contributors"]
+    },
+    {
+      "case_id": "adt.driver.zh.v1",
+      "language": "zh",
+      "question": "帮我拆一下两个已配置季度之间的变化，看看哪个市场板块最关键。",
+      "expected_intent": "turnover_driver",
+      "required_tools": ["compare_periods", "rank_contributors"]
+    },
+    {
+      "case_id": "adt.decompose.en.v1",
+      "language": "en",
+      "question": "Break the net change into the trading-calendar effect and the change in daily activity.",
+      "expected_intent": "sequential_decomposition",
+      "required_tools": ["compare_periods", "decompose_change"]
+    }
+  ]
+}

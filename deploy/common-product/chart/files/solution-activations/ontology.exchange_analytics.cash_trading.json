@@ -1,0 +1,16 @@
+{
+  "contract": "solution-llm-activation/v1",
+  "activation_id": "activation.cash-trading.qwen.engineering-demo.v1",
+  "solution_id": "ontology.exchange_analytics.cash_trading",
+  "mode": "ACTIVE",
+  "decision": "ALLOW",
+  "provider": "qwen",
+  "requested_model": "qwen3.8-max",
+  "profile_checksum": "03c8d0e3691c3cae7f5ecde7c9aa7425d841e17938303c2a84574aac167ce50c",
+  "question_family_checksum": "43a5c7f38160c9499f92220d2a7e7ed23cab0ee88c73bcb2370666ecf6ac6297",
+  "prompt_manifest_checksum": "5622b6bc7d68eb9556cc9881ac6d1d6984663bbd0e7eef6cd1e020a11e8ba4ba",
+  "projection_policy_checksum": "b0017fbf0136937f30850a96fc624a9150e2fb12fd1878ab129c232d4f925873",
+  "issued_at": "2026-08-20T00:00:00Z",
+  "expires_at": "2027-08-20T00:00:00Z",
+  "approved_by": "PoC Product & Delivery DRI"
+}

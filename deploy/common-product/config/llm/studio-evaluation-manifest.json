@@ -1,0 +1,30 @@
+{
+  "approved_by": "decision-owner.muyu",
+  "contract": "studio-evaluation-manifest/v1",
+  "demo_class": "STUDIO_LLM_ENGINEERING_DEMO",
+  "egress_decision_digest": "cbcb25e87b6c0d1da083b1e8d7bd3fe243d1eee7ccc3f5dc82f310ebc85267b6",
+  "evaluated_at": "2026-08-19T17:06:51Z",
+  "manifest_id": "eval-manifest.studio.adt.v1",
+  "observation_count": 5,
+  "observed_slot_ids": [
+    "metric.definition",
+    "eligibility.include_status",
+    "eligibility.exclude_cancelled",
+    "metric.allowed_dimensions",
+    "mapping.amount"
+  ],
+  "profile_digest": "e7eb853736c686cc9be104dbbde9693fc09725bd3073d1729bde9a61eec6c006",
+  "provider": "qwen",
+  "raw_content_retained": false,
+  "requested_model": "qwen3.8-max",
+  "response_model": "qwen3.8-max",
+  "security_gates": {
+    "closed_projection_only": true,
+    "human_only_draft_mutation": true,
+    "incomplete_slot_denominator_blocked": true,
+    "model_publish_route_absent": true,
+    "stale_draft_write_blocked": true,
+    "wrong_source_anchor_blocked": true
+  },
+  "slot_manifest_digest": "428b2681fb9fa3679c29296252e933006bfc54f4ac707f8aea2d1e613dfe99ff"
+}

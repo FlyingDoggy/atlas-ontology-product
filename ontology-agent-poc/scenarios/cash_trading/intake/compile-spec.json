@@ -1,0 +1,247 @@
+{
+  "contract": "tabular-xlsx-compilation/v1",
+  "build_id": "cash-trading.synthetic.20260820.v1",
+  "dataset_id": "cash-trading-synthetic-v1",
+  "dictionary_source_id": "SRC-DICT-001",
+  "sample_source_id": "SRC-SAMPLE-001",
+  "source_timezone": "Asia/Hong_Kong",
+  "storage_timezone": "UTC",
+  "dictionary_overview_sheet": "Data Model Overview",
+  "tables": [
+    {
+      "table": "order_activity",
+      "dictionary_sheet": "order_activity",
+      "data_sheet": "order_activity",
+      "primary_key": ["activity_id"],
+      "declared_overview_field_count": 70
+    },
+    {
+      "table": "trading_activity",
+      "dictionary_sheet": "trading_activity",
+      "data_sheet": "trading_activity",
+      "primary_key": ["trading_activity_id"],
+      "declared_overview_field_count": 47
+    },
+    {
+      "table": "instrument_reference",
+      "dictionary_sheet": "instrument_reference",
+      "data_sheet": "instrument_reference",
+      "primary_key": ["instrument_id"],
+      "declared_overview_field_count": 28
+    },
+    {
+      "table": "account_reference",
+      "dictionary_sheet": "account_reference",
+      "data_sheet": "account_reference",
+      "primary_key": ["participant_id"],
+      "declared_overview_field_count": 21
+    },
+    {
+      "table": "trading_calendar",
+      "dictionary_sheet": "trading_calendar",
+      "data_sheet": "trading_calendar",
+      "primary_key": ["calendar_code", "business_date"],
+      "declared_overview_field_count": 23
+    },
+    {
+      "table": "order_type_reference",
+      "dictionary_sheet": "order_type_reference",
+      "data_sheet": "order_type_reference",
+      "primary_key": ["order_type_code"],
+      "declared_overview_field_count": 18
+    },
+    {
+      "table": "exchange_rate",
+      "dictionary_sheet": "exchange_rate",
+      "data_sheet": "exchange_rate",
+      "primary_key": ["exchange_rate_id"],
+      "declared_overview_field_count": 18
+    }
+  ],
+  "value_aliases": [
+    {
+      "table": "order_activity",
+      "column": "order_status",
+      "aliases": {"CANCELLED": "CANCELED"},
+      "decision_id": "CT-ASM-002"
+    },
+    {
+      "table": "order_activity",
+      "column": "execution_type",
+      "aliases": {"CANCELLED": "CANCELED"},
+      "decision_id": "CT-ASM-002"
+    },
+    {
+      "table": "trading_activity",
+      "column": "trade_status",
+      "aliases": {"CANCELLED": "CANCELED"},
+      "decision_id": "CT-ASM-002"
+    }
+  ],
+  "enum_checks": [
+    {
+      "table": "order_activity",
+      "column": "activity_type",
+      "allowed_values": ["NEW", "MODIFY", "CANCEL", "EXECUTE", "REPLACE", "EXPIRE", "REJECT", "SUSPEND", "RESUME", "TRADE_CORRECT", "TRADE_CANCEL"],
+      "allow_null": false
+    },
+    {
+      "table": "order_activity",
+      "column": "execution_type",
+      "allowed_values": ["NEW", "PARTIAL_FILL", "FILL", "CANCELED", "REPLACED", "PENDING_CANCEL", "REJECTED", "EXPIRED", "RESTATED", "TRADE_CORRECT", "TRADE_CANCEL", "OTHER"],
+      "allow_null": true
+    },
+    {
+      "table": "order_activity",
+      "column": "order_status",
+      "allowed_values": ["NEW", "PARTIALLY_FILLED", "FILLED", "CANCELED", "REPLACED", "REJECTED", "EXPIRED", "SUSPENDED", "PENDING", "UNKNOWN"],
+      "allow_null": false
+    },
+    {
+      "table": "order_activity",
+      "column": "side",
+      "allowed_values": ["BUY", "SELL", "SELL_SHORT", "SELL_SHORT_EXEMPT", "CROSS", "UNKNOWN"],
+      "allow_null": false
+    },
+    {
+      "table": "trading_activity",
+      "column": "activity_type",
+      "allowed_values": ["TRADE", "TRADE_REPORT", "TRADE_CORRECT", "TRADE_CANCEL", "BUST", "ALLOCATION", "NETTING", "OTHER"],
+      "allow_null": false
+    },
+    {
+      "table": "trading_activity",
+      "column": "execution_type",
+      "allowed_values": ["FULL_FILL", "PARTIAL_FILL", "CROSS", "AUCTION", "BLOCK", "ODD_LOT", "OFF_BOOK", "OTHER"],
+      "allow_null": true
+    },
+    {
+      "table": "trading_activity",
+      "column": "trade_status",
+      "allowed_values": ["ACTIVE", "CORRECTED", "CANCELED", "BUSTED", "PENDING", "REJECTED"],
+      "allow_null": false
+    },
+    {
+      "table": "account_reference",
+      "column": "participant_type",
+      "allowed_values": ["BROKER", "DEALER", "BANK", "MARKET_MAKER", "CLIENT", "FUND", "INTERNAL_DESK", "CLEARING_MEMBER", "OTHER"],
+      "allow_null": false
+    },
+    {
+      "table": "instrument_reference",
+      "column": "asset_class",
+      "allowed_values": ["EQUITY", "ETF", "REIT", "FUND", "WARRANT", "RIGHT", "DEPOSITARY_RECEIPT", "OTHER_CASH"],
+      "allow_null": false
+    },
+    {
+      "table": "instrument_reference",
+      "column": "instrument_status",
+      "allowed_values": ["ACTIVE", "SUSPENDED", "DELISTED", "EXPIRED", "INACTIVE"],
+      "allow_null": false
+    },
+    {
+      "table": "exchange_rate",
+      "column": "quality_status",
+      "allowed_values": ["VALID", "PROVISIONAL", "STALE", "REJECTED", "OVERRIDDEN"],
+      "allow_null": false
+    }
+  ],
+  "reference_checks": [
+    {
+      "check_id": "reference.order.instrument",
+      "from_table": "order_activity",
+      "from_columns": ["instrument_id"],
+      "to_table": "instrument_reference",
+      "to_columns": ["instrument_id"],
+      "allow_null": false
+    },
+    {
+      "check_id": "reference.order.order_type",
+      "from_table": "order_activity",
+      "from_columns": ["order_type"],
+      "to_table": "order_type_reference",
+      "to_columns": ["order_type_code"],
+      "allow_null": false
+    },
+    {
+      "check_id": "reference.order.participant",
+      "from_table": "order_activity",
+      "from_columns": ["participant_id"],
+      "to_table": "account_reference",
+      "to_columns": ["participant_id"],
+      "allow_null": true
+    },
+    {
+      "check_id": "reference.order.calendar",
+      "from_table": "order_activity",
+      "from_columns": ["venue_code", "trading_date"],
+      "to_table": "trading_calendar",
+      "to_columns": ["venue_code", "business_date"],
+      "allow_null": false
+    },
+    {
+      "check_id": "reference.trade.instrument",
+      "from_table": "trading_activity",
+      "from_columns": ["instrument_id"],
+      "to_table": "instrument_reference",
+      "to_columns": ["instrument_id"],
+      "allow_null": false
+    },
+    {
+      "check_id": "reference.trade.participant",
+      "from_table": "trading_activity",
+      "from_columns": ["participant_id"],
+      "to_table": "account_reference",
+      "to_columns": ["participant_id"],
+      "allow_null": true
+    },
+    {
+      "check_id": "reference.trade.buy_participant",
+      "from_table": "trading_activity",
+      "from_columns": ["buy_participant_id"],
+      "to_table": "account_reference",
+      "to_columns": ["participant_id"],
+      "allow_null": true
+    },
+    {
+      "check_id": "reference.trade.sell_participant",
+      "from_table": "trading_activity",
+      "from_columns": ["sell_participant_id"],
+      "to_table": "account_reference",
+      "to_columns": ["participant_id"],
+      "allow_null": true
+    },
+    {
+      "check_id": "reference.trade.buy_order",
+      "from_table": "trading_activity",
+      "from_columns": ["buy_order_id"],
+      "to_table": "order_activity",
+      "to_columns": ["order_id"],
+      "allow_null": true
+    },
+    {
+      "check_id": "reference.trade.sell_order",
+      "from_table": "trading_activity",
+      "from_columns": ["sell_order_id"],
+      "to_table": "order_activity",
+      "to_columns": ["order_id"],
+      "allow_null": true
+    },
+    {
+      "check_id": "reference.trade.calendar",
+      "from_table": "trading_activity",
+      "from_columns": ["venue_code", "business_date"],
+      "to_table": "trading_calendar",
+      "to_columns": ["venue_code", "business_date"],
+      "allow_null": false
+    },
+    {
+      "check_id": "reference.fx.calendar",
+      "from_table": "exchange_rate",
+      "from_columns": ["business_date"],
+      "to_table": "trading_calendar",
+      "to_columns": ["business_date"],
+      "allow_null": false
+    }
+  ]
+}

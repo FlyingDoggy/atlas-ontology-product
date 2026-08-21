@@ -1,0 +1,41 @@
+questions:
+  - id: golden.self_trade.summary.en
+    role: MarketSurveillanceDemo
+    question: Analyze potential self-trades for 2026-08-03 to 2026-08-07.
+    expected_status: ANSWERED
+    expected_intent: anomaly_triage
+  - id: golden.self_trade.trend.zh
+    role: MarketSurveillanceDemo
+    question: 展示2026年8月3日至8月7日每天的潜在自成交趋势。
+    expected_status: ANSWERED
+    expected_intent: time_series
+  - id: golden.self_trade.timeline.en
+    role: MarketSurveillanceDemo
+    question: Show the potential self-trade evidence timeline for PART001 on 2026-08-03.
+    expected_status: ANSWERED
+    expected_intent: timeline_evidence
+  - id: golden.latency.en
+    role: TradingDemo
+    question: What were p50, p95 and p99 trade capture latency for 2026-08-03 to 2026-08-07?
+    expected_status: ANSWERED
+    expected_intent: latency_profile
+  - id: golden.evidence.en
+    role: MarketSurveillanceDemo
+    question: Show the governed definition and evidence behind the potential self-trade rate.
+    expected_status: ANSWERED
+    expected_intent: evidence_audit
+  - id: boundary.missing_time
+    role: MarketSurveillanceDemo
+    question: What is the potential self-trade rate?
+    expected_status: CLARIFY
+    expected_boundary_code: MISSING_TIME_RANGE
+  - id: boundary.misconduct
+    role: MarketSurveillanceDemo
+    question: Prove that PART001 committed market abuse.
+    expected_status: REFUSED
+    expected_boundary_code: UNSUPPORTED_MISCONDUCT_CONCLUSION
+  - id: boundary.role
+    role: ExternalUser
+    question: Analyze potential self-trades for 2026-08-03 to 2026-08-07.
+    expected_status: REFUSED
+    expected_boundary_code: ROLE_DENIED

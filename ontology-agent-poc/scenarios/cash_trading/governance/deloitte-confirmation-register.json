@@ -1,0 +1,150 @@
+{
+  "contract": "cash-trading-external-confirmation-register/v1",
+  "register_id": "cash-trading.deloitte-hk.confirmations.v0.1",
+  "prepared_at": "2026-08-20T00:00:00+08:00",
+  "audience": "Deloitte HK team for confirmation or onward validation with HKEX",
+  "delivery_rule": "Responses improve the next package revision but do not block the constructed-synthetic PoC build.",
+  "response_guidance": "For each Confirmation requested row, enter Confirmed, Correction provided, or Unable to confirm, followed by a concise explanation. Documents or examples are welcome where export controls permit.",
+  "items": [
+    {
+      "question_id": "CT-CONF-001",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Potential self-trade identity and population",
+      "question": "Should potential self-trade matching use clearing participant, exchange participant, trading account, beneficial owner, or another normalized party level? Which trade statuses/events and corrections are eligible?",
+      "current_poc_rule": "Use active TRADE rows with both participant IDs present; flag equality of normalized buy_participant_id and sell_participant_id; exclude cancel/bust/corrected originals.",
+      "mapped_decision_ids": ["CT-ASM-005", "CT-ASM-006", "CT-ASM-007", "CT-ASM-019"],
+      "impact_if_changed": "Changes the candidate population, denominator, evidence timeline and displayed rate."
+    },
+    {
+      "question_id": "CT-CONF-002",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Suspicious-transaction rules and business action",
+      "question": "Beyond same-party matching, which rules or thresholds make a transaction suspicious, what severity/segment labels are used, and what exact review or escalation action follows?",
+      "current_poc_rule": "Call the result a potential self-trade candidate only; show deterministic evidence and make no market-abuse or breach conclusion.",
+      "mapped_decision_ids": ["CT-ASM-005"],
+      "impact_if_changed": "Determines whether the demo remains triage-only or supports an approved surveillance methodology."
+    },
+    {
+      "question_id": "CT-CONF-003",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Order lifecycle completeness and ordering",
+      "question": "Can a reporting extract start mid-lifecycle? What is the canonical lifecycle key and ordering tie-breaker, and should trade-linked orders have corresponding NEW events in the same extract?",
+      "current_poc_rule": "Use venue_code + trading_date + order_id; show an observed event timeline and mark incomplete/invalid sequences rather than fabricating missing events.",
+      "mapped_decision_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-020"],
+      "impact_if_changed": "Affects lifecycle reconstruction, order metrics and the evidence timeline."
+    },
+    {
+      "question_id": "CT-CONF-004",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Submitted order and rejection definitions",
+      "question": "Does a rejected attempt count as a submitted order when no NEW event exists? Should rejection use any rejection event, the terminal state, or both? How are corrected/replayed events handled?",
+      "current_poc_rule": "A submitted attempt is a lifecycle containing NEW or REJECT; a rejection is any eligible REJECT/REJECTED event.",
+      "mapped_decision_ids": ["CT-ASM-011", "CT-ASM-012"],
+      "impact_if_changed": "Changes the order-rejection denominator and numerator."
+    },
+    {
+      "question_id": "CT-CONF-005",
+      "priority": "MEDIUM",
+      "response_required": true,
+      "topic": "Cancel-to-trade numerator",
+      "question": "Should cancel-to-trade count cancel events, distinct orders ever canceled, or orders whose final valid state is canceled? Which cancel reasons are eligible?",
+      "current_poc_rule": "Count distinct observed lifecycles containing a CANCEL event and expose terminal-canceled orders as a separate measure.",
+      "mapped_decision_ids": ["CT-ASM-002", "CT-ASM-013"],
+      "impact_if_changed": "The current sample contains 300 cancel events but only 172 terminal CANCELED lifecycles."
+    },
+    {
+      "question_id": "CT-CONF-006",
+      "priority": "MEDIUM",
+      "response_required": true,
+      "topic": "Order-to-trade convention",
+      "question": "Is the denominator always two times distinct active trades? Are auction, internalized, aggregated or multi-leg executions treated differently?",
+      "current_poc_rule": "submitted-order attempts divided by 2 × distinct eligible active trades.",
+      "mapped_decision_ids": ["CT-ASM-014"],
+      "impact_if_changed": "Changes ratio logic and cohort comparability."
+    },
+    {
+      "question_id": "CT-CONF-007",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Client identity and entitlements",
+      "question": "What entity constitutes a client for analytics: participant, member, account, client group or beneficial owner? Are effective dates and hierarchies required?",
+      "current_poc_rule": "Use account_reference.participant_type=CLIENT in the synthetic sample.",
+      "mapped_decision_ids": ["CT-ASM-009", "CT-ASM-016"],
+      "impact_if_changed": "Changes active-client metrics, dimensions, redaction and access policy."
+    },
+    {
+      "question_id": "CT-CONF-008",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Notional currency and FX/haircut convention",
+      "question": "Should active-client volume be reported in native HKD, converted USD, another base currency, or both? Is the haircut part of this business metric?",
+      "current_poc_rule": "Show native trade_notional in HKD and base_notional_before_haircut in USD; do not relabel converted USD as HKD.",
+      "mapped_decision_ids": ["CT-ASM-010"],
+      "impact_if_changed": "Changes units, aggregation compatibility and displayed values."
+    },
+    {
+      "question_id": "CT-CONF-009",
+      "priority": "MEDIUM",
+      "response_required": true,
+      "topic": "Latency percentile and SLA",
+      "question": "Which percentile algorithm, timestamp precision and approved SLA/threshold table should be used? How should clock-skew exceptions be reviewed?",
+      "current_poc_rule": "Integer milliseconds, nearest-rank p50/p95/p99, negative latency excluded and counted, no breach classification.",
+      "mapped_decision_ids": ["CT-ASM-008", "CT-ASM-020"],
+      "impact_if_changed": "Changes percentile values, exception handling and any breach counts."
+    },
+    {
+      "question_id": "CT-CONF-010",
+      "priority": "MEDIUM",
+      "response_required": true,
+      "topic": "Business date, timezone and session cut-off",
+      "question": "What timezone are the source timestamps in, what cut-off assigns business_date, and how should overnight or special sessions be handled?",
+      "current_poc_rule": "Assign source wall time to Asia/Hong_Kong, persist UTC, and use the supplied venue calendar date.",
+      "mapped_decision_ids": ["CT-ASM-018", "CT-ASM-020"],
+      "impact_if_changed": "May shift displayed timestamps, date buckets and time-window membership."
+    },
+    {
+      "question_id": "CT-CONF-011",
+      "priority": "HIGH",
+      "response_required": true,
+      "topic": "Known-correct examples and existing SQL",
+      "question": "Can you provide any manually transcribed pseudo-SQL, approved formula walkthrough, or small known-correct result for self-trade and latency without exporting restricted source material?",
+      "current_poc_rule": "Use independent internal recomputation over the synthetic data and label all SQL as compiler-generated reference SQL.",
+      "mapped_decision_ids": ["CT-ASM-017"],
+      "impact_if_changed": "Provides an external oracle and reduces reliance on internally derived controls."
+    },
+    {
+      "question_id": "CT-CONF-012",
+      "priority": "MEDIUM",
+      "response_required": true,
+      "topic": "Role access and retention",
+      "question": "Please confirm the intended row/field access for Trading, Client Services, Markets and Market Surveillance, including privileged accounts and the surveillance three-month limit.",
+      "current_poc_rule": "Demo-only role projection: Trading/Surveillance may inspect synthetic detail, Markets receives aggregates/redacted participants, Surveillance max window is three months.",
+      "mapped_decision_ids": ["CT-ASM-016"],
+      "impact_if_changed": "Changes evidence visibility, export behavior and question eligibility."
+    },
+    {
+      "question_id": "CT-CONF-013",
+      "priority": "LOW",
+      "response_required": false,
+      "topic": "Output packaging correction",
+      "question": "For information: we interpreted 'separate sheet titled {Participant ID}.csv' as one participant worksheet plus optional one-file-per-participant CSV exports. Please correct us if another format is intended.",
+      "current_poc_rule": "One Excel workbook with participant worksheets and separate CSV exports.",
+      "mapped_decision_ids": ["CT-ASM-015"],
+      "impact_if_changed": "Presentation/export change only."
+    },
+    {
+      "question_id": "CT-CONF-014",
+      "priority": "LOW",
+      "response_required": false,
+      "topic": "Packet metadata corrections",
+      "question": "For information: we use the detailed dictionary/sample headers as authoritative (68 order and 45 trade fields), normalize CANCELLED to CANCELED, and use calendar_code + business_date as the logical calendar key.",
+      "current_poc_rule": "Apply these non-destructive normalizations only in derived artifacts.",
+      "mapped_decision_ids": ["CT-ASM-002", "CT-ASM-018", "CT-ASM-019"],
+      "impact_if_changed": "Schema metadata and adapter mapping only."
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+"""Isolated Semantica construction worker."""
+

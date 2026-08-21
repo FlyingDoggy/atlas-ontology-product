@@ -1,0 +1,594 @@
+package_id: ontology.exchange_analytics.adt
+version: 1.2.0
+status: confirmed
+created_at: 2026-08-18T12:00:00+08:00
+
+scenario:
+  id: scenario.adt_reference
+  version: 1.0.0
+  status: confirmed
+  name: {en: ADT Reference Analysis, zh: ADT参考分析}
+  definition: A synthetic securities-market scenario for governed turnover and average daily turnover analysis.
+  owner: actor.domain_owner
+  sources: [source.requirements]
+  decisions: [decision.calendar_day, decision.eligible_trade]
+  tags: [reference, synthetic, exchange]
+  timezone: Asia/Hong_Kong
+  market_id: SYNTH-CASH
+  data_window_start: 2025-07-01
+  data_window_end: 2025-12-31
+  periods:
+    - {id: 2025-Q3, start: 2025-07-01, end: 2025-09-30, inclusive: true}
+    - {id: 2025-Q4, start: 2025-10-01, end: 2025-12-31, inclusive: true}
+  default_role: MarketAnalyst
+
+actors:
+  - id: actor.domain_owner
+    status: confirmed
+    name: {en: Market Analytics Owner, zh: 市场分析业务负责人}
+    definition: Accountable owner for metric meaning and scenario scope.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    roles: [DomainOwner, Approver]
+  - id: actor.data_steward
+    status: confirmed
+    name: {en: Market Data Steward, zh: 市场数据管理员}
+    definition: Accountable steward for source fields, keys and data quality.
+    owner: actor.domain_owner
+    sources: [source.data_dictionary]
+    roles: [DataSteward]
+  - id: actor.market_analyst
+    status: confirmed
+    name: {en: Market Analyst, zh: 市场分析师}
+    definition: Permitted user of aggregate market analytics.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    roles: [MarketAnalyst]
+  - id: actor.executive_viewer
+    status: confirmed
+    name: {en: Executive Viewer, zh: 管理层查看者}
+    definition: Permitted read-only user of approved aggregate analytics.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    roles: [ExecutiveViewer]
+  - id: actor.external_user
+    status: confirmed
+    name: {en: External User, zh: 外部用户}
+    definition: A principal that is not permitted to access this scenario.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    roles: [ExternalUser]
+  - id: actor.ontology_agent
+    status: confirmed
+    name: {en: Ontology Agent Service, zh: 本体分析代理服务}
+    definition: Deterministic service principal that validates, plans and executes approved analysis contracts.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    roles: [SystemExecutor]
+
+processes:
+  - id: process.adt_analysis
+    status: confirmed
+    name: {en: Governed ADT Analysis Process, zh: 受治理ADT分析流程}
+    definition: End-to-end process from a user question through policy, semantic binding, deterministic execution, validation and evidence.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    decisions: [decision.calendar_day, decision.eligible_trade, decision.decomposition]
+    process_type: analysis
+    trigger: An approved user submits an ADT fact, comparison, driver or evidence question.
+    steps:
+      - id: authorize
+        name: Check role, requested grain and denied fields
+        actor: actor.ontology_agent
+        operation: PolicyGate
+        governed_refs: [policy.aggregate_market_access]
+        output_artifacts: [policy_decision]
+        on_failure: refuse
+      - id: bind
+        name: Resolve periods, metrics and registered analysis pattern
+        actor: actor.ontology_agent
+        operation: SemanticBinding
+        governed_refs: [metric.average_daily_turnover, dimension.period, analysis.metric_fact, analysis.period_compare, analysis.segment_contribution, analysis.sequential_decomposition, analysis.turnover_driver, analysis.evidence_audit]
+        output_artifacts: [atomic_query_contracts, analysis_plan]
+        on_failure: clarify
+      - id: execute
+        name: Compile approved mappings and execute aggregate queries
+        actor: actor.ontology_agent
+        operation: DeterministicExecution
+        governed_refs: [source.trade_fact, source.trading_calendar, source.instrument_dim, join.trade_calendar, join.trade_instrument, rule.eligible_trade, rule.trading_day]
+        output_artifacts: [aggregate_fact_set]
+        on_failure: stop
+      - id: verify
+        name: Reconcile results and build claim-level evidence
+        actor: actor.ontology_agent
+        operation: VerifyAndEvidence
+        governed_refs: [metric.eligible_turnover, metric.trading_day_count, metric.average_daily_turnover, analysis.sequential_decomposition]
+        output_artifacts: [verified_facts, evidence_records, governed_answer]
+        on_failure: stop
+    exception_paths: [missing_period_to_clarification, denied_detail_to_refusal, validation_failure_to_no_answer]
+
+sources:
+  - id: source.requirements
+    source_type: requirement_transcription
+    title: ADT scenario requirements and end-to-end analysis process
+    locator: submission.reference.adt / sheet=01_需求与流程
+    owner: Deloitte HK reference author
+    captured_on: 2026-08-18
+    trust: primary
+  - id: source.metric_logic
+    source_type: metric_transcription
+    title: ADT metric logic transcription
+    locator: submission.reference.adt / sheet=02_指标逻辑
+    owner: Deloitte HK reference author
+    captured_on: 2026-08-18
+    trust: primary
+  - id: source.data_model
+    source_type: data_model
+    title: Synthetic exchange data model
+    locator: input/data_model.md
+    owner: POC technical owner
+    captured_on: 2026-08-18
+    trust: primary
+  - id: source.data_dictionary
+    source_type: data_dictionary
+    title: Synthetic exchange data dictionary
+    locator: input/data_dictionary.csv
+    owner: POC technical owner
+    captured_on: 2026-08-18
+    trust: primary
+  - id: source.existing_sql
+    source_type: sql
+    title: Existing ADT calculation SQL sample
+    locator: sql/existing_adt.sql
+    owner: POC technical owner
+    captured_on: 2026-08-18
+    trust: primary
+  - id: source.human_confirmation
+    source_type: human_confirmation
+    title: Synthetic ADT business decisions
+    locator: decision-log/ADT-001..ADT-005
+    owner: Reference case owner
+    captured_on: 2026-08-18
+    trust: primary
+  - id: source.article_semantic_web
+    source_type: public_reference
+    title: RDF, OWL, SPARQL and SHACL overview
+    locator: local PDF supplied by project owner
+    owner: AI神经
+    captured_on: 2026-08-18
+    trust: secondary
+  - id: source.article_blocks
+    source_type: public_reference
+    title: Object, Link, Action, Function and Interface
+    locator: local PDF supplied by project owner
+    owner: AI风起兮
+    captured_on: 2026-08-18
+    trust: secondary
+
+decisions:
+  - id: decision.calendar_day
+    question: What counts as the ADT denominator?
+    options: [Distinct approved trading dates, Dates with trades, Calendar days]
+    decision: Count distinct dates in the governed trading calendar where is_trading_day is true.
+    decided_by: actor.domain_owner
+    decided_on: 2026-08-18
+    affects: [metric.trading_day_count, metric.average_daily_turnover]
+  - id: decision.half_day
+    question: How does a half trading day contribute to the denominator?
+    options: [One day, Half day, Exclude]
+    decision: Count an approved half trading day as one trading day in this synthetic reference case.
+    decided_by: actor.domain_owner
+    decided_on: 2026-08-18
+    affects: [metric.trading_day_count]
+    residual_assumption: A real HKEX scenario must reconfirm this convention.
+  - id: decision.eligible_trade
+    question: Which trade records contribute to turnover?
+    options: [Executed only, All statuses, Executed including cancellations]
+    decision: Include status EXECUTED and exclude cancellation_flag true.
+    decided_by: actor.domain_owner
+    decided_on: 2026-08-18
+    affects: [rule.eligible_trade, metric.eligible_turnover]
+  - id: decision.segment_contribution
+    question: What does segment contribution refer to?
+    options: [Turnover delta, ADT delta, Share of Q4 turnover]
+    decision: Contribution is each segment turnover delta divided by total turnover delta.
+    decided_by: actor.domain_owner
+    decided_on: 2026-08-18
+    affects: [analysis.segment_contribution]
+  - id: decision.decomposition
+    question: Which turnover decomposition convention is used?
+    options: [Sequential calendar first, Sequential activity first, Shapley]
+    decision: Use sequential calendar-first decomposition and disclose that it is order-dependent and non-causal.
+    decided_by: actor.domain_owner
+    decided_on: 2026-08-18
+    affects: [analysis.sequential_decomposition]
+
+entities:
+  - id: entity.trade
+    status: confirmed
+    name: {en: Trade, zh: 成交记录}
+    definition: A synthetic market trade event at one fact-row grain.
+    owner: actor.domain_owner
+    sources: [source.data_model]
+    primary_key: property.trade.trade_id
+    grain: one source trade event row
+    lifecycle: immutable event with cancellation marker
+  - id: entity.instrument
+    status: confirmed
+    name: {en: Instrument, zh: 证券}
+    definition: A synthetic listed instrument used to resolve market segment.
+    owner: actor.domain_owner
+    sources: [source.data_model]
+    primary_key: property.instrument.instrument_id
+    grain: one governed instrument
+    lifecycle: effective for the fixture window
+  - id: entity.segment
+    status: confirmed
+    name: {en: Market Segment, zh: 市场板块}
+    definition: A governed classification used to decompose turnover.
+    owner: actor.domain_owner
+    sources: [source.requirements, source.data_dictionary]
+    primary_key: property.segment.segment_id
+    grain: one segment member
+    lifecycle: versioned classification
+  - id: entity.trading_day
+    status: confirmed
+    name: {en: Trading Day, zh: 交易日}
+    definition: A market-calendar date with an approved trading-day indicator and reporting period.
+    owner: actor.domain_owner
+    sources: [source.metric_logic, source.data_model]
+    decisions: [decision.calendar_day, decision.half_day]
+    primary_key: property.calendar.calendar_date
+    grain: one market and calendar date
+    lifecycle: immutable for a published calendar version
+
+properties:
+  - {id: property.trade.trade_id, status: confirmed, name: {en: Trade ID, zh: 成交ID}, definition: Stable synthetic event identifier., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: string, required: true}
+  - {id: property.trade.market_id, status: confirmed, name: {en: Market ID, zh: 市场ID}, definition: Governed market identifier., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: string, required: true}
+  - {id: property.trade.trade_date, status: confirmed, name: {en: Trade Date, zh: 成交日期}, definition: Execution date used to resolve the governed calendar., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: date, required: true}
+  - {id: property.trade.instrument_id, status: confirmed, name: {en: Instrument ID, zh: 证券ID}, definition: Instrument join key., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: string, required: true}
+  - {id: property.trade.executed_value_hkd_mn, status: confirmed, name: {en: Executed Value, zh: 执行成交额}, definition: Executed trade value stored in HKD millions., owner: actor.data_steward, sources: [source.metric_logic, source.data_dictionary], entity: entity.trade, data_type: decimal, required: true, unit: HKD_MN}
+  - {id: property.trade.order_value_hkd_mn, status: confirmed, name: {en: Order Value, zh: 订单金额}, definition: Deliberately incorrect candidate field for mapping mutation tests., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: decimal, required: true, unit: HKD_MN}
+  - {id: property.trade.status, status: confirmed, name: {en: Trade Status, zh: 成交状态}, definition: Trade processing status., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: enum, required: true, enum_values: [EXECUTED, REJECTED]}
+  - {id: property.trade.cancellation_flag, status: confirmed, name: {en: Cancellation Flag, zh: 取消标记}, definition: True when an otherwise executed record is cancelled., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trade, data_type: boolean, required: true}
+  - {id: property.instrument.instrument_id, status: confirmed, name: {en: Instrument ID, zh: 证券ID}, definition: Stable instrument identifier., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.instrument, data_type: string, required: true}
+  - {id: property.segment.segment_id, status: confirmed, name: {en: Segment ID, zh: 板块ID}, definition: Stable governed segment code., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.segment, data_type: string, required: true}
+  - {id: property.segment.segment_name, status: confirmed, name: {en: Segment Name, zh: 板块名称}, definition: Governed segment display name., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.segment, data_type: string, required: true}
+  - {id: property.calendar.market_id, status: confirmed, name: {en: Calendar Market ID, zh: 日历市场ID}, definition: Market governed by the calendar row., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trading_day, data_type: string, required: true}
+  - {id: property.calendar.calendar_date, status: confirmed, name: {en: Calendar Date, zh: 日历日期}, definition: Calendar date., owner: actor.data_steward, sources: [source.data_dictionary], entity: entity.trading_day, data_type: date, required: true}
+  - {id: property.calendar.period_id, status: confirmed, name: {en: Period ID, zh: 期间ID}, definition: Governed reporting period., owner: actor.data_steward, sources: [source.metric_logic, source.data_dictionary], entity: entity.trading_day, data_type: string, required: true}
+  - {id: property.calendar.is_trading_day, status: confirmed, name: {en: Is Trading Day, zh: 是否交易日}, definition: Approved denominator eligibility flag., owner: actor.data_steward, sources: [source.metric_logic, source.data_dictionary], decisions: [decision.calendar_day], entity: entity.trading_day, data_type: boolean, required: true}
+
+relationships:
+  - id: relationship.trade_instrument
+    status: confirmed
+    name: {en: Trade references Instrument, zh: 成交关联证券}
+    definition: Each trade resolves to exactly one governed instrument.
+    owner: actor.data_steward
+    sources: [source.data_model]
+    from_entity: entity.trade
+    to_entity: entity.instrument
+    predicate: references
+    cardinality: N:1
+  - id: relationship.instrument_segment
+    status: confirmed
+    name: {en: Instrument belongs to Segment, zh: 证券属于板块}
+    definition: Each instrument resolves to one governed market segment.
+    owner: actor.domain_owner
+    sources: [source.data_model]
+    from_entity: entity.instrument
+    to_entity: entity.segment
+    predicate: belongs_to
+    cardinality: N:1
+  - id: relationship.trade_calendar
+    status: confirmed
+    name: {en: Trade occurs on Trading Day, zh: 成交发生于交易日}
+    definition: Trade date and market resolve to one governed calendar row.
+    owner: actor.data_steward
+    sources: [source.data_model]
+    from_entity: entity.trade
+    to_entity: entity.trading_day
+    predicate: occurs_on
+    cardinality: N:1
+
+dimensions:
+  - id: dimension.segment
+    status: confirmed
+    name: {en: Segment, zh: 板块}
+    definition: Governed market-segment breakdown.
+    owner: actor.domain_owner
+    sources: [source.requirements, source.metric_logic]
+    entity: entity.segment
+    key_property: property.segment.segment_id
+    label_property: property.segment.segment_name
+    hierarchy: [segment]
+    member_resolution: exact
+  - id: dimension.period
+    status: confirmed
+    name: {en: Reporting Period, zh: 报告期间}
+    definition: Governed calendar-quarter reporting dimension.
+    owner: actor.domain_owner
+    sources: [source.metric_logic]
+    entity: entity.trading_day
+    key_property: property.calendar.period_id
+    label_property: property.calendar.period_id
+    hierarchy: [calendar_quarter]
+    member_resolution: exact
+
+rules:
+  - id: rule.eligible_trade
+    status: confirmed
+    name: {en: Eligible Trade, zh: 合资格成交}
+    definition: Includes executed trades and excludes cancelled records.
+    owner: actor.domain_owner
+    sources: [source.metric_logic, source.existing_sql]
+    decisions: [decision.eligible_trade]
+    rule_type: eligibility
+    all:
+      - {property: property.trade.status, op: eq, value: EXECUTED}
+      - {property: property.trade.cancellation_flag, op: is_false}
+    failure_behavior: exclude
+  - id: rule.trading_day
+    status: confirmed
+    name: {en: Approved Trading Day, zh: 合资格交易日}
+    definition: Includes calendar rows explicitly marked as trading days.
+    owner: actor.domain_owner
+    sources: [source.metric_logic]
+    decisions: [decision.calendar_day]
+    rule_type: calendar
+    all:
+      - {property: property.calendar.is_trading_day, op: is_true}
+    failure_behavior: exclude
+
+metrics:
+  - id: metric.eligible_turnover
+    status: confirmed
+    name: {en: Eligible Turnover, zh: 合资格成交额}
+    definition: Sum of executed value for eligible trades in the governed period.
+    owner: actor.domain_owner
+    sources: [source.metric_logic, source.existing_sql]
+    metric_type: base
+    base_entity: entity.trade
+    result_grain: [dimension.period]
+    value_type: decimal
+    unit: HKD_MN
+    aggregation_semantics: additive
+    formula:
+      op: sum
+      args: [{op: field_ref, ref: property.trade.executed_value_hkd_mn}]
+    query:
+      base_source: source.trade_fact
+      measure_property: property.trade.executed_value_hkd_mn
+      period_property: property.calendar.period_id
+      date_property: property.calendar.calendar_date
+      population_property: property.calendar.market_id
+      required_joins: [join.trade_calendar]
+      filters: [rule.eligible_trade]
+    allowed_dimensions: [dimension.period, dimension.segment]
+    null_policy: fail_validation
+    zero_denominator_policy: refuse
+  - id: metric.trading_day_count
+    status: confirmed
+    name: {en: Trading Day Count, zh: 交易日数}
+    definition: Count of distinct approved trading dates in the governed period.
+    owner: actor.domain_owner
+    sources: [source.metric_logic]
+    decisions: [decision.calendar_day, decision.half_day]
+    metric_type: base
+    base_entity: entity.trading_day
+    result_grain: [dimension.period]
+    value_type: integer
+    unit: TRADING_DAY_COUNT
+    aggregation_semantics: semi_additive
+    formula:
+      op: count_distinct
+      args: [{op: field_ref, ref: property.calendar.calendar_date}]
+    query:
+      base_source: source.trading_calendar
+      measure_property: property.calendar.calendar_date
+      period_property: property.calendar.period_id
+      date_property: property.calendar.calendar_date
+      population_property: property.calendar.market_id
+      filters: [rule.trading_day]
+    allowed_dimensions: [dimension.period]
+    null_policy: fail_validation
+    zero_denominator_policy: refuse
+  - id: metric.average_daily_turnover
+    status: confirmed
+    name: {en: Average Daily Turnover, zh: 平均每日成交额}
+    definition: Eligible turnover divided by the distinct approved trading-day count for the same period.
+    owner: actor.domain_owner
+    sources: [source.metric_logic]
+    decisions: [decision.calendar_day, decision.eligible_trade]
+    metric_type: derived
+    base_entity: entity.trade
+    result_grain: [dimension.period]
+    value_type: decimal
+    unit: HKD_MN_PER_TRADING_DAY
+    aggregation_semantics: derived_non_additive
+    formula:
+      op: divide
+      args:
+        - {op: metric_ref, ref: metric.eligible_turnover}
+        - {op: metric_ref, ref: metric.trading_day_count}
+    query: {}
+    allowed_dimensions: [dimension.period, dimension.segment]
+    null_policy: fail_validation
+    zero_denominator_policy: refuse
+
+data_sources:
+  - id: source.trade_fact
+    status: confirmed
+    name: {en: Synthetic Trade Fact, zh: 合成成交事实}
+    definition: Synthetic row-level fixture used only by the reference POC.
+    owner: actor.data_steward
+    sources: [source.data_model, source.data_dictionary]
+    protocol: tabular/v1
+    tables:
+      - name: trade_fact
+        grain: one synthetic source trade event row
+        primary_key: [trade_id]
+        fields:
+          - {name: trade_id, data_type: string, nullable: false, description: Stable event ID}
+          - {name: market_id, data_type: string, nullable: false, description: Market ID}
+          - {name: trade_date, data_type: date, nullable: false, description: Execution date}
+          - {name: instrument_id, data_type: string, nullable: false, description: Instrument join key}
+          - {name: executed_value_hkd_mn, data_type: decimal, nullable: false, description: Executed value, unit: HKD_MN}
+          - {name: order_value_hkd_mn, data_type: decimal, nullable: false, description: Incorrect candidate amount, unit: HKD_MN}
+          - {name: status, data_type: string, nullable: false, description: Trade status}
+          - {name: cancellation_flag, data_type: boolean, nullable: false, description: Cancellation marker}
+  - id: source.instrument_dim
+    status: confirmed
+    name: {en: Synthetic Instrument Dimension, zh: 合成证券维表}
+    definition: Synthetic instrument-to-segment mapping.
+    owner: actor.data_steward
+    sources: [source.data_model, source.data_dictionary]
+    protocol: tabular/v1
+    tables:
+      - name: instrument_dim
+        grain: one instrument
+        primary_key: [instrument_id]
+        fields:
+          - {name: instrument_id, data_type: string, nullable: false, description: Instrument ID}
+          - {name: segment_id, data_type: string, nullable: false, description: Segment ID}
+          - {name: segment_name, data_type: string, nullable: false, description: Segment label}
+  - id: source.trading_calendar
+    status: confirmed
+    name: {en: Synthetic Trading Calendar, zh: 合成交易日历}
+    definition: Synthetic market calendar with governed period assignment.
+    owner: actor.data_steward
+    sources: [source.data_model, source.data_dictionary]
+    protocol: tabular/v1
+    tables:
+      - name: trading_calendar
+        grain: one market and date
+        primary_key: [market_id, calendar_date]
+        fields:
+          - {name: market_id, data_type: string, nullable: false, description: Market ID}
+          - {name: calendar_date, data_type: date, nullable: false, description: Calendar date}
+          - {name: period_id, data_type: string, nullable: false, description: Reporting period}
+          - {name: is_trading_day, data_type: boolean, nullable: false, description: Trading-day flag}
+
+bindings:
+  - {id: binding.trade.trade_id, status: confirmed, name: {en: Trade ID Binding, zh: 成交ID映射}, definition: Maps Trade ID., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.trade_id, source: source.trade_fact, table: trade_fact, column: trade_id, data_type: string}
+  - {id: binding.trade.market_id, status: confirmed, name: {en: Trade Market Binding, zh: 成交市场映射}, definition: Maps trade market., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.market_id, source: source.trade_fact, table: trade_fact, column: market_id, data_type: string}
+  - {id: binding.trade.trade_date, status: confirmed, name: {en: Trade Date Binding, zh: 成交日期映射}, definition: Maps trade date., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.trade_date, source: source.trade_fact, table: trade_fact, column: trade_date, data_type: date}
+  - {id: binding.trade.instrument_id, status: confirmed, name: {en: Trade Instrument Binding, zh: 成交证券映射}, definition: Maps instrument key., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.instrument_id, source: source.trade_fact, table: trade_fact, column: instrument_id, data_type: string}
+  - {id: binding.trade.executed_value, status: confirmed, name: {en: Executed Value Binding, zh: 执行成交额映射}, definition: Maps governed turnover measure., owner: actor.data_steward, sources: [source.data_dictionary, source.existing_sql], logical_target: property.trade.executed_value_hkd_mn, source: source.trade_fact, table: trade_fact, column: executed_value_hkd_mn, data_type: decimal, unit: HKD_MN}
+  - {id: binding.trade.order_value, status: confirmed, name: {en: Order Value Binding, zh: 订单金额映射}, definition: Maps deliberately incorrect candidate measure., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.order_value_hkd_mn, source: source.trade_fact, table: trade_fact, column: order_value_hkd_mn, data_type: decimal, unit: HKD_MN}
+  - {id: binding.trade.status, status: confirmed, name: {en: Trade Status Binding, zh: 成交状态映射}, definition: Maps eligibility status., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.status, source: source.trade_fact, table: trade_fact, column: status, data_type: string}
+  - {id: binding.trade.cancelled, status: confirmed, name: {en: Cancellation Binding, zh: 取消标记映射}, definition: Maps cancellation marker., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.trade.cancellation_flag, source: source.trade_fact, table: trade_fact, column: cancellation_flag, data_type: boolean}
+  - {id: binding.instrument.instrument_id, status: confirmed, name: {en: Instrument ID Binding, zh: 证券ID映射}, definition: Maps instrument ID., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.instrument.instrument_id, source: source.instrument_dim, table: instrument_dim, column: instrument_id, data_type: string}
+  - {id: binding.segment.id, status: confirmed, name: {en: Segment ID Binding, zh: 板块ID映射}, definition: Maps segment ID., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.segment.segment_id, source: source.instrument_dim, table: instrument_dim, column: segment_id, data_type: string}
+  - {id: binding.segment.name, status: confirmed, name: {en: Segment Name Binding, zh: 板块名称映射}, definition: Maps segment label., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.segment.segment_name, source: source.instrument_dim, table: instrument_dim, column: segment_name, data_type: string}
+  - {id: binding.calendar.market, status: confirmed, name: {en: Calendar Market Binding, zh: 日历市场映射}, definition: Maps calendar market., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.calendar.market_id, source: source.trading_calendar, table: trading_calendar, column: market_id, data_type: string}
+  - {id: binding.calendar.date, status: confirmed, name: {en: Calendar Date Binding, zh: 日历日期映射}, definition: Maps calendar date., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.calendar.calendar_date, source: source.trading_calendar, table: trading_calendar, column: calendar_date, data_type: date}
+  - {id: binding.calendar.period, status: confirmed, name: {en: Calendar Period Binding, zh: 日历期间映射}, definition: Maps governed period., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.calendar.period_id, source: source.trading_calendar, table: trading_calendar, column: period_id, data_type: string}
+  - {id: binding.calendar.is_trading_day, status: confirmed, name: {en: Trading Day Flag Binding, zh: 交易日标记映射}, definition: Maps denominator eligibility., owner: actor.data_steward, sources: [source.data_dictionary], logical_target: property.calendar.is_trading_day, source: source.trading_calendar, table: trading_calendar, column: is_trading_day, data_type: boolean}
+
+joins:
+  - id: join.trade_calendar
+    status: confirmed
+    name: {en: Trade to Calendar Join, zh: 成交到日历关联}
+    definition: Resolves each trade date to exactly one governed calendar row.
+    owner: actor.data_steward
+    sources: [source.data_model, source.existing_sql]
+    left_source: source.trade_fact
+    left_table: trade_fact
+    right_source: source.trading_calendar
+    right_table: trading_calendar
+    keys:
+      - {left_column: market_id, right_column: market_id}
+      - {left_column: trade_date, right_column: calendar_date}
+    expected_cardinality: N:1
+    fanout_policy: block
+  - id: join.trade_instrument
+    status: confirmed
+    name: {en: Trade to Instrument Join, zh: 成交到证券关联}
+    definition: Resolves each trade to exactly one instrument and segment.
+    owner: actor.data_steward
+    sources: [source.data_model, source.existing_sql]
+    left_source: source.trade_fact
+    left_table: trade_fact
+    right_source: source.instrument_dim
+    right_table: instrument_dim
+    keys:
+      - {left_column: instrument_id, right_column: instrument_id}
+    expected_cardinality: N:1
+    fanout_policy: block
+
+analysis_patterns:
+  - {id: analysis.metric_fact, status: confirmed, name: {en: Metric Fact, zh: 指标事实}, definition: Returns a governed metric for one or more explicit periods., owner: actor.domain_owner, sources: [source.requirements], intent: metric_fact, operation: MetricFact, required_metrics: [metric.average_daily_turnover], required_dimensions: [dimension.period], exactly_two_periods: false, output_fields: [period, turnover, trading_days, adt], failure_conditions: [missing_period, zero_denominator]}
+  - {id: analysis.period_compare, status: confirmed, name: {en: Exact Period Compare, zh: 精确期间比较}, definition: Compares ADT and turnover across exactly two periods., owner: actor.domain_owner, sources: [source.requirements], intent: period_compare, operation: ExactPeriodCompare, required_metrics: [metric.average_daily_turnover], required_dimensions: [dimension.period], exactly_two_periods: true, output_fields: [current, previous, delta, delta_pct], failure_conditions: [overlapping_periods, missing_period]}
+  - {id: analysis.segment_contribution, status: confirmed, name: {en: Segment Contribution, zh: 板块贡献}, definition: Reconciles segment turnover deltas and ranks contribution to total turnover change., owner: actor.domain_owner, sources: [source.requirements, source.metric_logic], decisions: [decision.segment_contribution], intent: segment_contribution, operation: SegmentNetChangeShare, required_metrics: [metric.eligible_turnover], required_dimensions: [dimension.segment, dimension.period], exactly_two_periods: true, output_fields: [segment, previous, current, delta, contribution_share], failure_conditions: [segments_do_not_reconcile]}
+  - {id: analysis.sequential_decomposition, status: confirmed, name: {en: Calendar-first Decomposition, zh: 日历优先分解}, definition: Decomposes turnover change into trading-day and activity effects using a disclosed sequential convention., owner: actor.domain_owner, sources: [source.requirements], decisions: [decision.decomposition], intent: sequential_decomposition, operation: SequentialCalendarFirst, required_metrics: [metric.eligible_turnover, metric.trading_day_count, metric.average_daily_turnover], required_dimensions: [dimension.period], exactly_two_periods: true, output_fields: [calendar_effect, activity_effect, residual], failure_conditions: [non_closing_residual]}
+  - {id: analysis.evidence_audit, status: confirmed, name: {en: Evidence Audit, zh: 证据审计}, definition: "Returns definition, mapping, validation and execution evidence for the governed answer.", owner: actor.domain_owner, sources: [source.requirements], intent: evidence_audit, operation: EvidenceAudit, required_metrics: [metric.average_daily_turnover], exactly_two_periods: false, output_fields: [definition, formula, mappings, validation, execution], failure_conditions: [missing_evidence]}
+  - id: analysis.turnover_driver
+    status: confirmed
+    name: {en: Governed Turnover Driver Analysis, zh: 受治理成交额驱动分析}
+    definition: Combines period facts, turnover change, segment contribution and a disclosed calendar-first non-causal decomposition.
+    owner: actor.domain_owner
+    sources: [source.requirements, source.metric_logic]
+    decisions: [decision.segment_contribution, decision.decomposition]
+    intent: turnover_driver
+    operation: TurnoverDriverAnalysis
+    required_metrics: [metric.eligible_turnover, metric.trading_day_count, metric.average_daily_turnover]
+    required_dimensions: [dimension.period, dimension.segment]
+    exactly_two_periods: true
+    output_fields: [period_facts, turnover_change, segment_contribution, calendar_effect, activity_effect, residual]
+    failure_conditions: [missing_period, segments_do_not_reconcile, non_closing_residual]
+
+policies:
+  - id: policy.aggregate_market_access
+    status: confirmed
+    name: {en: Aggregate Market Access, zh: 市场聚合访问策略}
+    definition: Permits approved aggregate analysis and denies raw trade exposure.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    allowed_roles: [MarketAnalyst, ExecutiveViewer]
+    denied_roles: [ExternalUser]
+    allowed_grains: [market-period, segment-period]
+    denied_fields: [property.trade.trade_id, property.trade.instrument_id]
+    minimum_group_size: 10
+
+questions:
+  - id: question.adt_fact
+    status: confirmed
+    name: {en: ADT Fact Question, zh: ADT事实问题}
+    definition: Requests ADT for explicit periods.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    examples: ["What was ADT in Q3 and Q4?", "2025年第三和第四季度的ADT是多少？"]
+    analysis_pattern: analysis.metric_fact
+    required_inputs: [period]
+    expected_answer: Turnover, trading-day count and ADT by requested period.
+  - id: question.adt_compare
+    status: confirmed
+    name: {en: ADT Comparison Question, zh: ADT比较问题}
+    definition: Requests the exact change between two periods.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    examples: ["Compare Q4 ADT with Q3.", "第四季度ADT较第三季度变化多少？"]
+    analysis_pattern: analysis.period_compare
+    required_inputs: [two periods]
+    expected_answer: Absolute and percentage changes with metric scope.
+  - id: question.turnover_driver
+    status: confirmed
+    name: {en: Turnover Driver Question, zh: 成交额驱动问题}
+    definition: Requests turnover decline, ADT context, segment contribution and deterministic decomposition.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    examples: ["Why did total turnover fall in Q4 versus Q3, and which segment contributed most?", "第四季度总成交额为什么较第三季度下降，哪个板块贡献最大？"]
+    analysis_pattern: analysis.turnover_driver
+    required_inputs: [two periods, segment dimension]
+    expected_answer: Period facts, largest segment contribution and disclosed non-causal decomposition.
+  - id: question.evidence
+    status: confirmed
+    name: {en: Evidence Question, zh: 证据问题}
+    definition: Requests how the metric was defined, mapped, validated and calculated.
+    owner: actor.domain_owner
+    sources: [source.requirements]
+    examples: ["Show the evidence and lineage for ADT.", "展示ADT定义、映射和证据。"]
+    analysis_pattern: analysis.evidence_audit
+    required_inputs: [metric]
+    expected_answer: Snapshot, definition, bindings, validation and execution lineage.

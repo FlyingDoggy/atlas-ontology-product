@@ -1,0 +1,30 @@
+{
+  "contract": "studio-model-projection-policy/v1",
+  "classification": "constructed_synthetic",
+  "allowed_fields": [
+    "workspace_id",
+    "base_revision",
+    "base_draft_checksum",
+    "intake_submission_id",
+    "intake_checksum",
+    "claim_ceiling",
+    "slot_id",
+    "draft_path",
+    "value_kind",
+    "required",
+    "current_value",
+    "source_fragment.asset_id",
+    "source_fragment.locator",
+    "source_fragment.text",
+    "source_fragment.checksum",
+    "declared_gap_ids"
+  ],
+  "denied_field_tokens": [
+    "api_key",
+    "authorization",
+    "password",
+    "credential",
+    "private_key",
+    "publish_authority"
+  ]
+}
