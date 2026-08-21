@@ -41,17 +41,15 @@ describe("studioQueryScope", () => {
     });
   });
 
-  it("scopes source, runtime, and LLM reads to their consuming views", () => {
+  it("scopes source, runtime, and model-capability reads to their consuming views", () => {
     expect(studioQueryScope("overview", "summary")).toMatchObject({
       sourceLibrary: true,
       runtime: true,
       llmStatus: true,
-      llmObservations: false,
     });
     expect(studioQueryScope("inputs", "sources")).toMatchObject({ sourceLibrary: true });
     expect(studioQueryScope("inputs", "runs")).toMatchObject({
       llmStatus: true,
-      llmObservations: true,
       sourceLibrary: true,
     });
     expect(studioQueryScope("release", "delivery")).toMatchObject({ runtime: true });
@@ -59,7 +57,6 @@ describe("studioQueryScope", () => {
       sourceLibrary: false,
       runtime: false,
       llmStatus: false,
-      llmObservations: false,
     });
   });
 });

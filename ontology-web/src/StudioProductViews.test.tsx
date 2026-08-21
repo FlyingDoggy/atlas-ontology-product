@@ -10,6 +10,7 @@ import {
   RequirementsCatalogView,
   SampleAndEnumView,
   SchemaCatalogView,
+  SqlContractCatalogView,
   SourceLibraryView,
   StudioVersionLineage,
   buildOntologyGraphProjection,
@@ -55,6 +56,7 @@ const ontologyPackage = {
   data_sources: [{ ...governed("data_source.trades", "成交数据"), protocol: "tabular/v1", tables: [{ name: "trades", grain: "one trade", primary_key: ["trade_id"], fields: [{ name: "trade_id", data_type: "string", nullable: false, description: "成交编号", unit: null }, { name: "market", data_type: "string", nullable: false, description: "市场", unit: null }] }] }],
   bindings: [{ ...governed("binding.trade.market", "市场字段映射"), logical_target: "property.trade.market", source: "data_source.trades", table: "trades", column: "market", data_type: "string", unit: null, transformation: "identity" }],
   joins: [{ ...governed("join.trades.self", "成交自关联"), left_source: "data_source.trades", left_table: "trades", right_source: "data_source.trades", right_table: "trades", keys: [{ left_column: "trade_id", right_column: "trade_id" }], expected_cardinality: "1:1", fanout_policy: "block" }], analysis_patterns: [], policies: [],
+  sql_contracts: [],
   questions: [
     { ...governed("question.adt_fact", "ADT是多少"), examples: ["上月ADT是多少？"] },
     { ...governed("question.adt_compare", "ADT比较"), examples: ["两个期间有何差异？"] },
@@ -449,6 +451,33 @@ describe("mature Studio product views", () => {
     expect(screen.getByText("GEM")).toBeTruthy();
   });
 
+  it("authors a governed SQL contract without copying SQL text into the package", async () => {
+    const onApply = vi.fn().mockResolvedValue(undefined);
+    render(<SqlContractCatalogView ontologyPackage={ontologyPackage} onApply={onApply} busy={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "新增第一个 SQL 合同" }));
+    fireEvent.change(screen.getByLabelText("SQL Contract ID"), { target: { value: "sql.daily_turnover" } });
+    fireEvent.change(screen.getByLabelText("中文名称"), { target: { value: "每日成交额查询" } });
+    fireEvent.change(screen.getByLabelText("英文名称"), { target: { value: "Daily turnover query" } });
+    fireEvent.change(screen.getByLabelText("责任人"), { target: { value: "actor.owner" } });
+    fireEvent.change(screen.getByLabelText("业务定义"), { target: { value: "用于计算受治理每日成交额的既有查询。" } });
+    fireEvent.change(screen.getByLabelText("SQL 原文来源"), { target: { value: "source.requirements" } });
+    fireEvent.change(screen.getByLabelText("语句定位锚点"), { target: { value: "existing.sql#L10-L35" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存 SQL 合同草稿" }));
+
+    await waitFor(() => expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
+      action: "UPSERT",
+      collection: "sql_contracts",
+      object_id: "sql.daily_turnover",
+      payload: expect.objectContaining({
+        statement_source: "source.requirements",
+        statement_locator: "existing.sql#L10-L35",
+        execution_mode: "reference_only",
+        read_only: true,
+      }),
+    })));
+    expect(JSON.stringify(onApply.mock.calls[0]?.[0])).not.toContain("SELECT ");
+  });
+
   it("keeps source metrics, canonical metrics and runtime support as separate counts", () => {
     const authoring = {
       contract: "studio-authoring-projection/v1",
@@ -526,7 +555,7 @@ describe("mature Studio product views", () => {
     expect(screen.getAllByRole("alert").some((item) => item.textContent?.includes("revision conflict"))).toBe(true);
   });
 
-  it("keeps every malformed JSON field blocking even after another JSON field becomes valid", () => {
+  it("edits a metric formula through structured controls instead of raw JSON", () => {
     const onApply = vi.fn();
     render(<MemoryRouter initialEntries={["/ontology-studio/solutions/ontology.exchange_analytics.adt/semantic/metrics/?assetType=metrics&assetId=new"]}><SemanticAssetCatalog
       mode="metrics"
@@ -544,13 +573,24 @@ describe("mature Studio product views", () => {
     fireEvent.change(screen.getByLabelText("业务定义"), { target: { value: "验证多个结构化字段不会互相掩盖错误。" } });
     fireEvent.change(screen.getByLabelText("单位"), { target: { value: "count" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /需求文档/ }));
-    fireEvent.change(screen.getByLabelText("公式合同"), { target: { value: "{" } });
-    fireEvent.change(screen.getByLabelText("确定性查询合同"), { target: { value: "{}" } });
+    expect(screen.queryByLabelText("公式合同")).toBeNull();
+    fireEvent.change(screen.getByLabelText("运算"), { target: { value: "field_ref" } });
+    fireEvent.change(screen.getByLabelText("字段"), { target: { value: "property.trade.market" } });
     fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({ formula: { op: "field_ref", ref: "property.trade.market", args: [] } }),
+    }));
+  });
 
-    expect(onApply).not.toHaveBeenCalled();
-    expect((screen.getByLabelText("公式合同") as HTMLTextAreaElement).value).toBe("{");
-    expect(screen.getByRole("alert").textContent).toContain("formula");
+  it("allows policy assets to enter the same governed edit lifecycle", () => {
+    const policyPackage = {
+      ...ontologyPackage,
+      policies: [{ ...governed("policy.aggregate", "聚合访问策略"), allowed_roles: ["analyst"], denied_roles: [], allowed_grains: ["aggregate"], denied_fields: [], minimum_group_size: 5 }],
+    } as StudioWorkbench["package"];
+    render(<MemoryRouter><SemanticAssetCatalog mode="policies" solutionId="ontology.exchange_analytics.adt" ontologyPackage={policyPackage} busy={false} error={null} reviewer="atlas-operator" onApply={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: "创建修订草稿" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "＋ 新增策略" })).toBeTruthy();
+    expect(screen.queryByText("治理资产 · 只读")).toBeNull();
   });
 
   it("uses the server-provided asset digest and authenticated reviewer for confirmation", async () => {

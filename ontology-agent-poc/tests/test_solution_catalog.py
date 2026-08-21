@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from ontology_agent.io import canonical_bytes, load_package
+from ontology_agent.models import Status
 from ontology_agent.product_context import ExactStoredArtifactRef
 from ontology_agent.studio.solutions import (
     SolutionBundleRecordV1,
@@ -276,6 +277,12 @@ def test_blank_solution_contains_only_a_generic_draft_envelope(
         "Build a governed ontology from newly registered evidence."
     )
     assert package.scenario.tags == ("solution:blank", "authority:draft")
+    assert package.status is Status.CONFIRMED
+    assert package.scenario.status is Status.CONFIRMED
+    assert package.scenario.market_id is None
+    assert package.scenario.timezone is None
+    assert package.scenario.data_window_start is None
+    assert package.scenario.data_window_end is None
     assert package.sources[0].trust == "assumption"
     assert all(
         not getattr(package, collection)
@@ -291,6 +298,7 @@ def test_blank_solution_contains_only_a_generic_draft_envelope(
             "data_sources",
             "bindings",
             "joins",
+            "sql_contracts",
             "analysis_patterns",
             "policies",
             "questions",
@@ -300,5 +308,11 @@ def test_blank_solution_contains_only_a_generic_draft_envelope(
         token in (installed / "ontology" / "package.yaml").read_text(
             encoding="utf-8"
         ).casefold()
-        for token in ("average daily turnover", "cash trading")
+        for token in (
+            "average daily turnover",
+            "cash trading",
+            "market_id:",
+            "1970-01-01",
+            "ontology_author",
+        )
     )

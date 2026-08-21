@@ -824,7 +824,7 @@ def _studio_construction(
                 ),
                 skill=load_skill_package(
                     "ontology-build",
-                    os.environ.get("ONTOLOGY_BUILD_SKILL_VERSION", "1.0.0"),
+                    os.environ.get("ONTOLOGY_BUILD_SKILL_VERSION", "1.1.0"),
                     root=(
                         Path(os.environ["ONTOLOGY_SKILL_ROOT"])
                         if os.environ.get("ONTOLOGY_SKILL_ROOT")

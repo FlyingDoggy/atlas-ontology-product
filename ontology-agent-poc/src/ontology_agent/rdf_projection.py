@@ -81,6 +81,7 @@ def build_graph(package: OntologyPackage) -> Graph:
         ("DataSource", package.data_sources),
         ("PhysicalBinding", package.bindings),
         ("JoinContract", package.joins),
+        ("SqlContract", package.sql_contracts),
         ("AnalysisPattern", package.analysis_patterns),
         ("Policy", package.policies),
         ("BusinessQuestion", package.questions),
@@ -132,6 +133,17 @@ def build_graph(package: OntologyPackage) -> Graph:
         graph.add((uri, EX.source, resource_uri(binding.source)))
         graph.add((uri, EX.table, Literal(binding.table)))
         graph.add((uri, EX.column, Literal(binding.column)))
+
+    for contract in package.sql_contracts:
+        uri = resource_uri(contract.id)
+        graph.add((uri, EX.statementSource, resource_uri(contract.statement_source)))
+        graph.add((uri, EX.statementLocator, Literal(contract.statement_locator)))
+        graph.add((uri, EX.executionMode, Literal(contract.execution_mode)))
+        for implemented in contract.implements:
+            graph.add((uri, EX.implements, resource_uri(implemented)))
+        for relation in contract.inputs:
+            graph.add((uri, EX.inputSource, resource_uri(relation.source)))
+            graph.add((uri, EX.inputTable, Literal(relation.table)))
 
     for pattern in package.analysis_patterns:
         uri = resource_uri(pattern.id)

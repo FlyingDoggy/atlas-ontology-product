@@ -89,12 +89,19 @@ class PeriodDefinition(StrictModel):
 
 
 class Scenario(GovernedObject):
-    timezone: str
-    market_id: str
-    data_window_start: date
-    data_window_end: date
-    periods: tuple[PeriodDefinition, ...]
-    default_role: str
+    """Optional execution context for one solution.
+
+    Exchange-specific context is deliberately optional.  A blank or non-trading
+    solution must not manufacture a market, date window or role merely to satisfy
+    the package envelope.
+    """
+
+    timezone: str | None = None
+    market_id: str | None = None
+    data_window_start: date | None = None
+    data_window_end: date | None = None
+    periods: tuple[PeriodDefinition, ...] = ()
+    default_role: str | None = None
 
 
 class Entity(GovernedObject):
@@ -241,6 +248,43 @@ class JoinContract(GovernedObject):
     fanout_policy: Literal["block", "deduplicate_reviewed"] = "block"
 
 
+class SqlInputRelation(StrictModel):
+    source: str
+    table: str
+    alias: str | None = None
+
+
+class SqlParameter(StrictModel):
+    name: str = Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
+    data_type: Literal["string", "integer", "decimal", "boolean", "date", "datetime"]
+    required: bool = True
+    description: str = ""
+
+
+class SqlContract(GovernedObject):
+    """Governed reference to exact SQL evidence, not a mutable SQL text copy."""
+
+    dialect: Literal[
+        "ansi",
+        "postgresql",
+        "duckdb",
+        "bigquery",
+        "snowflake",
+        "spark",
+        "other",
+    ] = "ansi"
+    statement_source: str
+    statement_locator: str = Field(min_length=1)
+    inputs: tuple[SqlInputRelation, ...] = ()
+    output_fields: tuple[str, ...] = ()
+    implements: tuple[str, ...] = ()
+    parameters: tuple[SqlParameter, ...] = ()
+    execution_mode: Literal[
+        "reference_only", "validated_query", "runtime_tool"
+    ] = "reference_only"
+    read_only: Literal[True] = True
+
+
 class AnalysisPattern(GovernedObject):
     intent: Literal[
         "metric_fact",
@@ -307,6 +351,7 @@ class OntologyPackage(StrictModel):
     data_sources: tuple[DataSource, ...]
     bindings: tuple[PhysicalBinding, ...]
     joins: tuple[JoinContract, ...]
+    sql_contracts: tuple[SqlContract, ...] = ()
     analysis_patterns: tuple[AnalysisPattern, ...]
     policies: tuple[Policy, ...]
     questions: tuple[BusinessQuestion, ...]
@@ -325,6 +370,7 @@ class OntologyPackage(StrictModel):
             *self.data_sources,
             *self.bindings,
             *self.joins,
+            *self.sql_contracts,
             *self.analysis_patterns,
             *self.policies,
             *self.questions,

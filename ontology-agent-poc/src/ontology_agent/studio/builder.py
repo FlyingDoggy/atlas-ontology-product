@@ -37,7 +37,7 @@ PHASE_COLLECTIONS: dict[BuilderPhase, tuple[str, ...]] = {
         "policies",
         "questions",
     ),
-    "DATA": ("data_sources", "bindings", "joins"),
+    "DATA": ("data_sources", "bindings", "joins", "sql_contracts"),
 }
 
 _SOURCE_TYPE_BY_KIND: dict[str, str] = {

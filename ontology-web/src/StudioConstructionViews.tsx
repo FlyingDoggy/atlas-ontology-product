@@ -59,6 +59,7 @@ const candidateTypeLabels: Record<ConstructionCandidate["candidate_type"], strin
   DATA_SOURCE: "数据源",
   MAPPING: "映射",
   JOIN: "关联合同",
+  SQL_CONTRACT: "SQL 合同",
   ANALYSIS_PATTERN: "分析模式",
   POLICY: "策略",
   QUESTION: "问题",

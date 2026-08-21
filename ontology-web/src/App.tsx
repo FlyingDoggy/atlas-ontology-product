@@ -13,7 +13,6 @@ import {
   fetchSolutionRuntime,
   fetchStudioWorkbench,
   fetchStudioLlmStatus,
-  fetchStudioObservations,
   fetchConstructionRuns,
   fetchConstructionJobs,
   fetchConstructionReviewDraft,
@@ -26,8 +25,6 @@ import {
   applyPackageOperations,
   publishDraft,
   rollbackAgentRuntime,
-  generateStudioObservations,
-  reviewStudioObservations,
   enqueueConstructionJob,
   cancelConstructionJob,
   retryConstructionJob,
@@ -48,7 +45,6 @@ import {
   type SolutionAnalysis,
   type SolutionOntology,
   type SemanticChangeRequestInput,
-  type StudioObservationDisposition,
   type ConstructionDisposition,
   type StudioWorkbench,
   type AgentRuntimeStatus,
@@ -75,13 +71,13 @@ import {
 import { StudioSolutionDirectory } from "./StudioSolutionDirectory";
 import { SemanticChangeRequestPanel } from "./SemanticChangeRequestPanel";
 import { AgentExecutionEvidence } from "./AgentExecutionEvidence";
-import { StudioLlmWorkbench } from "./StudioLlmWorkbench";
 import {
   MappingWorkbenchView,
   OntologyGraphEditor,
   RequirementsCatalogView,
   SampleAndEnumView,
   SchemaCatalogView,
+  SqlContractCatalogView,
   SourceLibraryView,
   StudioVersionLineage,
 } from "./StudioProductViews";
@@ -692,6 +688,7 @@ function StudioOverviewPanel({
     workbench.package.metrics,
     workbench.package.rules,
     workbench.package.bindings,
+    workbench.package.sql_contracts,
     workbench.package.analysis_patterns,
   ].reduce((total, items) => total + items.length, 0);
   const intakeGaps = Array.isArray(workbench.intake.gaps) ? workbench.intake.gaps.length : 0;
@@ -827,13 +824,6 @@ function StudioPackageWorkbench({
     queryKey: ["studio-llm-status", workspaceId],
     queryFn: () => fetchStudioLlmStatus(workspaceId),
     enabled: Boolean(query.data) && queryScope.llmStatus,
-  });
-  const llmObservationsQuery = useQuery({
-    queryKey: ["studio-llm-observations", workspaceId],
-    queryFn: () => fetchStudioObservations(workspaceId),
-    enabled: queryScope.llmObservations
-      && llmStatusQuery.data?.installed === true
-      && llmStatusQuery.data.mode === "active-observation-canary",
   });
   const constructionRunsQuery = useQuery({
     queryKey: ["studio-construction-runs", workspaceId],
@@ -991,37 +981,6 @@ function StudioPackageWorkbench({
       ]);
     },
   });
-  const generateObservations = useMutation({
-    mutationFn: async () => {
-      if (!query.data) throw new ProductApiError("Studio workbench 尚未就绪。", 409);
-      return generateStudioObservations(workspaceId, query.data.workspace.revision);
-    },
-    onSuccess: async () => {
-      await llmObservationsQuery.refetch();
-      await query.refetch();
-    },
-  });
-  const reviewObservations = useMutation({
-    mutationFn: async (dispositions: StudioObservationDisposition[]) => {
-      if (!query.data) throw new ProductApiError("Studio workbench 尚未就绪。", 409);
-      const record = llmObservationsQuery.data?.observation_sets.find((item) => item.decision === null)
-        ?? llmObservationsQuery.data?.observation_sets[0];
-      if (!record) throw new ProductApiError("没有可复核的 observation set。", 409);
-      return reviewStudioObservations(
-        workspaceId,
-        record.observation_set.observation_set_id,
-        query.data.workspace.revision,
-        dispositions,
-      );
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        query.refetch(),
-        llmObservationsQuery.refetch(),
-        queryClient.invalidateQueries({ queryKey: ["studio-workspace-editor", workspaceId] }),
-      ]);
-    },
-  });
   const startConstruction = useMutation({
     mutationFn: async (sourceVersionIds: string[]) => {
       if (!query.data) throw new ProductApiError("Studio workbench 尚未就绪。", 409);
@@ -1093,23 +1052,6 @@ function StudioPackageWorkbench({
           ? "refresh" as const
           : null;
   const actionError = prepare.error ?? activate.error ?? rollback.error ?? verify.error ?? runtimeQuery.error;
-  const llmWorkbench = <StudioLlmWorkbench
-      status={llmStatusQuery.data ?? null}
-      observationSets={llmObservationsQuery.data?.observation_sets ?? []}
-      currentRevision={query.data.workspace.revision}
-      busy={generateObservations.isPending ? "generate" : reviewObservations.isPending ? "review" : null}
-      error={(
-        generateObservations.error
-        ?? reviewObservations.error
-        ?? (llmStatusQuery.data?.installed === true && llmStatusQuery.data.mode === "active-observation-canary" ? llmObservationsQuery.error : null)
-      ) instanceof Error ? String((
-        generateObservations.error
-        ?? reviewObservations.error
-        ?? llmObservationsQuery.error
-      )?.message) : null}
-      onGenerate={() => generateObservations.mutate()}
-      onReview={(dispositions) => reviewObservations.mutate(dispositions)}
-    />;
   const workspaceActionError = author.error
     ?? authorAndValidate.error
     ?? validateWorkspace.error
@@ -1154,8 +1096,7 @@ function StudioPackageWorkbench({
       onImportInstalledSources={async () => { await importInstalledSources.mutateAsync(); }}
     />;
   } else if (page === "inputs" && subpage === "runs") {
-    content = <>
-      <ConstructionRunsView
+    content = <ConstructionRunsView
         runs={constructionRunsQuery.data ?? null}
         jobs={constructionJobsQuery.data ?? null}
         sources={sourceLibraryQuery.data?.current ?? []}
@@ -1165,12 +1106,7 @@ function StudioPackageWorkbench({
         onStart={(sourceVersionIds) => startConstruction.mutate(sourceVersionIds)}
         onCancel={(jobId) => cancelConstruction.mutate(jobId)}
         onRetry={(jobId) => retryConstruction.mutate(jobId)}
-      />
-      <details className="auxiliary-construction-tool">
-        <summary>AI 辅助字段提取</summary>
-        {llmWorkbench}
-      </details>
-    </>;
+      />;
   } else if (page === "semantic" && subpage === "model") {
     content = <SemanticAssetCatalog
       mode="business"
@@ -1232,9 +1168,12 @@ function StudioPackageWorkbench({
       mode="policies"
       solutionId={solutionId}
       ontologyPackage={query.data.package}
-      busy={false}
-      error={null}
+      busy={author.isPending || authorAndValidate.isPending}
+      error={(author.error ?? authorAndValidate.error) instanceof Error ? String((author.error ?? authorAndValidate.error)?.message) : null}
       onApply={applyOperation}
+      onApplyAndValidate={applyAndValidateOperation}
+      onConfirm={applyOperation}
+      onDeprecate={applyOperation}
       assetChecksums={query.data.asset_checksums}
       reviewer={reviewer}
     />;
@@ -1254,6 +1193,12 @@ function StudioPackageWorkbench({
     onApply={applyOperation}
   />;
   else if (page === "data" && subpage === "mappings") content = <MappingWorkbenchView
+    ontologyPackage={query.data.package}
+    busy={author.isPending}
+    error={author.error instanceof Error ? author.error.message : null}
+    onApply={applyOperation}
+  />;
+  else if (page === "data" && subpage === "sql") content = <SqlContractCatalogView
     ontologyPackage={query.data.package}
     busy={author.isPending}
     error={author.error instanceof Error ? author.error.message : null}

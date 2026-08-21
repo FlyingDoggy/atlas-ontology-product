@@ -87,7 +87,9 @@ function commonTemplate(
     status: "proposed",
     name: { en: "", zh: "" },
     definition: "",
-    owner: ontologyPackage.scenario.owner,
+    owner: collection === "actors"
+      ? `${config.prefix}.new`
+      : ontologyPackage.actors[0]?.id ?? ontologyPackage.scenario.owner,
     sources: [],
     decisions: [],
     tags: ["studio-authored"],
@@ -153,10 +155,6 @@ function parseLines(value: string): string[] {
   return [...new Set(value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean))];
 }
 
-function jsonEditorValue(value: unknown): string {
-  return JSON.stringify(value ?? [], null, 2);
-}
-
 function CommonFields({
   payload,
   ontologyPackage,
@@ -179,11 +177,146 @@ function CommonFields({
         <label>中文名称<input required value={name.zh} onChange={(event) => update("name", { ...name, zh: event.target.value })} /></label>
         <label>英文名称<input required value={name.en} onChange={(event) => update("name", { ...name, en: event.target.value })} /></label>
         <label className="is-wide">业务定义<textarea required rows={4} value={stringValue(payload.definition)} onChange={(event) => update("definition", event.target.value)} placeholder="说明它是什么、适用边界以及不代表什么。" /></label>
-        <label>责任人<select required value={stringValue(payload.owner)} onChange={(event) => update("owner", event.target.value)}>{ontologyPackage.actors.map((actor) => <option key={actor.id} value={actor.id}>{actor.name.zh} · {actor.id}</option>)}</select></label>
+        <label>责任人<input required list="asset-owner-options" value={stringValue(payload.owner)} onChange={(event) => update("owner", event.target.value)} /><small>选择已登记参与者；新建首个参与者时可填写该参与者自身 ID。</small></label>
         <fieldset className="asset-source-selector"><legend>来源证据（至少一项）</legend>{ontologyPackage.sources.map((source) => <label key={source.id}><input type="checkbox" checked={selectedSources.includes(source.id)} onChange={() => update("sources", selectedSources.includes(source.id) ? selectedSources.filter((id) => id !== source.id) : [...selectedSources, source.id])} /><span><strong>{source.title}</strong><small>{source.id} · {source.trust}</small></span></label>)}</fieldset>
       </div>
+      <datalist id="asset-owner-options">{ontologyPackage.actors.map((actor) => <option key={actor.id} value={actor.id}>{actor.name.zh}</option>)}<option value={ontologyPackage.scenario.owner} /></datalist>
     </section>
   </>;
+}
+
+function objectValue(value: unknown): JsonObject {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as JsonObject
+    : {};
+}
+
+function objectList(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+    : [];
+}
+
+function ProcessStepsEditor({
+  value,
+  ontologyPackage,
+  onChange,
+}: {
+  value: unknown;
+  ontologyPackage: OntologyPackage;
+  onChange: (value: JsonObject[]) => void;
+}) {
+  const steps = objectList(value);
+  const actorFallback = ontologyPackage.actors[0]?.id ?? "";
+  const updateStep = (index: number, patch: JsonObject) => onChange(
+    steps.map((step, current) => current === index ? { ...step, ...patch } : step),
+  );
+  return <fieldset className="structured-array-editor is-wide"><legend>流程步骤</legend>
+    {steps.map((step, index) => <article key={`${stringValue(step.id)}-${index}`}>
+      <header><strong>步骤 {index + 1}</strong><button type="button" disabled={steps.length === 1} onClick={() => onChange(steps.filter((_, current) => current !== index))}>移除</button></header>
+      <div>
+        <label>步骤 ID<input required value={stringValue(step.id)} onChange={(event) => updateStep(index, { id: event.target.value })} /></label>
+        <label>名称<input required value={stringValue(step.name)} onChange={(event) => updateStep(index, { name: event.target.value })} /></label>
+        <label>执行者<select required value={stringValue(step.actor)} onChange={(event) => updateStep(index, { actor: event.target.value })}><option value="">请选择</option>{ontologyPackage.actors.map((actor) => <option key={actor.id} value={actor.id}>{actor.name.zh} · {actor.id}</option>)}</select></label>
+        <label>操作<input required value={stringValue(step.operation)} onChange={(event) => updateStep(index, { operation: event.target.value })} /></label>
+        <label>失败处理<select value={stringValue(step.on_failure, "review")} onChange={(event) => updateStep(index, { on_failure: event.target.value })}>{["stop", "clarify", "review", "refuse"].map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="is-wide">治理资产引用（每行一个 ID）<textarea rows={3} value={lines(step.governed_refs)} onChange={(event) => updateStep(index, { governed_refs: parseLines(event.target.value) })} /></label>
+        <label className="is-wide">输出物（每行一个）<textarea rows={3} value={lines(step.output_artifacts)} onChange={(event) => updateStep(index, { output_artifacts: parseLines(event.target.value) })} /></label>
+      </div>
+    </article>)}
+    <button type="button" onClick={() => onChange([...steps, { id: `step.${steps.length + 1}`, name: "", actor: actorFallback, operation: "", governed_refs: [], output_artifacts: [], on_failure: "review" }])}>＋ 新增步骤</button>
+  </fieldset>;
+}
+
+function RuleConditionsEditor({
+  value,
+  ontologyPackage,
+  onChange,
+}: {
+  value: unknown;
+  ontologyPackage: OntologyPackage;
+  onChange: (value: JsonObject[]) => void;
+}) {
+  const conditions = objectList(value);
+  const updateCondition = (index: number, patch: JsonObject) => onChange(
+    conditions.map((condition, current) => current === index ? { ...condition, ...patch } : condition),
+  );
+  return <fieldset className="structured-array-editor is-wide"><legend>条件（全部满足）</legend>
+    {conditions.map((condition, index) => {
+      const operator = stringValue(condition.op, "eq");
+      const raw = condition.value;
+      const renderedValue = Array.isArray(raw) ? raw.join(", ") : String(raw ?? "");
+      return <article key={`${stringValue(condition.property)}-${index}`}><header><strong>条件 {index + 1}</strong><button type="button" onClick={() => onChange(conditions.filter((_, current) => current !== index))}>移除</button></header><div>
+        <label>属性<select required value={stringValue(condition.property)} onChange={(event) => updateCondition(index, { property: event.target.value })}><option value="">请选择</option>{ontologyPackage.properties.map((property) => <option key={property.id} value={property.id}>{property.name.zh} · {property.id}</option>)}</select></label>
+        <label>操作符<select value={operator} onChange={(event) => updateCondition(index, { op: event.target.value, value: ["is_true", "is_false"].includes(event.target.value) ? null : condition.value ?? "" })}>{["eq", "neq", "in", "not_in", "is_true", "is_false"].map((item) => <option key={item}>{item}</option>)}</select></label>
+        {!['is_true', 'is_false'].includes(operator) ? <label>值<input required value={renderedValue} onChange={(event) => updateCondition(index, { value: ["in", "not_in"].includes(operator) ? parseLines(event.target.value) : event.target.value })} placeholder={["in", "not_in"].includes(operator) ? "多个值用逗号分隔" : "比较值"} /></label> : null}
+      </div></article>;
+    })}
+    <button type="button" onClick={() => onChange([...conditions, { property: ontologyPackage.properties[0]?.id ?? "", op: "eq", value: "" }])}>＋ 新增条件</button>
+  </fieldset>;
+}
+
+const formulaOps = ["field_ref", "metric_ref", "literal", "sum", "count_distinct", "add", "subtract", "multiply", "divide"] as const;
+
+function newFormulaNode(
+  op: typeof formulaOps[number],
+  ontologyPackage: OntologyPackage,
+): JsonObject {
+  if (op === "field_ref") return { op, ref: ontologyPackage.properties[0]?.id ?? "", args: [] };
+  if (op === "metric_ref") return { op, ref: ontologyPackage.metrics[0]?.id ?? "", args: [] };
+  if (op === "literal") return { op, value: 0, args: [] };
+  if (["sum", "count_distinct"].includes(op)) return { op, args: [newFormulaNode("field_ref", ontologyPackage)] };
+  return { op, args: [newFormulaNode("literal", ontologyPackage), newFormulaNode("literal", ontologyPackage)] };
+}
+
+function FormulaNodeEditor({
+  value,
+  ontologyPackage,
+  onChange,
+  depth = 0,
+}: {
+  value: unknown;
+  ontologyPackage: OntologyPackage;
+  onChange: (value: JsonObject) => void;
+  depth?: number;
+}) {
+  const node = objectValue(value);
+  const op = formulaOps.includes(stringValue(node.op) as typeof formulaOps[number])
+    ? stringValue(node.op) as typeof formulaOps[number]
+    : "literal";
+  const args = objectList(node.args);
+  const updateArg = (index: number, next: JsonObject) => onChange({ ...node, op, args: args.map((item, current) => current === index ? next : item) });
+  return <fieldset className="formula-node-editor"><legend>{depth === 0 ? "公式" : `参数 ${depth}`}</legend>
+    <label>运算<select value={op} onChange={(event) => onChange(newFormulaNode(event.target.value as typeof formulaOps[number], ontologyPackage))}>{formulaOps.map((item) => <option key={item}>{item}</option>)}</select></label>
+    {op === "field_ref" ? <label>字段<select required value={stringValue(node.ref)} onChange={(event) => onChange({ op, ref: event.target.value, args: [] })}><option value="">请选择</option>{ontologyPackage.properties.map((property) => <option key={property.id} value={property.id}>{property.name.zh} · {property.id}</option>)}</select></label> : null}
+    {op === "metric_ref" ? <label>指标<select required value={stringValue(node.ref)} onChange={(event) => onChange({ op, ref: event.target.value, args: [] })}><option value="">请选择</option>{ontologyPackage.metrics.map((metric) => <option key={metric.id} value={metric.id}>{metric.name.zh} · {metric.id}</option>)}</select></label> : null}
+    {op === "literal" ? <label>数值<input required type="number" step="any" value={String(node.value ?? 0)} onChange={(event) => onChange({ op, value: Number(event.target.value), args: [] })} /></label> : null}
+    {args.map((child, index) => <FormulaNodeEditor key={index} value={child} ontologyPackage={ontologyPackage} onChange={(next) => updateArg(index, next)} depth={depth + 1} />)}
+  </fieldset>;
+}
+
+function QueryContractEditor({
+  value,
+  ontologyPackage,
+  onChange,
+}: {
+  value: unknown;
+  ontologyPackage: OntologyPackage;
+  onChange: (value: JsonObject) => void;
+}) {
+  const query = objectValue(value);
+  const updateQuery = (key: string, next: unknown) => onChange({ ...query, [key]: next });
+  const propertyOptions = ontologyPackage.properties.map((property) => <option key={property.id} value={property.id}>{property.name.zh} · {property.id}</option>);
+  const selectedJoins = stringList(query.required_joins);
+  const selectedRules = stringList(query.filters);
+  return <fieldset className="query-contract-editor is-wide"><legend>确定性查询合同</legend><div>
+    <label>基础数据源<select required value={stringValue(query.base_source)} onChange={(event) => updateQuery("base_source", event.target.value)}><option value="">请选择</option>{ontologyPackage.data_sources.map((source) => <option key={source.id} value={source.id}>{source.name.zh} · {source.id}</option>)}</select></label>
+    <label>度量字段<select required value={stringValue(query.measure_property)} onChange={(event) => updateQuery("measure_property", event.target.value)}><option value="">请选择</option>{propertyOptions}</select></label>
+    <label>期间字段<select required value={stringValue(query.period_property)} onChange={(event) => updateQuery("period_property", event.target.value)}><option value="">请选择</option>{propertyOptions}</select></label>
+    <label>日期字段<select required value={stringValue(query.date_property)} onChange={(event) => updateQuery("date_property", event.target.value)}><option value="">请选择</option>{propertyOptions}</select></label>
+    <label>总体字段<select required value={stringValue(query.population_property)} onChange={(event) => updateQuery("population_property", event.target.value)}><option value="">请选择</option>{propertyOptions}</select></label>
+  </div><fieldset><legend>需要的 Join</legend>{ontologyPackage.joins.length ? ontologyPackage.joins.map((join) => <label key={join.id}><input type="checkbox" checked={selectedJoins.includes(join.id)} onChange={() => updateQuery("required_joins", selectedJoins.includes(join.id) ? selectedJoins.filter((id) => id !== join.id) : [...selectedJoins, join.id])} />{join.name.zh} · {join.id}</label>) : <p>当前没有 Join 合同</p>}</fieldset><fieldset><legend>过滤规则</legend>{ontologyPackage.rules.length ? ontologyPackage.rules.map((rule) => <label key={rule.id}><input type="checkbox" checked={selectedRules.includes(rule.id)} onChange={() => updateQuery("filters", selectedRules.includes(rule.id) ? selectedRules.filter((id) => id !== rule.id) : [...selectedRules, rule.id])} />{rule.name.zh} · {rule.id}</label>) : <p>当前没有规则</p>}</fieldset>
+  </fieldset>;
 }
 
 function TypeFields({
@@ -191,23 +324,12 @@ function TypeFields({
   payload,
   ontologyPackage,
   update,
-  setLocalError,
-  jsonTexts,
-  setJsonText,
 }: {
   collection: SemanticCollection;
   payload: JsonObject;
   ontologyPackage: OntologyPackage;
   update: (key: string, value: unknown) => void;
-  setLocalError: (value: string | null) => void;
-  jsonTexts: Record<string, string>;
-  setJsonText: (key: string, value: string) => void;
 }) {
-  const jsonField = (key: string, label: string, rows = 6) => <label className="is-wide">{label}<textarea rows={rows} spellCheck={false} value={jsonTexts[key] ?? jsonEditorValue(payload[key])} onChange={(event) => {
-    setJsonText(key, event.target.value);
-    try { update(key, JSON.parse(event.target.value)); setLocalError(null); }
-    catch { setLocalError(`${label}必须是有效 JSON；修复前不会保存。`); }
-  }} /></label>;
   const entityOptions = ontologyPackage.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name.zh} · {entity.id}</option>);
   const propertyOptions = ontologyPackage.properties.map((property) => <option key={property.id} value={property.id}>{property.name.zh} · {property.id}</option>);
   const dimensionOptions = ontologyPackage.dimensions.map((dimension) => <option key={dimension.id} value={dimension.id}>{dimension.name.zh} · {dimension.id}</option>);
@@ -219,13 +341,13 @@ function TypeFields({
       {collection === "properties" ? <><label>所属对象<select required value={stringValue(payload.entity)} onChange={(event) => update("entity", event.target.value)}>{entityOptions}</select></label><label>数据类型<select value={stringValue(payload.data_type, "string")} onChange={(event) => update("data_type", event.target.value)}>{["string", "integer", "decimal", "boolean", "date", "datetime", "enum"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="asset-checkbox"><input type="checkbox" checked={Boolean(payload.required)} onChange={(event) => update("required", event.target.checked)} />必填字段</label><label>单位<input value={stringValue(payload.unit)} onChange={(event) => update("unit", event.target.value || null)} placeholder="无单位可留空" /></label><label>空值含义<input required value={stringValue(payload.null_meaning, "not_allowed")} onChange={(event) => update("null_meaning", event.target.value)} /></label><label className="is-wide">枚举值（每行一个）<textarea rows={5} value={lines(payload.enum_values)} onChange={(event) => update("enum_values", parseLines(event.target.value))} /></label></> : null}
       {collection === "relationships" ? <><label>起点对象<select required value={stringValue(payload.from_entity)} onChange={(event) => update("from_entity", event.target.value)}>{entityOptions}</select></label><label>终点对象<select required value={stringValue(payload.to_entity)} onChange={(event) => update("to_entity", event.target.value)}>{entityOptions}</select></label><label>谓词<input required value={stringValue(payload.predicate)} onChange={(event) => update("predicate", event.target.value)} placeholder="例如 belongsTo" /></label><label>基数<select value={stringValue(payload.cardinality, "N:1")} onChange={(event) => update("cardinality", event.target.value)}>{["1:1", "1:N", "N:1", "N:N"].map((item) => <option key={item}>{item}</option>)}</select></label></> : null}
       {collection === "actors" ? <label className="is-wide">业务角色（每行一个）<textarea required rows={6} value={lines(payload.roles)} onChange={(event) => update("roles", parseLines(event.target.value))} /></label> : null}
-      {collection === "processes" ? <><label>流程类型<select value={stringValue(payload.process_type, "business")} onChange={(event) => update("process_type", event.target.value)}>{["business", "analysis", "governance"].map((item) => <option key={item}>{item}</option>)}</select></label><label>触发条件<input required value={stringValue(payload.trigger)} onChange={(event) => update("trigger", event.target.value)} /></label>{jsonField("steps", "流程步骤（结构化）", 10)}<label className="is-wide">异常路径（每行一个）<textarea rows={5} value={lines(payload.exception_paths)} onChange={(event) => update("exception_paths", parseLines(event.target.value))} /></label></> : null}
-      {collection === "dimensions" ? <><label>所属对象<select required value={stringValue(payload.entity)} onChange={(event) => update("entity", event.target.value)}>{entityOptions}</select></label><label>键属性<select required value={stringValue(payload.key_property)} onChange={(event) => update("key_property", event.target.value)}>{propertyOptions}</select></label><label>标签属性<select required value={stringValue(payload.label_property)} onChange={(event) => update("label_property", event.target.value)}>{propertyOptions}</select></label><label>成员解析<select value={stringValue(payload.member_resolution, "exact")} onChange={(event) => update("member_resolution", event.target.value)}>{["exact", "controlled_alias", "none"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="is-wide">层级（每行一个属性 ID）<textarea rows={5} value={lines(payload.hierarchy)} onChange={(event) => update("hierarchy", parseLines(event.target.value))} /></label></> : null}
-      {collection === "rules" ? <><label>规则类型<select value={stringValue(payload.rule_type, "quality")} onChange={(event) => update("rule_type", event.target.value)}>{["eligibility", "quality", "calendar", "policy", "alert"].map((item) => <option key={item}>{item}</option>)}</select></label><label>失败行为<select value={stringValue(payload.failure_behavior, "warn")} onChange={(event) => update("failure_behavior", event.target.value)}>{["exclude", "block", "warn"].map((item) => <option key={item}>{item}</option>)}</select></label>{jsonField("all", "条件集合（结构化）", 9)}</> : null}
-      {collection === "metrics" ? <><label>指标类型<select value={stringValue(payload.metric_type, "derived")} onChange={(event) => update("metric_type", event.target.value)}>{["base", "derived"].map((item) => <option key={item}>{item}</option>)}</select></label><label>基础对象<select required value={stringValue(payload.base_entity)} onChange={(event) => update("base_entity", event.target.value)}>{entityOptions}</select></label><label>值类型<select value={stringValue(payload.value_type, "decimal")} onChange={(event) => update("value_type", event.target.value)}>{["integer", "decimal", "percentage"].map((item) => <option key={item}>{item}</option>)}</select></label><label>单位<input required value={stringValue(payload.unit)} onChange={(event) => update("unit", event.target.value)} /></label><label>聚合语义<select value={stringValue(payload.aggregation_semantics, "derived_non_additive")} onChange={(event) => update("aggregation_semantics", event.target.value)}>{["additive", "semi_additive", "non_additive", "derived_non_additive"].map((item) => <option key={item}>{item}</option>)}</select></label><label>空值策略<select value={stringValue(payload.null_policy, "fail_validation")} onChange={(event) => update("null_policy", event.target.value)}>{["exclude", "zero", "fail_validation"].map((item) => <option key={item}>{item}</option>)}</select></label><label>零分母策略<select value={stringValue(payload.zero_denominator_policy, "refuse")} onChange={(event) => update("zero_denominator_policy", event.target.value)}>{["zero", "null", "refuse"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="is-wide">结果粒度（每行一个维度 ID）<textarea rows={4} value={lines(payload.result_grain)} onChange={(event) => update("result_grain", parseLines(event.target.value))} /></label><label className="is-wide">允许维度（每行一个维度 ID）<textarea rows={4} value={lines(payload.allowed_dimensions)} onChange={(event) => update("allowed_dimensions", parseLines(event.target.value))} /></label>{jsonField("formula", "公式合同", 10)}{jsonField("query", "确定性查询合同", 10)}</> : null}
+      {collection === "processes" ? <><label>流程类型<select value={stringValue(payload.process_type, "business")} onChange={(event) => update("process_type", event.target.value)}>{["business", "analysis", "governance"].map((item) => <option key={item}>{item}</option>)}</select></label><label>触发条件<input required value={stringValue(payload.trigger)} onChange={(event) => update("trigger", event.target.value)} /></label><ProcessStepsEditor value={payload.steps} ontologyPackage={ontologyPackage} onChange={(value) => update("steps", value)} /><label className="is-wide">异常路径（每行一个）<textarea rows={5} value={lines(payload.exception_paths)} onChange={(event) => update("exception_paths", parseLines(event.target.value))} /></label></> : null}
+      {collection === "dimensions" ? <><label>所属对象<select required value={stringValue(payload.entity)} onChange={(event) => update("entity", event.target.value)}>{entityOptions}</select></label><label>键属性<select required value={stringValue(payload.key_property)} onChange={(event) => update("key_property", event.target.value)}>{propertyOptions}</select></label><label>标签属性<select required value={stringValue(payload.label_property)} onChange={(event) => update("label_property", event.target.value)}>{propertyOptions}</select></label><label>成员解析<select value={stringValue(payload.member_resolution, "exact")} onChange={(event) => update("member_resolution", event.target.value)}>{["exact", "controlled_alias", "none"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="is-wide">层级名称（每行一级）<textarea rows={5} value={lines(payload.hierarchy)} onChange={(event) => update("hierarchy", parseLines(event.target.value))} /></label></> : null}
+      {collection === "rules" ? <><label>规则类型<select value={stringValue(payload.rule_type, "quality")} onChange={(event) => update("rule_type", event.target.value)}>{["eligibility", "quality", "calendar", "policy", "alert"].map((item) => <option key={item}>{item}</option>)}</select></label><label>失败行为<select value={stringValue(payload.failure_behavior, "warn")} onChange={(event) => update("failure_behavior", event.target.value)}>{["exclude", "block", "warn"].map((item) => <option key={item}>{item}</option>)}</select></label><RuleConditionsEditor value={payload.all} ontologyPackage={ontologyPackage} onChange={(value) => update("all", value)} /></> : null}
+      {collection === "metrics" ? <><label>指标类型<select value={stringValue(payload.metric_type, "derived")} onChange={(event) => { const next = event.target.value; update("metric_type", next); update("query", next === "derived" ? {} : { base_source: ontologyPackage.data_sources[0]?.id ?? null, measure_property: ontologyPackage.properties[0]?.id ?? null, period_property: ontologyPackage.properties[0]?.id ?? null, date_property: ontologyPackage.properties[0]?.id ?? null, population_property: ontologyPackage.properties[0]?.id ?? null, required_joins: [], filters: [] }); }}>{["base", "derived"].map((item) => <option key={item}>{item}</option>)}</select></label><label>基础对象<select required value={stringValue(payload.base_entity)} onChange={(event) => update("base_entity", event.target.value)}>{entityOptions}</select></label><label>值类型<select value={stringValue(payload.value_type, "decimal")} onChange={(event) => update("value_type", event.target.value)}>{["integer", "decimal", "percentage"].map((item) => <option key={item}>{item}</option>)}</select></label><label>单位<input required value={stringValue(payload.unit)} onChange={(event) => update("unit", event.target.value)} /></label><label>聚合语义<select value={stringValue(payload.aggregation_semantics, "derived_non_additive")} onChange={(event) => update("aggregation_semantics", event.target.value)}>{["additive", "semi_additive", "non_additive", "derived_non_additive"].map((item) => <option key={item}>{item}</option>)}</select></label><label>空值策略<select value={stringValue(payload.null_policy, "fail_validation")} onChange={(event) => update("null_policy", event.target.value)}>{["exclude", "zero", "fail_validation"].map((item) => <option key={item}>{item}</option>)}</select></label><label>零分母策略<select value={stringValue(payload.zero_denominator_policy, "refuse")} onChange={(event) => update("zero_denominator_policy", event.target.value)}>{["zero", "null", "refuse"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="is-wide">结果粒度（每行一个维度 ID）<textarea rows={4} value={lines(payload.result_grain)} onChange={(event) => update("result_grain", parseLines(event.target.value))} /></label><label className="is-wide">允许维度（每行一个维度 ID）<textarea rows={4} value={lines(payload.allowed_dimensions)} onChange={(event) => update("allowed_dimensions", parseLines(event.target.value))} /></label><div className="is-wide"><FormulaNodeEditor value={payload.formula} ontologyPackage={ontologyPackage} onChange={(value) => update("formula", value)} /></div>{stringValue(payload.metric_type, "derived") === "base" ? <QueryContractEditor value={payload.query} ontologyPackage={ontologyPackage} onChange={(value) => update("query", value)} /> : <div className="derived-query-note is-wide"><strong>派生指标不绑定物理查询。</strong><span>公式只能引用已治理指标；物理查询责任保留在基础指标。</span></div>}</> : null}
       {collection === "analysis_patterns" ? <><label>分析意图<select value={stringValue(payload.intent, "metric_fact")} onChange={(event) => update("intent", event.target.value)}>{["metric_fact", "period_compare", "segment_contribution", "sequential_decomposition", "evidence_audit", "turnover_driver", "anomaly_triage", "time_series", "latency_profile", "timeline_evidence"].map((item) => <option key={item}>{item}</option>)}</select></label><label>执行操作<input required value={stringValue(payload.operation)} onChange={(event) => update("operation", event.target.value)} /></label><label className="asset-checkbox"><input type="checkbox" checked={Boolean(payload.exactly_two_periods)} onChange={(event) => update("exactly_two_periods", event.target.checked)} />要求恰好两个期间</label><label className="is-wide">依赖指标（每行一个 ID）<textarea required rows={5} value={lines(payload.required_metrics)} onChange={(event) => update("required_metrics", parseLines(event.target.value))} /></label><label className="is-wide">依赖维度（每行一个 ID）<textarea rows={4} value={lines(payload.required_dimensions)} onChange={(event) => update("required_dimensions", parseLines(event.target.value))} /></label><label className="is-wide">输出字段（每行一个）<textarea required rows={5} value={lines(payload.output_fields)} onChange={(event) => update("output_fields", parseLines(event.target.value))} /></label><label className="is-wide">失败条件（每行一个）<textarea rows={5} value={lines(payload.failure_conditions)} onChange={(event) => update("failure_conditions", parseLines(event.target.value))} /></label></> : null}
       {collection === "questions" ? <><label>分析模式<select required value={stringValue(payload.analysis_pattern)} onChange={(event) => update("analysis_pattern", event.target.value)}>{ontologyPackage.analysis_patterns.map((patternItem) => <option key={patternItem.id} value={patternItem.id}>{patternItem.name.zh} · {patternItem.id}</option>)}</select></label><label className="is-wide">问题示例（每行一条）<textarea required rows={6} value={lines(payload.examples)} onChange={(event) => update("examples", parseLines(event.target.value))} /></label><label className="is-wide">必需输入（每行一个）<textarea rows={4} value={lines(payload.required_inputs)} onChange={(event) => update("required_inputs", parseLines(event.target.value))} /></label><label className="is-wide">期望回答<textarea required rows={5} value={stringValue(payload.expected_answer)} onChange={(event) => update("expected_answer", event.target.value)} /></label></> : null}
-      {collection === "policies" ? <><label className="is-wide">允许角色<input readOnly value={stringList(payload.allowed_roles).join(" · ")} /></label><label className="is-wide">拒绝角色<input readOnly value={stringList(payload.denied_roles).join(" · ")} /></label><label className="is-wide">允许粒度<input readOnly value={stringList(payload.allowed_grains).join(" · ")} /></label><label className="is-wide">拒绝字段<input readOnly value={stringList(payload.denied_fields).join(" · ")} /></label><label>最小群组<input readOnly value={String(payload.minimum_group_size ?? 1)} /></label></> : null}
+      {collection === "policies" ? <><label className="is-wide">允许角色（每行一个）<textarea rows={4} value={lines(payload.allowed_roles)} onChange={(event) => update("allowed_roles", parseLines(event.target.value))} /></label><label className="is-wide">拒绝角色（每行一个）<textarea rows={4} value={lines(payload.denied_roles)} onChange={(event) => update("denied_roles", parseLines(event.target.value))} /></label><label className="is-wide">允许粒度（每行一个）<textarea required rows={4} value={lines(payload.allowed_grains)} onChange={(event) => update("allowed_grains", parseLines(event.target.value))} /></label><label className="is-wide">拒绝字段（每行一个）<textarea rows={4} value={lines(payload.denied_fields)} onChange={(event) => update("denied_fields", parseLines(event.target.value))} /></label><label>最小群组<input required type="number" min={1} value={String(payload.minimum_group_size ?? 1)} onChange={(event) => update("minimum_group_size", Number(event.target.value))} /></label></> : null}
       <datalist id="asset-property-options">{propertyOptions}</datalist>
       <datalist id="asset-dimension-options">{dimensionOptions}</datalist>
       <datalist id="asset-metric-options">{metricOptions}</datalist>
@@ -256,9 +378,8 @@ function AssetEditorShell({
   const initial = useMemo(() => item ? structuredClone(item) : templateFor(collection, ontologyPackage), [collection, item, ontologyPackage]);
   const [payload, setPayload] = useState<JsonObject>(initial);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [jsonTexts, setJsonTexts] = useState<Record<string, string>>({});
   const dirty = stableJson(payload) !== stableJson(initial);
-  useEffect(() => { setPayload(initial); setLocalError(null); setJsonTexts({}); }, [initial]);
+  useEffect(() => { setPayload(initial); setLocalError(null); }, [initial]);
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", guard);
@@ -267,10 +388,6 @@ function AssetEditorShell({
   const update = (key: string, value: unknown) => setPayload((current) => ({ ...current, [key]: value }));
   const close = () => { if (!dirty || window.confirm("放弃尚未保存的修改？")) onClose(); };
   const save = async (validate: boolean) => {
-    for (const [field, text] of Object.entries(jsonTexts)) {
-      try { JSON.parse(text); }
-      catch { setLocalError(`${field} 必须是有效 JSON；修复前不会保存。`); return; }
-    }
     if (!stringList(payload.sources).length) { setLocalError("至少选择一项来源证据。"); return; }
     setLocalError(null);
     const normalized = { ...payload, status: "proposed", tags: [...new Set([...stringList(payload.tags), "studio-authored"])] };
@@ -289,7 +406,7 @@ function AssetEditorShell({
       <div className="asset-state-strip"><span className="is-active">Draft</span><i>→</i><span>人工确认</span><i>→</i><span>验证</span><i>→</i><span>发布</span><i>→</i><span>Agent Active</span></div>
       <form onSubmit={(event) => { event.preventDefault(); const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null; void save(submitter?.dataset.validate === "true"); }}>
         <CommonFields payload={payload} ontologyPackage={ontologyPackage} existing={existing} update={update} />
-        <TypeFields collection={collection} payload={payload} ontologyPackage={ontologyPackage} update={update} setLocalError={setLocalError} jsonTexts={jsonTexts} setJsonText={(key, value) => setJsonTexts((current) => ({ ...current, [key]: value }))} />
+        <TypeFields collection={collection} payload={payload} ontologyPackage={ontologyPackage} update={update} />
         <footer className="asset-editor-actions"><div><strong>{dirty ? "有未保存修改" : "尚未修改"}</strong><span>保存失败时内容会保留在当前编辑器中。</span>{localError || error ? <p role="alert">{localError ?? error}</p> : null}</div><div><button type="button" onClick={close}>取消</button><button type="submit" disabled={busy || !dirty}>{busy ? "保存中…" : "保存草稿"}</button>{onApplyAndValidate ? <button type="submit" data-validate="true" className="is-primary" disabled={busy || !dirty}>{busy ? "处理中…" : "保存并验证"}</button> : null}</div></footer>
       </form>
     </section>
@@ -301,6 +418,7 @@ function AssetCreateMenu({ solutionId }: { solutionId: string }) {
     ["业务结构", ["entities", "properties", "relationships", "actors", "processes", "dimensions"]],
     ["计算语义", ["metrics", "rules"]],
     ["分析能力", ["analysis_patterns", "questions"]],
+    ["运行治理", ["policies"]],
   ];
   return <details className="asset-create-menu"><summary>＋ 新建语义资产</summary><div>{groups.map(([label, collections]) => <section key={label}><h3>{label}</h3>{collections.map((collection) => <Link key={collection} to={semanticAssetHref(solutionId, collection)}><strong>{collectionConfig[collection].singular}</strong><small>{collectionConfig[collection].description}</small></Link>)}</section>)}</div></details>;
 }
@@ -398,13 +516,13 @@ export function SemanticAssetCatalog({
     } catch { /* Keep impact confirmation open with parent error. */ }
   };
   const title = mode === "business" ? "业务模型" : mode === "metrics" ? "指标与规则" : mode === "experience" ? "分析能力" : "访问与披露策略";
-  const description = mode === "business" ? "从业务对象到流程与维度的统一资产目录" : mode === "metrics" ? "权威指标、计算口径与规则目录" : mode === "experience" ? "Agent 可以理解的问题与可以执行的分析" : "运行权限与结果披露边界（当前版本只读）";
+  const description = mode === "business" ? "从业务对象到流程与维度的统一资产目录" : mode === "metrics" ? "权威指标、计算口径与规则目录" : mode === "experience" ? "Agent 可以理解的问题与可以执行的分析" : "运行权限、数据粒度与结果披露边界";
   return <section className="semantic-asset-catalog" aria-labelledby="semantic-assets-title">
-    <header className="asset-catalog-heading"><div><span>SEMANTIC ASSET CATALOG</span><h2 id="semantic-assets-title">{title}</h2><p>{description}</p></div>{mode !== "policies" ? <AssetCreateMenu solutionId={solutionId} /> : <span className="policy-readonly-badge">治理资产 · 只读</span>}</header>
+    <header className="asset-catalog-heading"><div><span>SEMANTIC ASSET CATALOG</span><h2 id="semantic-assets-title">{title}</h2><p>{description}</p></div><AssetCreateMenu solutionId={solutionId} /></header>
     <div className="asset-authority-summary"><div><span>当前 Draft</span><strong>{allowedCollections.reduce((total, collection) => total + recordsFor(ontologyPackage, collection).length, 0)}</strong><small>可追踪语义资产</small></div><div><span>来源定义</span><strong>{sourceCount}</strong><small>原始材料转写层</small></div><div><span>待复核候选</span><strong>{pendingCount}</strong><small>尚未进入权威模型</small></div><div><span>Agent 已支持</span><strong>{supportedCount}</strong><small>已有执行能力</small></div></div>
     {sourceCount ? <div className="asset-layer-notice"><strong>来源层与权威层已分开。</strong><span>{sourceCount} 条来源指标保留为证据，不会替换下方 {ontologyPackage.metrics.length} 条 Ontology 指标。</span></div> : null}
     <nav className="asset-category-nav" aria-label={`${title}资产类型`}>{allowedCollections.map((collection) => <button type="button" className={selectedCollection === collection ? "is-active" : ""} key={collection} onClick={() => { const next = new URLSearchParams(searchParams); next.set("assetType", collection); next.delete("assetId"); setSearchParams(next); setSelectedId(""); }}><strong>{collectionConfig[collection].label}</strong><span>{recordsFor(ontologyPackage, collection).length}</span><small>{collectionConfig[collection].description}</small></button>)}</nav>
-    <div className="asset-catalog-toolbar"><label><span>搜索当前类型</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="名称、ID 或定义" /></label><label><span>治理状态</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">全部状态</option><option value="proposed">Proposed</option><option value="needs_clarification">Needs clarification</option><option value="confirmed">Confirmed</option></select></label>{mode !== "policies" ? <Link className="context-create-action" to={semanticAssetHref(solutionId, selectedCollection)}>＋ 新增{collectionConfig[selectedCollection].singular}</Link> : null}</div>
+    <div className="asset-catalog-toolbar"><label><span>搜索当前类型</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="名称、ID 或定义" /></label><label><span>治理状态</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">全部状态</option><option value="proposed">Proposed</option><option value="needs_clarification">Needs clarification</option><option value="confirmed">Confirmed</option></select></label><Link className="context-create-action" to={semanticAssetHref(solutionId, selectedCollection)}>＋ 新增{collectionConfig[selectedCollection].singular}</Link></div>
     <div className="asset-catalog-layout">
       <div className="asset-list" role="list" aria-label={`${collectionConfig[selectedCollection].label}目录`}><header><span>资产</span><span>状态</span><span>责任 / 来源</span></header>{visible.map((item) => { const name = localizedName(item); return <button type="button" role="listitem" className={selected?.id === item.id ? "is-selected" : ""} key={stringValue(item.id)} onClick={() => { setSelectedId(stringValue(item.id)); setDeprecating(null); setDeprecationAcknowledged(false); }}><span><strong>{name.zh || name.en}</strong><small>{name.en}</small><code>{stringValue(item.id)}</code></span><em className={`is-${stringValue(item.status)}`}>{stringValue(item.status)}</em><span><strong>{stringValue(item.owner)}</strong><small>{stringList(item.sources).length} 项证据</small></span></button>; })}{visible.length === 0 ? <div className="asset-empty"><h3>没有匹配资产</h3><p>调整搜索或状态筛选；也可以创建第一项。</p></div> : null}</div>
       <aside className="asset-inspector">
@@ -420,11 +538,11 @@ export function SemanticAssetCatalog({
             <div><dt>来源</dt><dd>{stringList(selected.sources).join(" · ")}</dd></div>
           </dl>
           <details><summary>查看完整 typed contract</summary><pre>{JSON.stringify(selected, null, 2)}</pre></details>
-          {mode !== "policies" ? <div className="asset-inspector-actions">
+          <div className="asset-inspector-actions">
             <Link to={editHref(selected)}>{selected.status === "confirmed" ? "创建修订草稿" : "继续编辑"}</Link>
             {["proposed", "needs_clarification"].includes(stringValue(selected.status)) && onConfirm ? <button type="button" disabled={busy || !assetChecksums[`${selectedCollection}:${stringValue(selected.id)}`]} onClick={() => void confirmAsset(selected)}>{confirming === selected.id ? "确认中…" : assetChecksums[`${selectedCollection}:${stringValue(selected.id)}`] ? "确认当前摘要" : "等待权威摘要"}</button> : null}
             {onDeprecate ? <button type="button" className="is-danger" onClick={() => { setDeprecating(stringValue(selected.id)); setDeprecationAcknowledged(false); }}>弃用</button> : null}
-          </div> : <p className="policy-readonly-note">策略涉及权限和披露执行，当前版本只允许查看。修改需进入独立治理变更流程。</p>}
+          </div>
           {deprecating === selected.id ? <div className="asset-deprecate-confirm">
             <strong>先确认影响，再弃用</strong>
             <p>系统会检查对象、指标、规则、映射和流程中的所有活动引用；仍有依赖时操作会被后端阻止，当前输入不会丢失。</p>
@@ -435,6 +553,6 @@ export function SemanticAssetCatalog({
         </> : <div className="asset-empty"><h3>选择一项资产</h3><p>详情、依赖与治理动作会显示在这里。</p></div>}
       </aside>
     </div>
-    {editorOpen && mode !== "policies" ? <AssetEditorShell collection={selectedCollection} item={editingItem} ontologyPackage={ontologyPackage} busy={busy} error={error} onClose={closeEditor} onApply={onApply} onApplyAndValidate={onApplyAndValidate} /> : null}
+    {editorOpen ? <AssetEditorShell collection={selectedCollection} item={editingItem} ontologyPackage={ontologyPackage} busy={busy} error={error} onClose={closeEditor} onApply={onApply} onApplyAndValidate={onApplyAndValidate} /> : null}
   </section>;
 }

@@ -59,6 +59,7 @@ def build_studio_workbench(
                 "data_sources",
                 "bindings",
                 "joins",
+                "sql_contracts",
                 "analysis_patterns",
                 "policies",
                 "questions",

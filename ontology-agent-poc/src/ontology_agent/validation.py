@@ -90,14 +90,23 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
 
     ordered_periods = sorted(package.scenario.periods, key=lambda period: period.start)
     period_defects: list[str] = []
+    window_start = package.scenario.data_window_start
+    window_end = package.scenario.data_window_end
+    if (window_start is None) != (window_end is None):
+        period_defects.append("data window must provide both start and end")
+    if window_start is not None and window_end is not None and window_start > window_end:
+        period_defects.append("data window start is after end")
+    if ordered_periods and (window_start is None or window_end is None):
+        period_defects.append("periods require a scenario data window")
     if len({period.id for period in ordered_periods}) != len(ordered_periods):
         period_defects.append("duplicate period IDs")
     for index, period in enumerate(ordered_periods):
         if period.start > period.end:
             period_defects.append(f"{period.id}: start is after end")
         if (
-            period.start < package.scenario.data_window_start
-            or period.end > package.scenario.data_window_end
+            window_start is not None
+            and window_end is not None
+            and (period.start < window_start or period.end > window_end)
         ):
             period_defects.append(f"{period.id}: outside scenario data window")
         if index and period.start <= ordered_periods[index - 1].end:
@@ -146,8 +155,19 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
         )
     )
 
-    invalid_owners = sorted({item.owner for item in objects if item.owner not in actor_ids})
-    checks.append(_check("OWNER_REFERENCES", "source", not invalid_owners, "Every governed object has a registered accountable actor", missing=invalid_owners))
+    governed_assets = tuple(item for item in objects if item is not package.scenario)
+    invalid_owners = sorted(
+        {item.owner for item in governed_assets if item.owner not in actor_ids}
+    )
+    checks.append(
+        _check(
+            "OWNER_REFERENCES",
+            "source",
+            not invalid_owners,
+            "Every governed asset has a registered accountable actor",
+            missing=invalid_owners,
+        )
+    )
 
     invalid_processes: dict[str, list[str]] = {}
     for process in package.processes:
@@ -170,6 +190,25 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
         )
     )
 
+    invalid_process_steps: dict[str, list[str]] = {}
+    for process in package.processes:
+        duplicates = sorted(
+            step_id
+            for step_id, count in Counter(step.id for step in process.steps).items()
+            if count > 1
+        )
+        if duplicates:
+            invalid_process_steps[process.id] = duplicates
+    checks.append(
+        _check(
+            "PROCESS_STEP_INTEGRITY",
+            "semantic",
+            not invalid_process_steps,
+            "Process step identities are unique within each process",
+            duplicates=invalid_process_steps,
+        )
+    )
+
     unpublished_status = sorted(
         item.id for item in objects if item.status is not Status.CONFIRMED
     )
@@ -181,13 +220,25 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
         for rel in package.relationships
         if rel.from_entity not in entity_ids or rel.to_entity not in entity_ids
     )
-    invalid_dimensions = sorted(
-        dim.id
-        for dim in package.dimensions
-        if dim.entity not in entity_ids
-        or dim.key_property not in property_ids
-        or dim.label_property not in property_ids
-    )
+    property_map = {item.id: item for item in package.properties}
+    invalid_dimensions: dict[str, list[str]] = {}
+    for dimension in package.dimensions:
+        defects: list[str] = []
+        if dimension.entity not in entity_ids:
+            defects.append(f"unknown entity: {dimension.entity}")
+        for role, property_id in (
+            ("key", dimension.key_property),
+            ("label", dimension.label_property),
+        ):
+            prop = property_map.get(property_id)
+            if prop is None:
+                defects.append(f"unknown {role} property: {property_id}")
+            elif prop.entity != dimension.entity:
+                defects.append(
+                    f"{role} property {property_id} belongs to {prop.entity}"
+                )
+        if defects:
+            invalid_dimensions[dimension.id] = defects
     checks.append(
         _check(
             "BUSINESS_REFERENCE_CLOSURE",
@@ -197,6 +248,25 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
             properties=invalid_properties,
             relationships=invalid_relationships,
             dimensions=invalid_dimensions,
+        )
+    )
+
+    invalid_entity_keys: dict[str, str] = {}
+    for entity in package.entities:
+        primary_key = property_map.get(entity.primary_key)
+        if primary_key is None:
+            invalid_entity_keys[entity.id] = f"unknown primary key: {entity.primary_key}"
+        elif primary_key.entity != entity.id:
+            invalid_entity_keys[entity.id] = (
+                f"primary key {entity.primary_key} belongs to {primary_key.entity}"
+            )
+    checks.append(
+        _check(
+            "ENTITY_KEY_CLOSURE",
+            "semantic",
+            not invalid_entity_keys,
+            "Every entity primary key resolves to one of its own properties",
+            invalid=invalid_entity_keys,
         )
     )
 
@@ -277,6 +347,83 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
         )
     )
 
+    invalid_metric_time: dict[str, list[str]] = {}
+    for metric in package.metrics:
+        if metric.metric_type != "base":
+            continue
+        defects: list[str] = []
+        date_property = property_map.get(metric.query.date_property or "")
+        period_property = property_map.get(metric.query.period_property or "")
+        if date_property and date_property.data_type not in {"date", "datetime"}:
+            defects.append(
+                f"date property {date_property.id} has type {date_property.data_type}"
+            )
+        if period_property and period_property.data_type not in {
+            "string",
+            "enum",
+            "date",
+            "datetime",
+        }:
+            defects.append(
+                f"period property {period_property.id} has type {period_property.data_type}"
+            )
+        if defects:
+            invalid_metric_time[metric.id] = defects
+    checks.append(
+        _check(
+            "METRIC_TIME_SEMANTICS",
+            "semantic",
+            not invalid_metric_time,
+            "Metric date and period properties use compatible semantic types",
+            invalid=invalid_metric_time,
+        )
+    )
+
+    metric_map = {item.id: item for item in package.metrics}
+    invalid_metric_units: dict[str, list[str]] = {}
+    for metric in package.metrics:
+        defects: list[str] = []
+        measure = property_map.get(metric.query.measure_property or "")
+        if (
+            metric.metric_type == "base"
+            and metric.formula.op != "count_distinct"
+            and measure is not None
+            and measure.unit
+            and metric.unit
+            and measure.unit != metric.unit
+        ):
+            defects.append(
+                f"measure unit {measure.unit} does not match metric unit {metric.unit}"
+            )
+
+        def check_formula(node: FormulaNode) -> None:
+            if node.op in {"add", "subtract"}:
+                operand_units = {
+                    metric_map[child.ref].unit
+                    for child in node.args
+                    if child.op == "metric_ref" and child.ref in metric_map
+                }
+                if len(operand_units) > 1:
+                    defects.append(
+                        f"{node.op} operands have incompatible units: "
+                        + ", ".join(sorted(operand_units))
+                    )
+            for child in node.args:
+                check_formula(child)
+
+        check_formula(metric.formula)
+        if defects:
+            invalid_metric_units[metric.id] = defects
+    checks.append(
+        _check(
+            "METRIC_UNIT_COMPATIBILITY",
+            "semantic",
+            not invalid_metric_units,
+            "Metric formulas preserve explicit unit compatibility",
+            invalid=invalid_metric_units,
+        )
+    )
+
     required_binding_targets = {
         reference
         for metric in package.metrics
@@ -309,7 +456,49 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
     )
 
     source_map = {source.id: source for source in package.data_sources}
+    invalid_source_schemas: dict[str, list[str]] = {}
+    for source in package.data_sources:
+        defects: list[str] = []
+        duplicate_tables = sorted(
+            table_name
+            for table_name, count in Counter(
+                table.name for table in source.tables
+            ).items()
+            if count > 1
+        )
+        defects.extend(f"duplicate table: {name}" for name in duplicate_tables)
+        for table in source.tables:
+            field_map = {field.name: field for field in table.fields}
+            duplicate_fields = sorted(
+                field_name
+                for field_name, count in Counter(
+                    field.name for field in table.fields
+                ).items()
+                if count > 1
+            )
+            defects.extend(
+                f"{table.name}: duplicate field {name}" for name in duplicate_fields
+            )
+            for key in table.primary_key:
+                field = field_map.get(key)
+                if field is None:
+                    defects.append(f"{table.name}: unknown primary-key field {key}")
+                elif field.nullable:
+                    defects.append(f"{table.name}: primary-key field {key} is nullable")
+        if defects:
+            invalid_source_schemas[source.id] = defects
+    checks.append(
+        _check(
+            "DATA_SOURCE_SCHEMA_INTEGRITY",
+            "data",
+            not invalid_source_schemas,
+            "Physical schemas have unique tables and fields with valid primary keys",
+            invalid=invalid_source_schemas,
+        )
+    )
+
     invalid_bindings: dict[str, str] = {}
+    incompatible_logical_bindings: dict[str, str] = {}
     for binding in package.bindings:
         source = source_map.get(binding.source)
         if source is None:
@@ -325,7 +514,29 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
             invalid_bindings[binding.id] = f"type mismatch: {field.data_type} != {binding.data_type}"
         elif binding.unit and field.unit and binding.unit != field.unit:
             invalid_bindings[binding.id] = f"unit mismatch: {field.unit} != {binding.unit}"
+        logical = property_map.get(binding.logical_target)
+        if logical is None:
+            incompatible_logical_bindings[binding.id] = "unknown logical property"
+        elif logical.data_type != binding.data_type and not (
+            logical.data_type == "enum" and binding.data_type == "string"
+        ):
+            incompatible_logical_bindings[binding.id] = (
+                f"logical type mismatch: {logical.data_type} != {binding.data_type}"
+            )
+        elif logical.unit and binding.unit and logical.unit != binding.unit:
+            incompatible_logical_bindings[binding.id] = (
+                f"logical unit mismatch: {logical.unit} != {binding.unit}"
+            )
     checks.append(_check("PHYSICAL_BINDINGS", "binding", not invalid_bindings, "Bindings resolve to schema-compatible fields", invalid=invalid_bindings))
+    checks.append(
+        _check(
+            "LOGICAL_BINDING_COMPATIBILITY",
+            "binding",
+            not incompatible_logical_bindings,
+            "Bindings preserve logical property types and units",
+            invalid=incompatible_logical_bindings,
+        )
+    )
 
     invalid_joins: dict[str, list[str]] = {}
     join_type_mismatches: dict[str, list[str]] = {}
@@ -362,6 +573,79 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
             not join_type_mismatches,
             "Join-key physical types are compatible",
             invalid=join_type_mismatches,
+        )
+    )
+
+    implementable_ids = metric_ids | rule_ids | analysis_ids
+    invalid_sql_contracts: dict[str, list[str]] = {}
+    for contract in package.sql_contracts:
+        defects: list[str] = []
+        if contract.statement_source not in source_ids:
+            defects.append(f"unknown statement source: {contract.statement_source}")
+        input_identities: list[str] = []
+        for relation in contract.inputs:
+            source = source_map.get(relation.source)
+            table = (
+                next(
+                    (item for item in source.tables if item.name == relation.table),
+                    None,
+                )
+                if source
+                else None
+            )
+            if source is None:
+                defects.append(f"unknown input source: {relation.source}")
+            elif table is None:
+                defects.append(
+                    f"unknown input table: {relation.source}.{relation.table}"
+                )
+            input_identities.append(
+                relation.alias or f"{relation.source}.{relation.table}"
+            )
+        duplicate_inputs = sorted(
+            identity
+            for identity, count in Counter(input_identities).items()
+            if count > 1
+        )
+        if duplicate_inputs:
+            defects.append("duplicate input aliases: " + ", ".join(duplicate_inputs))
+        duplicate_outputs = sorted(
+            field
+            for field, count in Counter(contract.output_fields).items()
+            if count > 1
+        )
+        if duplicate_outputs:
+            defects.append("duplicate output fields: " + ", ".join(duplicate_outputs))
+        duplicate_parameters = sorted(
+            name
+            for name, count in Counter(
+                parameter.name for parameter in contract.parameters
+            ).items()
+            if count > 1
+        )
+        if duplicate_parameters:
+            defects.append(
+                "duplicate parameters: " + ", ".join(duplicate_parameters)
+            )
+        missing_implements = sorted(set(contract.implements) - implementable_ids)
+        if missing_implements:
+            defects.append("unknown implemented assets: " + ", ".join(missing_implements))
+        if contract.execution_mode != "reference_only":
+            if not contract.inputs:
+                defects.append("executable SQL contract has no declared input")
+            if not contract.output_fields:
+                defects.append("executable SQL contract has no declared output")
+            if not contract.implements:
+                defects.append("executable SQL contract implements no governed asset")
+        if defects:
+            invalid_sql_contracts[contract.id] = defects
+    checks.append(
+        _check(
+            "SQL_CONTRACT_CLOSURE",
+            "binding",
+            not invalid_sql_contracts,
+            "SQL contracts resolve exact statements, physical inputs and governed outputs",
+            invalid=invalid_sql_contracts,
         )
     )
 

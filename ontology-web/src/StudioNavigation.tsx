@@ -21,6 +21,7 @@ export type StudioSubpageId =
   | "sources"
   | "schemas"
   | "mappings"
+  | "sql"
   | "samples"
   | "review"
   | "policies"
@@ -76,6 +77,7 @@ export const studioPages: StudioPageDefinition[] = [
     subpages: [
       { id: "schemas", label: "数据源与 Schema", description: "物理表、字段和数据类型" },
       { id: "mappings", label: "映射与关联", description: "逻辑字段、物理字段和 Join" },
+      { id: "sql", label: "SQL 合同", description: "语句来源、输入、输出和执行边界" },
       { id: "samples", label: "样例与枚举", description: "样例数据、枚举和控制用例" },
     ],
   },

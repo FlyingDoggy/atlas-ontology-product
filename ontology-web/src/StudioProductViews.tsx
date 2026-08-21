@@ -1020,6 +1020,201 @@ export function SchemaCatalogView({
   </section>;
 }
 
+type SqlInputDraft = { source: string; table: string; alias: string };
+type SqlParameterDraft = {
+  name: string;
+  dataType: "string" | "integer" | "decimal" | "boolean" | "date" | "datetime";
+  required: boolean;
+  description: string;
+};
+type SqlContractDraft = {
+  id: string;
+  version: string;
+  nameZh: string;
+  nameEn: string;
+  definition: string;
+  owner: string;
+  statementSource: string;
+  statementLocator: string;
+  dialect: "ansi" | "postgresql" | "duckdb" | "bigquery" | "snowflake" | "spark" | "other";
+  executionMode: "reference_only" | "validated_query" | "runtime_tool";
+  inputs: SqlInputDraft[];
+  outputFields: string;
+  implements: string;
+  parameters: SqlParameterDraft[];
+};
+
+function blankSqlContract(ontologyPackage: OntologyPackage): SqlContractDraft {
+  return {
+    id: "sql.new",
+    version: "1.0.0",
+    nameZh: "",
+    nameEn: "",
+    definition: "",
+    owner: ontologyPackage.actors[0]?.id ?? ontologyPackage.scenario.owner,
+    statementSource: "",
+    statementLocator: "",
+    dialect: "ansi",
+    executionMode: "reference_only",
+    inputs: [],
+    outputFields: "",
+    implements: "",
+    parameters: [],
+  };
+}
+
+function sqlContractDraft(
+  ontologyPackage: OntologyPackage,
+  contract?: OntologyPackage["sql_contracts"][number],
+): SqlContractDraft {
+  if (!contract) return blankSqlContract(ontologyPackage);
+  return {
+    id: contract.id,
+    version: contract.version,
+    nameZh: contract.name.zh,
+    nameEn: contract.name.en,
+    definition: contract.definition,
+    owner: contract.owner,
+    statementSource: contract.statement_source,
+    statementLocator: contract.statement_locator,
+    dialect: contract.dialect,
+    executionMode: contract.execution_mode,
+    inputs: contract.inputs.map((input) => ({ source: input.source, table: input.table, alias: input.alias ?? "" })),
+    outputFields: contract.output_fields.join("\n"),
+    implements: contract.implements.join("\n"),
+    parameters: contract.parameters.map((parameter) => ({
+      name: parameter.name,
+      dataType: parameter.data_type,
+      required: parameter.required,
+      description: parameter.description,
+    })),
+  };
+}
+
+export function SqlContractCatalogView({
+  ontologyPackage,
+  onApply,
+  busy,
+  error = null,
+}: {
+  ontologyPackage: OntologyPackage;
+  onApply: (operation: PackageDraftOperation) => Promise<void> | void;
+  busy: boolean;
+  error?: string | null;
+}) {
+  const [selectedId, setSelectedId] = useState(ontologyPackage.sql_contracts[0]?.id ?? "");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<SqlContractDraft>(() => blankSqlContract(ontologyPackage));
+  const [baseline, setBaseline] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [confirmDeprecate, setConfirmDeprecate] = useState(false);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const selected = ontologyPackage.sql_contracts.find((contract) => contract.id === selectedId)
+    ?? ontologyPackage.sql_contracts[0];
+  const dirty = editing && JSON.stringify(draft) !== baseline;
+  useDirtyNavigationGuard(dirty);
+  const editorRef = useDialogFocus<HTMLElement>(editing, closeEditor, returnFocusRef);
+
+  function openEditor(contract?: OntologyPackage["sql_contracts"][number], trigger?: HTMLElement) {
+    if (!confirmDiscard(dirty)) return;
+    returnFocusRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    const next = sqlContractDraft(ontologyPackage, contract);
+    setDraft(next);
+    setBaseline(JSON.stringify(next));
+    setLocalError(null);
+    setConfirmDeprecate(false);
+    setEditing(true);
+  }
+
+  function closeEditor() {
+    if (confirmDiscard(dirty)) setEditing(false);
+  }
+
+  function updateInput(index: number, patch: Partial<SqlInputDraft>) {
+    setDraft((current) => ({
+      ...current,
+      inputs: current.inputs.map((input, currentIndex) => currentIndex === index ? { ...input, ...patch } : input),
+    }));
+  }
+
+  function updateParameter(index: number, patch: Partial<SqlParameterDraft>) {
+    setDraft((current) => ({
+      ...current,
+      parameters: current.parameters.map((parameter, currentIndex) => currentIndex === index ? { ...parameter, ...patch } : parameter),
+    }));
+  }
+
+  async function saveContract() {
+    const outputFields = draft.outputFields.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
+    const implementsAssets = draft.implements.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
+    if (!draft.id.trim() || !draft.nameZh.trim() || !draft.nameEn.trim() || !draft.definition.trim()) {
+      setLocalError("请完整填写 SQL 合同 ID、中英文名称与业务定义。"); return;
+    }
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(draft.id) || !/^\d+\.\d+\.\d+$/.test(draft.version)) {
+      setLocalError("SQL 合同 ID 或语义版本格式不正确。"); return;
+    }
+    if (!draft.statementSource || !draft.statementLocator.trim()) {
+      setLocalError("请选择 SQL 原文的 exact source，并填写可定位到具体语句的锚点。"); return;
+    }
+    const relationKeys = draft.inputs.map((input) => `${input.source}:${input.table}`);
+    if (draft.inputs.some((input) => !input.source || !input.table) || new Set(relationKeys).size !== relationKeys.length) {
+      setLocalError("每个输入关系必须指向唯一的数据源与物理表。"); return;
+    }
+    const parameterNames = draft.parameters.map((parameter) => parameter.name.trim());
+    if (parameterNames.some((name) => !name) || new Set(parameterNames).size !== parameterNames.length) {
+      setLocalError("SQL 参数名必须非空且唯一。"); return;
+    }
+    if (draft.executionMode !== "reference_only" && (!draft.inputs.length || !outputFields.length || !implementsAssets.length)) {
+      setLocalError("可验证或可执行的 SQL 合同必须声明输入、输出字段和实现的治理资产。"); return;
+    }
+    const existing = ontologyPackage.sql_contracts.find((contract) => contract.id === draft.id);
+    setLocalError(null);
+    try {
+      await onApply({ action: "UPSERT", collection: "sql_contracts", object_id: draft.id, payload: {
+        id: draft.id.trim(), version: draft.version, status: "proposed",
+        name: { zh: draft.nameZh.trim(), en: draft.nameEn.trim() }, definition: draft.definition.trim(),
+        owner: draft.owner.trim() || ontologyPackage.scenario.owner,
+        sources: [draft.statementSource], decisions: existing?.decisions ?? [],
+        tags: [...new Set([...(existing?.tags ?? []), "studio-authored"])],
+        dialect: draft.dialect, statement_source: draft.statementSource,
+        statement_locator: draft.statementLocator.trim(),
+        inputs: draft.inputs.map((input) => ({ source: input.source, table: input.table, alias: input.alias.trim() || null })),
+        output_fields: outputFields, implements: implementsAssets,
+        parameters: draft.parameters.map((parameter) => ({ name: parameter.name.trim(), data_type: parameter.dataType, required: parameter.required, description: parameter.description.trim() })),
+        execution_mode: draft.executionMode, read_only: true,
+      } });
+      setSelectedId(draft.id);
+      setEditing(false);
+    } catch { /* Parent mutation preserves and displays the exact backend error. */ }
+  }
+
+  async function deprecateContract() {
+    if (!selected) return;
+    try {
+      await onApply({ action: "DEPRECATE", collection: "sql_contracts", object_id: selected.id, payload: null });
+      setConfirmDeprecate(false);
+    } catch { /* Keep the confirmation open on a rejected operation. */ }
+  }
+
+  const implementedOptions = [
+    ...ontologyPackage.metrics.map((asset) => ({ id: asset.id, label: asset.name.zh })),
+    ...ontologyPackage.rules.map((asset) => ({ id: asset.id, label: asset.name.zh })),
+    ...ontologyPackage.analysis_patterns.map((asset) => ({ id: asset.id, label: asset.name.zh })),
+  ];
+  return <section className="studio-object-page sql-contract-page" aria-labelledby="sql-contract-title">
+    <header className="object-page-heading"><div><span>SQL CONTRACT CATALOG</span><h2 id="sql-contract-title">SQL 合同</h2><p>登记 SQL 原文的证据位置、输入输出与治理责任；Ontology 保存合同，不复制或改写 SQL 正文。</p></div><div className="object-page-heading-side"><div className="object-page-counts"><strong>{ontologyPackage.sql_contracts.length} 个 SQL 合同</strong><span>{ontologyPackage.sql_contracts.filter((item) => item.execution_mode !== "reference_only").length} 个可验证或运行</span></div><div className="object-page-actions">{selected ? <button type="button" onClick={(event) => openEditor(selected, event.currentTarget)}>编辑当前合同</button> : null}<button type="button" className="is-primary" onClick={(event) => openEditor(undefined, event.currentTarget)}>新增 SQL 合同</button></div></div></header>
+    <div className="page-authority-note"><strong>SQL 不是业务真相本身。</strong><span>合同必须明确它读取什么、产出什么、实现哪些指标或规则；运行前仍需确定性验证。</span></div>
+    {selected ? <div className="sql-contract-layout"><section className="sql-contract-list"><header><span>合同</span><span>模式</span><span>状态</span></header>{ontologyPackage.sql_contracts.map((contract) => <button type="button" className={contract.id === selected.id ? "is-selected" : ""} key={contract.id} onClick={() => { setSelectedId(contract.id); setConfirmDeprecate(false); }}><span><strong>{contract.name.zh || contract.name.en}</strong><small>{contract.id}</small></span><code>{contract.execution_mode}</code><em>{contract.status}</em></button>)}</section><aside className="sql-contract-inspector"><span>SQL CONTRACT DETAIL</span><h3>{selected.name.zh || selected.name.en}</h3><p>{selected.definition}</p><dl><div><dt>语句证据</dt><dd>{selected.statement_source} · {selected.statement_locator}</dd></div><div><dt>方言 / 模式</dt><dd>{selected.dialect} · {selected.execution_mode}</dd></div><div><dt>输入</dt><dd>{selected.inputs.map((input) => `${input.source}.${input.table}`).join(" · ") || "无"}</dd></div><div><dt>实现资产</dt><dd>{selected.implements.join(" · ") || "仅作参考"}</dd></div><div><dt>输出字段</dt><dd>{selected.output_fields.join(" · ") || "未声明"}</dd></div></dl><div className="inspector-actions"><button type="button" className="is-primary" onClick={(event) => openEditor(selected, event.currentTarget)}>创建修订</button><button type="button" className="is-danger" onClick={() => setConfirmDeprecate(true)}>弃用</button></div>{confirmDeprecate ? <div className="data-deprecate-confirm"><strong>检查下游依赖后弃用</strong><p>仍被指标、规则或运行工具引用时，后端会拒绝操作。</p><div><button type="button" onClick={() => setConfirmDeprecate(false)}>返回</button><button type="button" className="is-danger" disabled={busy} onClick={() => void deprecateContract()}>检查并弃用</button></div></div> : null}{error ? <p className="operator-error" role="alert">{error}</p> : null}</aside></div> : <div className="data-empty-state"><span>NO SQL CONTRACT</span><h3>当前 Draft 尚无 SQL 合同</h3><p>如果材料中包含现有 SQL，请登记证据位置和它承担的计算责任。</p><button type="button" className="is-primary" onClick={(event) => openEditor(undefined, event.currentTarget)}>新增第一个 SQL 合同</button></div>}
+    {editing ? <div className="configuration-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeEditor(); }}><aside ref={editorRef} tabIndex={-1} className="configuration-drawer sql-contract-editor-drawer" role="dialog" aria-modal="true" aria-labelledby="sql-contract-editor-title"><header><div><span>SQL CONTRACT EDITOR</span><h2 id="sql-contract-editor-title">{ontologyPackage.sql_contracts.some((item) => item.id === draft.id) ? "创建 SQL 合同修订" : "新增 SQL 合同"}</h2><p>维护证据锚点和执行合同，不在这里编辑 SQL 正文。</p></div><button type="button" aria-label="关闭 SQL 合同编辑器" onClick={closeEditor}>×</button></header><form className="structured-data-editor" onSubmit={(event) => { event.preventDefault(); void saveContract(); }}>
+      <section className="structured-editor-section"><header><div><span>01</span><h3>身份与证据</h3></div></header><div className="structured-editor-grid"><label>SQL Contract ID<input required disabled={ontologyPackage.sql_contracts.some((item) => item.id === draft.id)} value={draft.id} onChange={(event) => setDraft((current) => ({ ...current, id: event.target.value }))} /></label><label>语义版本<input required value={draft.version} onChange={(event) => setDraft((current) => ({ ...current, version: event.target.value }))} /></label><label>中文名称<input required value={draft.nameZh} onChange={(event) => setDraft((current) => ({ ...current, nameZh: event.target.value }))} /></label><label>英文名称<input required value={draft.nameEn} onChange={(event) => setDraft((current) => ({ ...current, nameEn: event.target.value }))} /></label><label>责任人<input required value={draft.owner} onChange={(event) => setDraft((current) => ({ ...current, owner: event.target.value }))} /></label><label>SQL 原文来源<select required value={draft.statementSource} onChange={(event) => setDraft((current) => ({ ...current, statementSource: event.target.value }))}><option value="">请选择 exact source</option>{ontologyPackage.sources.map((source) => <option key={source.id} value={source.id}>{source.title} · {source.id}</option>)}</select></label><label className="is-full">业务定义<textarea required rows={3} value={draft.definition} onChange={(event) => setDraft((current) => ({ ...current, definition: event.target.value }))} /></label><label className="is-full">语句定位锚点<input required value={draft.statementLocator} onChange={(event) => setDraft((current) => ({ ...current, statementLocator: event.target.value }))} placeholder="例如 file.sql#L18-L64 或 statement:daily_turnover" /></label></div></section>
+      <section className="structured-editor-section"><header><div><span>02</span><h3>执行责任</h3></div></header><div className="structured-editor-grid"><label>SQL 方言<select value={draft.dialect} onChange={(event) => setDraft((current) => ({ ...current, dialect: event.target.value as SqlContractDraft["dialect"] }))}>{["ansi", "postgresql", "duckdb", "bigquery", "snowflake", "spark", "other"].map((value) => <option key={value}>{value}</option>)}</select></label><label>执行模式<select value={draft.executionMode} onChange={(event) => setDraft((current) => ({ ...current, executionMode: event.target.value as SqlContractDraft["executionMode"] }))}><option value="reference_only">仅参考</option><option value="validated_query">已验证查询</option><option value="runtime_tool">运行工具</option></select></label><label className="is-full">输出字段（每行一个）<textarea rows={4} value={draft.outputFields} onChange={(event) => setDraft((current) => ({ ...current, outputFields: event.target.value }))} /></label><fieldset className="is-full contract-checkboxes"><legend>实现的治理资产</legend>{implementedOptions.length ? implementedOptions.map((asset) => { const selectedAssets = draft.implements.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean); return <label key={asset.id}><input type="checkbox" checked={selectedAssets.includes(asset.id)} onChange={() => setDraft((current) => ({ ...current, implements: (selectedAssets.includes(asset.id) ? selectedAssets.filter((id) => id !== asset.id) : [...selectedAssets, asset.id]).join("\n") }))} /><span>{asset.label}</span><code>{asset.id}</code></label>; }) : <p>先创建指标、规则或分析模式，再建立执行责任。</p>}</fieldset></div></section>
+      <section className="structured-editor-section repeatable-contract-section"><header><div><span>03</span><h3>输入关系</h3></div><button type="button" onClick={() => setDraft((current) => ({ ...current, inputs: [...current.inputs, { source: ontologyPackage.data_sources[0]?.id ?? "", table: ontologyPackage.data_sources[0]?.tables[0]?.name ?? "", alias: "" }] }))}>新增输入</button></header>{draft.inputs.map((input, index) => { const source = ontologyPackage.data_sources.find((item) => item.id === input.source); return <div className="repeatable-contract-row" key={`sql-input-${index}`}><label>数据源<select required value={input.source} onChange={(event) => { const nextSource = ontologyPackage.data_sources.find((item) => item.id === event.target.value); updateInput(index, { source: event.target.value, table: nextSource?.tables[0]?.name ?? "" }); }}><option value="">请选择</option>{ontologyPackage.data_sources.map((item) => <option key={item.id} value={item.id}>{item.name.zh} · {item.id}</option>)}</select></label><label>物理表<select required value={input.table} onChange={(event) => updateInput(index, { table: event.target.value })}><option value="">请选择</option>{source?.tables.map((table) => <option key={table.name}>{table.name}</option>)}</select></label><label>别名<input value={input.alias} onChange={(event) => updateInput(index, { alias: event.target.value })} /></label><button type="button" className="is-danger-quiet" onClick={() => setDraft((current) => ({ ...current, inputs: current.inputs.filter((_, currentIndex) => currentIndex !== index) }))}>移除</button></div>; })}</section>
+      <section className="structured-editor-section repeatable-contract-section"><header><div><span>04</span><h3>参数</h3></div><button type="button" onClick={() => setDraft((current) => ({ ...current, parameters: [...current.parameters, { name: "", dataType: "string", required: true, description: "" }] }))}>新增参数</button></header>{draft.parameters.map((parameter, index) => <div className="repeatable-contract-row is-parameter" key={`sql-param-${index}`}><label>参数名<input required value={parameter.name} onChange={(event) => updateParameter(index, { name: event.target.value })} /></label><label>类型<select value={parameter.dataType} onChange={(event) => updateParameter(index, { dataType: event.target.value as SqlParameterDraft["dataType"] })}>{["string", "integer", "decimal", "boolean", "date", "datetime"].map((value) => <option key={value}>{value}</option>)}</select></label><label>说明<input value={parameter.description} onChange={(event) => updateParameter(index, { description: event.target.value })} /></label><label className="field-nullability"><input type="checkbox" checked={parameter.required} onChange={(event) => updateParameter(index, { required: event.target.checked })} /><span>必填</span></label><button type="button" className="is-danger-quiet" onClick={() => setDraft((current) => ({ ...current, parameters: current.parameters.filter((_, currentIndex) => currentIndex !== index) }))}>移除</button></div>)}</section>
+      {localError || error ? <p className="operator-error structured-editor-error" role="alert">{localError ?? error}</p> : null}<footer className="configuration-drawer-actions"><span>{dirty ? "有尚未保存的修改" : "尚未修改"}</span><button type="button" onClick={closeEditor}>取消</button><button type="submit" className="is-primary" disabled={busy || !dirty}>{busy ? "保存中…" : "保存 SQL 合同草稿"}</button></footer>
+    </form></aside></div> : null}
+  </section>;
+}
+
 type BindingDraft = {
   id: string;
   logicalTarget: string;

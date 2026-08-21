@@ -7,7 +7,6 @@ export type StudioQueryScope = {
   sourceLibrary: boolean;
   runtime: boolean;
   llmStatus: boolean;
-  llmObservations: boolean;
 };
 
 export function studioQueryScope(
@@ -33,6 +32,5 @@ export function studioQueryScope(
     sourceLibrary,
     runtime,
     llmStatus,
-    llmObservations: constructionJobs,
   };
 }

@@ -32,3 +32,13 @@ def test_review_skill_is_versioned_findings_only_and_domain_neutral() -> None:
     assert "adt" not in corpus
     assert "cash trading" not in corpus
     assert "approve" in corpus
+
+
+def test_build_skill_1_1_governs_sql_contract_candidates() -> None:
+    package = load_skill_package("ontology-build", "1.1.0")
+
+    assert package.manifest.version == "1.1.0"
+    assert "SQL contract" in package.reference_texts[
+        "references/modeling-rules.md"
+    ]
+    assert package.manifest.direct_draft_write is False

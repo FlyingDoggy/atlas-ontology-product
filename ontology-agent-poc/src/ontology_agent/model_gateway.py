@@ -111,7 +111,7 @@ def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
                 "ANALYTICS": (
                     "dimensions", "rules", "metrics", "analysis_patterns", "policies", "questions"
                 ),
-                "DATA": ("data_sources", "bindings", "joins"),
+                "DATA": ("data_sources", "bindings", "joins", "sql_contracts"),
             }[request.phase]
         )
     ):

@@ -19,6 +19,7 @@ const collections: Array<{ id: Collection; label: string }> = [
   { id: "data_sources", label: "Data sources" },
   { id: "bindings", label: "Physical bindings" },
   { id: "joins", label: "Join contracts" },
+  { id: "sql_contracts", label: "SQL contracts" },
   { id: "analysis_patterns", label: "Analysis patterns" },
   { id: "policies", label: "Policies" },
   { id: "questions", label: "Business questions" },
@@ -100,6 +101,7 @@ function templateFor(
     case "data_sources": return { ...common, protocol: "tabular/v1", tables: [] };
     case "bindings": return { ...common, logical_target: property, source, table: "table_name", column: "column_name", data_type: "string", unit: null, transformation: "identity" };
     case "joins": return { ...common, left_source: source, left_table: "left_table", right_source: source, right_table: "right_table", keys: [{ left_column: "id", right_column: "id" }], expected_cardinality: "N:1", fanout_policy: "block" };
+    case "sql_contracts": return { ...common, dialect: "ansi", statement_source: ontologyPackage.sources[0]?.id ?? "source.unconfirmed", statement_locator: "statement:pending", inputs: [], output_fields: [], implements: [], parameters: [], execution_mode: "reference_only", read_only: true };
     case "analysis_patterns": return { ...common, intent: "metric_fact", operation: "metric_fact", required_metrics: [metric], required_dimensions: [], exactly_two_periods: false, output_fields: ["value"], failure_conditions: [] };
     case "policies": return { ...common, allowed_roles: [], denied_roles: [], allowed_grains: ["aggregate"], denied_fields: [], minimum_group_size: 1 };
     case "questions": return { ...common, examples: [], analysis_pattern: pattern, required_inputs: [], expected_answer: "A grounded answer with evidence." };

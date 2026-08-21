@@ -3004,3 +3004,74 @@ a:focus-visible, button:focus-visible {
   .studio-version-lineage li { border-right: 0; border-bottom: 1px solid var(--semantic-border-subtle); }
   .studio-version-lineage li::after { display: none; }
 }
+
+/* Structured ontology authoring and governed SQL contracts. */
+.asset-form-grid > .is-wide { grid-column: 1 / -1; }
+.asset-form-grid > label,
+.structured-array-editor,
+.formula-node-editor,
+.query-contract-editor { font-size: var(--semantic-type-control); }
+.asset-form-grid input,
+.asset-form-grid select,
+.asset-form-grid textarea { min-height: var(--component-field-height); border-radius: var(--semantic-radius-control); font-size: var(--semantic-type-control); }
+.structured-array-editor,
+.formula-node-editor,
+.query-contract-editor,
+.contract-checkboxes { min-width: 0; margin: 0; padding: var(--semantic-space-3); border: 1px solid var(--semantic-border-strong); }
+.structured-array-editor > legend,
+.formula-node-editor > legend,
+.query-contract-editor > legend,
+.contract-checkboxes > legend { padding-inline: var(--semantic-space-2); color: var(--semantic-text-secondary); font-size: var(--semantic-type-control); font-weight: 700; }
+.structured-array-editor > article { margin-bottom: var(--semantic-space-3); border: 1px solid var(--semantic-border-subtle); }
+.structured-array-editor > article > header { min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: var(--semantic-space-2) var(--semantic-space-3); background: var(--semantic-surface-subtle); }
+.structured-array-editor > article > header button,
+.structured-array-editor > button { min-height: 36px; padding-inline: var(--semantic-space-3); color: var(--semantic-action-primary); background: var(--semantic-surface-paper); border: 1px solid var(--semantic-border-strong); cursor: pointer; font-size: var(--semantic-type-control); font-weight: 700; }
+.structured-array-editor > article > div,
+.query-contract-editor > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--semantic-space-3); padding: var(--semantic-space-3); }
+.structured-array-editor label,
+.formula-node-editor label,
+.query-contract-editor label { min-width: 0; display: grid; gap: var(--semantic-space-2); color: var(--semantic-text-secondary); font-size: var(--semantic-type-control); font-weight: 700; }
+.formula-node-editor { display: grid; grid-template-columns: minmax(160px, .35fr) minmax(240px, 1fr); gap: var(--semantic-space-3); background: var(--semantic-surface-paper); }
+.formula-node-editor .formula-node-editor { grid-column: 1 / -1; margin-left: var(--semantic-space-4); background: var(--semantic-surface-subtle); }
+.query-contract-editor > fieldset { display: grid; gap: var(--semantic-space-2); margin: var(--semantic-space-3); padding: var(--semantic-space-3); border: 1px solid var(--semantic-border-subtle); }
+.query-contract-editor > fieldset label { grid-template-columns: 18px minmax(0, 1fr); align-items: center; }
+.derived-query-note { display: grid; gap: var(--semantic-space-1); padding: var(--semantic-space-3); background: var(--semantic-surface-info); border-left: 3px solid var(--semantic-action-primary); font-size: var(--semantic-type-control); }
+
+.sql-contract-layout { display: grid; grid-template-columns: minmax(520px, 1.2fr) minmax(360px, .8fr); background: var(--semantic-surface-paper); border: 1px solid var(--semantic-border-subtle); }
+.sql-contract-list { min-width: 0; border-right: 1px solid var(--semantic-border-subtle); }
+.sql-contract-list > header,
+.sql-contract-list > button { width: 100%; min-height: 68px; display: grid; grid-template-columns: minmax(220px, 1fr) 150px 120px; gap: var(--semantic-space-4); align-items: center; padding: var(--semantic-space-3) var(--semantic-space-4); text-align: left; border: 0; border-bottom: 1px solid var(--semantic-border-subtle); background: var(--semantic-surface-paper); }
+.sql-contract-list > header { min-height: 44px; color: var(--semantic-text-secondary); background: var(--semantic-surface-subtle); font-size: var(--semantic-type-meta); font-weight: 700; }
+.sql-contract-list > button { cursor: pointer; }
+.sql-contract-list > button:hover,
+.sql-contract-list > button.is-selected { background: var(--semantic-action-hover); }
+.sql-contract-list > button > span { min-width: 0; display: grid; gap: var(--semantic-space-1); }
+.sql-contract-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--semantic-type-supporting); }
+.sql-contract-list small,
+.sql-contract-list code,
+.sql-contract-list em { color: var(--semantic-text-secondary); font-size: var(--semantic-type-meta); font-style: normal; }
+.sql-contract-inspector { min-width: 0; padding: var(--semantic-space-6); }
+.sql-contract-inspector > span { color: var(--semantic-action-primary); font: 700 var(--semantic-type-meta)/1 var(--semantic-font-utility); letter-spacing: .08em; }
+.sql-contract-inspector h3 { margin: var(--semantic-space-3) 0 var(--semantic-space-2); font-size: var(--semantic-type-lead); }
+.sql-contract-inspector > p { color: var(--semantic-text-secondary); font-size: var(--semantic-type-control); line-height: var(--semantic-line-height-reading); }
+.sql-contract-inspector dl { margin-block: var(--semantic-space-4); }
+.sql-contract-inspector dl > div { padding-block: var(--semantic-space-3); border-top: 1px solid var(--semantic-border-subtle); }
+.sql-contract-inspector dt { color: var(--semantic-text-secondary); font-size: var(--semantic-type-meta); }
+.sql-contract-inspector dd { margin: var(--semantic-space-1) 0 0; overflow-wrap: anywhere; font-size: var(--semantic-type-control); }
+.sql-contract-editor-drawer { width: min(1040px, calc(100vw - 56px)); }
+.contract-checkboxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--semantic-space-2); }
+.contract-checkboxes label { min-width: 0; display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--semantic-space-2); align-items: center; padding: var(--semantic-space-2); background: var(--semantic-surface-subtle); }
+.contract-checkboxes label code { grid-column: 2; overflow: hidden; color: var(--semantic-text-secondary); text-overflow: ellipsis; white-space: nowrap; font-size: var(--semantic-type-meta); }
+.repeatable-contract-section { padding-bottom: var(--semantic-space-4); }
+.repeatable-contract-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 120px 64px; gap: var(--semantic-space-3); align-items: end; padding: var(--semantic-space-3) var(--semantic-space-4); border-bottom: 1px solid var(--semantic-border-subtle); }
+.repeatable-contract-row.is-parameter { grid-template-columns: minmax(150px, .8fr) 130px minmax(220px, 1.4fr) 90px 64px; }
+.repeatable-contract-row label { min-width: 0; display: grid; gap: var(--semantic-space-2); color: var(--semantic-text-secondary); font-size: var(--semantic-type-control); font-weight: 700; }
+.repeatable-contract-row input,
+.repeatable-contract-row select { width: 100%; min-height: var(--component-field-height); padding-inline: var(--semantic-space-3); border: 1px solid var(--semantic-border-strong); background: var(--semantic-surface-paper); font-size: var(--semantic-type-control); }
+
+@media (max-width: 1100px) {
+  .sql-contract-layout { grid-template-columns: 1fr; }
+  .sql-contract-list { border-right: 0; border-bottom: 1px solid var(--semantic-border-subtle); }
+  .repeatable-contract-row,
+  .repeatable-contract-row.is-parameter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

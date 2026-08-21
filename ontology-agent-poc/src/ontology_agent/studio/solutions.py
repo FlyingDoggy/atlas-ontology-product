@@ -470,24 +470,18 @@ def _write_blank_solution_files(
         {
             "package_id": solution_id,
             "version": "0.1.0",
-            "status": "proposed",
+            "status": "confirmed",
             "created_at": now,
             "scenario": {
                 "id": scenario_id,
                 "version": "0.1.0",
-                "status": "proposed",
+                "status": "confirmed",
                 "name": display_name.model_dump(mode="json"),
                 "definition": description,
                 "owner": owner,
                 "sources": [source_id],
                 "decisions": [],
                 "tags": ["solution:blank", "authority:draft"],
-                "timezone": "UTC",
-                "market_id": "UNSPECIFIED",
-                "data_window_start": "1970-01-01",
-                "data_window_end": "1970-01-01",
-                "periods": [],
-                "default_role": "ontology_author",
             },
             "actors": [],
             "processes": [],
@@ -516,6 +510,7 @@ def _write_blank_solution_files(
             "data_sources": [],
             "bindings": [],
             "joins": [],
+            "sql_contracts": [],
             "analysis_patterns": [],
             "policies": [],
             "questions": [],
@@ -542,7 +537,7 @@ def _write_blank_solution_files(
     package_path.parent.mkdir(parents=True, exist_ok=True)
     package_path.write_text(
         yaml.safe_dump(
-            package.model_dump(mode="json"),
+            package.model_dump(mode="json", exclude_none=True),
             allow_unicode=True,
             sort_keys=False,
             width=120,

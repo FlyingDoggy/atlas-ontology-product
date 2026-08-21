@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from ontology_agent.io import sha256_value
-from ontology_agent.models import OntologyPackage
+from ontology_agent.models import OntologyPackage, SqlContract
 from ontology_agent.studio.package_authoring import (
     PackageDraftOperation,
     PackageDraftOperationsV1,
@@ -215,6 +215,44 @@ def test_payload_cannot_smuggle_fields_outside_the_selected_closed_type(
                 "payload": payload,
             }
         )
+
+
+def test_sql_contract_is_a_closed_governed_package_asset(
+    package: OntologyPackage,
+) -> None:
+    source = package.data_sources[0]
+    table = source.tables[0]
+    statement_source = next(
+        item.id for item in package.sources if item.source_type == "sql"
+    )
+    contract = SqlContract.model_validate(
+        {
+            "id": "sql.adt.reference",
+            "status": "confirmed",
+            "name": {"en": "ADT SQL", "zh": "ADT SQL"},
+            "definition": "Governed reference to the exact ADT calculation SQL.",
+            "owner": package.actors[0].id,
+            "sources": [statement_source],
+            "dialect": "duckdb",
+            "statement_source": statement_source,
+            "statement_locator": "statement:adt",
+            "inputs": [{"source": source.id, "table": table.name, "alias": "base"}],
+            "output_fields": ["adt"],
+            "implements": [package.metrics[0].id],
+            "execution_mode": "validated_query",
+        }
+    )
+    operation = PackageDraftOperation(
+        action="UPSERT",
+        collection="sql_contracts",
+        object_id=contract.id,
+        payload=contract.model_dump(mode="json"),
+    )
+
+    candidate = apply_package_operations(package, (operation,))
+
+    assert candidate.sql_contracts[0].id == contract.id
+    assert candidate.sql_contracts[0].status == "proposed"
 
 
 def test_one_batch_cannot_hide_two_writes_to_the_same_object(

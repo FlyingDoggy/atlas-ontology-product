@@ -382,7 +382,7 @@ export const packageDraftOperationSchema = z.object({
   collection: z.enum([
     "sources", "decisions", "actors", "processes", "entities", "properties", "relationships",
     "dimensions", "rules", "metrics", "data_sources", "bindings", "joins",
-    "analysis_patterns", "policies", "questions",
+    "sql_contracts", "analysis_patterns", "policies", "questions",
   ]),
   object_id: z.string().min(1),
   payload: z.record(z.string(), z.unknown()).nullable(),
@@ -542,6 +542,27 @@ const joinSchema = governedObjectSchema.extend({
   fanout_policy: z.enum(["block", "deduplicate_reviewed"]),
 }).strict();
 
+const sqlContractSchema = governedObjectSchema.extend({
+  dialect: z.enum(["ansi", "postgresql", "duckdb", "bigquery", "snowflake", "spark", "other"]),
+  statement_source: z.string().min(1),
+  statement_locator: z.string().min(1),
+  inputs: z.array(z.object({
+    source: z.string().min(1),
+    table: z.string().min(1),
+    alias: z.string().nullable(),
+  }).strict()),
+  output_fields: z.array(z.string().min(1)),
+  implements: z.array(z.string().min(1)),
+  parameters: z.array(z.object({
+    name: z.string().min(1),
+    data_type: z.enum(["string", "integer", "decimal", "boolean", "date", "datetime"]),
+    required: z.boolean(),
+    description: z.string(),
+  }).strict()),
+  execution_mode: z.enum(["reference_only", "validated_query", "runtime_tool"]),
+  read_only: z.literal(true),
+}).strict();
+
 const workbenchPackageSchema = z.object({
   package_id: z.string().min(1),
   version: z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/),
@@ -569,6 +590,7 @@ const workbenchPackageSchema = z.object({
   data_sources: z.array(dataSourceSchema),
   bindings: z.array(bindingSchema),
   joins: z.array(joinSchema),
+  sql_contracts: z.array(sqlContractSchema).default([]),
   analysis_patterns: z.array(governedObjectSchema.passthrough()),
   policies: z.array(policySchema),
   questions: z.array(governedObjectSchema.passthrough()),
@@ -873,7 +895,7 @@ export const constructionCandidateSchema = z.object({
   revision_digest: sha256,
   candidate_type: z.enum([
     "SOURCE", "GAP", "REQUIREMENT", "ACTOR", "PROCESS", "OBJECT", "LINK", "PROPERTY",
-    "DIMENSION", "METRIC", "RULE", "DATA_SOURCE", "MAPPING", "JOIN",
+    "DIMENSION", "METRIC", "RULE", "DATA_SOURCE", "MAPPING", "JOIN", "SQL_CONTRACT",
     "ANALYSIS_PATTERN", "POLICY", "QUESTION",
   ]),
   label: z.string().min(1),
