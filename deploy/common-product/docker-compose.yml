@@ -2,6 +2,7 @@ name: ontology-common-product
 
 x-backend-env: &backend-env
   ONTOLOGY_AGENT_PROJECT_ROOT: /app
+  ONTOLOGY_SKILL_ROOT: /app/skills
   ONTOLOGY_DEMO_VERSION: ${ONTOLOGY_PRODUCT_VERSION:-0.16.2}
   ONTOLOGY_PRODUCT_STATE_MODE: postgresql-s3
   ONTOLOGY_LIFECYCLE_STATE_MODE: postgresql-s3

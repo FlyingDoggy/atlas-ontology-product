@@ -112,6 +112,19 @@ describe("Studio runtime lifecycle contracts", () => {
     expect(parsed.active?.checksum).toBe(snapshot.checksum);
   });
 
+  it("accepts a newly created Solution before any runtime is active", () => {
+    const parsed = agentRuntimeStatusSchema.parse({
+      environment_id: "solution-blank",
+      package_id: "ontology.custom.blank",
+      state_authority: "postgresql-s3",
+      active: null,
+      rollback_target: null,
+    });
+
+    expect(parsed.active).toBeNull();
+    expect(parsed.rollback_target).toBeNull();
+  });
+
   it("persists a distinct rollback target in runtime status", () => {
     const previous = {
       ...snapshot,
@@ -456,6 +469,38 @@ describe("studioWorkbenchSchema", () => {
   it("accepts one exact package-driven Studio workbench", () => {
     const parsed = studioWorkbenchSchema.parse(workbench());
     expect(parsed.package.relationships[0].predicate).toBe("belongsTo");
+  });
+
+  it("normalizes a true blank generic workspace without legacy ADT fields", () => {
+    const value: Record<string, any> = workbench();
+    value.package.package_id = "ontology.custom.blank";
+    value.package.version = "0.1.0";
+    value.package.entities = [];
+    value.package.properties = [];
+    value.package.relationships = [];
+    value.workspace = {
+      schema_version: "generic-draft-workspace/v1",
+      workspace_id: "workspace.custom.blank",
+      package_id: "ontology.custom.blank",
+      base_version: "0.1.0",
+      target_version: "0.1.0",
+      revision: 1,
+      created_at: "2026-08-22T00:00:00Z",
+      updated_at: "2026-08-22T00:00:00Z",
+      revision_created_at: "2026-08-22T00:00:00Z",
+      solution_intent: "Start with zero domain assets.",
+      modified_fields: [],
+      package_operations: [],
+      draft_checksum: digest,
+      validation: { status: "NOT_RUN", revision: null, draft_checksum: null, validated_at: null, report: null },
+      last_published: null,
+    };
+
+    const parsed = studioWorkbenchSchema.parse(value);
+
+    expect(parsed.workspace.draft).toEqual({});
+    expect(parsed.workspace.source_anchors).toEqual([]);
+    expect(parsed.workspace.intake_submission_id).toBeNull();
   });
 
   it("rejects a relationship to an entity outside the package", () => {

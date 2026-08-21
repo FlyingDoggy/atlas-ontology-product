@@ -399,8 +399,9 @@ const draftWorkspaceSchema = z
     created_at: z.string().min(1),
     updated_at: z.string().min(1),
     revision_created_at: z.string().nullable(),
-    intake_submission_id: z.string().min(1),
-    intake_checksum: sha256,
+    solution_intent: z.string().optional().default(""),
+    intake_submission_id: z.string().min(1).nullable().optional().default(null),
+    intake_checksum: sha256.nullable().optional().default(null),
     source_anchors: z.array(
       z.record(z.string().min(1), z.string().min(1)).superRefine((anchor, context) => {
         if (!anchor.field || Object.keys(anchor).length < 2) {
@@ -410,9 +411,9 @@ const draftWorkspaceSchema = z
           });
         }
       }),
-    ),
+    ).default([]),
     modified_fields: z.array(z.string()),
-    draft: z.record(z.string(), z.unknown()),
+    draft: z.record(z.string(), z.unknown()).default({}),
     package_operations: z.array(packageDraftOperationSchema).default([]),
     draft_checksum: sha256,
     validation: z
@@ -1195,7 +1196,11 @@ export const agentRuntimeStatusSchema = z.object({
   if (value.rollback_target && !value.active) {
     context.addIssue({ code: "custom", message: "Rollback target requires an active runtime" });
   }
-  if (value.rollback_target?.checksum === value.active?.checksum) {
+  if (
+    value.rollback_target
+    && value.active
+    && value.rollback_target.checksum === value.active.checksum
+  ) {
     context.addIssue({ code: "custom", message: "Rollback target cannot equal the active runtime" });
   }
 });

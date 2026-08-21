@@ -342,6 +342,9 @@ class BoundedBuilderOrchestrator:
         known_sources = {item.id for item in working.sources}
         known_decisions = {item.id for item in working.decisions}
         known_fragments = {item.fragment_id for item in bundle.fragments}
+        fragment_sources = {
+            item.fragment_id: item.source_id for item in bundle.fragments
+        }
         proposals: list[BuilderProposalV1] = []
         gaps: list[BuildGapV1] = [
             BuildGapV1(
@@ -397,7 +400,18 @@ class BoundedBuilderOrchestrator:
                     raise BuilderError("Builder proposed one package target more than once")
                 if not set(proposal.evidence_fragment_ids).issubset(known_fragments):
                     raise BuilderError("Builder cited an unknown evidence fragment")
-                parsed_payload = operation.payload or {}
+                # Provenance is derived from exact cited fragments. A model may
+                # choose evidence, but it cannot invent or omit source authority.
+                exact_sources = sorted(
+                    {
+                        fragment_sources[fragment_id]
+                        for fragment_id in proposal.evidence_fragment_ids
+                    }
+                )
+                parsed_payload = dict(operation.payload or {})
+                parsed_payload["sources"] = exact_sources
+                operation = operation.model_copy(update={"payload": parsed_payload})
+                proposal = proposal.model_copy(update={"operation": operation})
                 status = parsed_payload.get("status")
                 if status not in {"proposed", "needs_clarification"}:
                     raise BuilderError("Builder attempted to manufacture review status")

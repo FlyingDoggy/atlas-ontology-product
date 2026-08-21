@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 from typing import Literal
 
@@ -56,6 +57,12 @@ class LoadedSkillPackageV1(StrictModel):
 
 
 def default_skill_root() -> Path:
+    configured_root = os.environ.get("ONTOLOGY_SKILL_ROOT", "").strip()
+    if configured_root:
+        return Path(configured_root)
+    project_root = os.environ.get("ONTOLOGY_AGENT_PROJECT_ROOT", "").strip()
+    if project_root:
+        return Path(project_root) / "skills"
     return Path(__file__).resolve().parents[3] / "skills"
 
 

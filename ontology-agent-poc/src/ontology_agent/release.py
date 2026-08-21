@@ -184,10 +184,15 @@ def verify_release_directory(path: Path, expected: ReleaseRef | None = None) -> 
     if expected is not None and ref != expected:
         raise PublicationError("Release identity does not match the requested reference")
 
-    package = OntologyPackage.model_validate(_read_json(path / "package.json", "package"))
+    package_payload = _read_json(path / "package.json", "package")
+    package = OntologyPackage.model_validate(package_payload)
     if package.package_id != ref.package_id or package.version != ref.version:
         raise PublicationError("Release package identity does not match its manifest")
-    if package_checksum(package) != manifest.get("package_checksum"):
+    # Verify the immutable bytes' canonical value, not a round-trip through the
+    # current model.  New optional fields may acquire defaults as the product
+    # schema evolves; normalising an older package with today's model must not
+    # invalidate an otherwise intact historical release.
+    if sha256_value(package_payload) != manifest.get("package_checksum"):
         raise PublicationError("Release package checksum mismatch")
     semantic_validation = _read_json(
         path / "semantic-validation.json", "semantic validation"

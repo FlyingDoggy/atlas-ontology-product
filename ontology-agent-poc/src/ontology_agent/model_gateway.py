@@ -172,12 +172,22 @@ def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
             or not isinstance(content, str)
         ):
             raise ValueError("Provider response identity is invalid")
-        output = BuilderPhaseOutputV1.model_validate_json(content)
-        if (
-            output.phase != request.phase
-            or output.request_digest != request.request_digest
-            or len(output.proposals) > request.max_proposals
-        ):
+        raw_output = json.loads(content)
+        if not isinstance(raw_output, dict):
+            raise ValueError("Builder output must be a JSON object")
+        # Request identity and loop closure are control-plane facts. The model
+        # proposes domain content; it does not get authority to declare which
+        # request it answered or whether the bounded phase is complete.
+        raw_output.update(
+            {
+                "contract": "builder-phase-output/v1",
+                "phase": request.phase,
+                "request_digest": request.request_digest,
+                "done": True,
+            }
+        )
+        output = BuilderPhaseOutputV1.model_validate(raw_output)
+        if len(output.proposals) > request.max_proposals:
             raise ValueError("Builder output escaped its exact request")
     except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
         raise HTTPException(status_code=502, detail="Ontology Builder provider request failed") from exc

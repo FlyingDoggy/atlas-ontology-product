@@ -1,6 +1,27 @@
 from __future__ import annotations
 
-from ontology_agent.studio.skill_packages import load_skill_package
+from ontology_agent.studio.skill_packages import default_skill_root, load_skill_package
+
+
+def test_default_skill_root_uses_the_platform_project_root(
+    tmp_path, monkeypatch
+) -> None:
+    project_root = tmp_path / "installed-product"
+    skill_root = project_root / "skills"
+    skill_root.mkdir(parents=True)
+    monkeypatch.delenv("ONTOLOGY_SKILL_ROOT", raising=False)
+    monkeypatch.setenv("ONTOLOGY_AGENT_PROJECT_ROOT", str(project_root))
+
+    assert default_skill_root() == skill_root
+
+
+def test_explicit_platform_skill_root_has_priority(tmp_path, monkeypatch) -> None:
+    explicit_root = tmp_path / "platform-skills"
+    project_root = tmp_path / "installed-product"
+    monkeypatch.setenv("ONTOLOGY_SKILL_ROOT", str(explicit_root))
+    monkeypatch.setenv("ONTOLOGY_AGENT_PROJECT_ROOT", str(project_root))
+
+    assert default_skill_root() == explicit_root
 
 
 def test_build_skill_is_versioned_closed_and_domain_neutral() -> None:

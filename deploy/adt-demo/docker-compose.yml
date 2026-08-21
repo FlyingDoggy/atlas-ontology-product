@@ -2,6 +2,7 @@ name: ontology-adt-demo
 
 x-backend-env: &backend-env
   ONTOLOGY_AGENT_PROJECT_ROOT: /app
+  ONTOLOGY_SKILL_ROOT: /app/skills
   ONTOLOGY_DEMO_VERSION: ${ONTOLOGY_DEMO_VERSION:-0.3.0-studio-llm-demo.1}
 
 x-backend: &backend

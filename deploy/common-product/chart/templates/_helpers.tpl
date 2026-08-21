@@ -17,6 +17,8 @@ app.kubernetes.io/instance: {{ .Release.Name | quote }}
 {{- define "ontology.backendEnv" -}}
 - name: ONTOLOGY_AGENT_PROJECT_ROOT
   value: /app
+- name: ONTOLOGY_SKILL_ROOT
+  value: /app/skills
 - name: ONTOLOGY_DEMO_VERSION
   value: {{ .Chart.AppVersion | quote }}
 - name: ONTOLOGY_PRODUCT_STATE_MODE

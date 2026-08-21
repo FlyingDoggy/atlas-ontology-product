@@ -23,7 +23,8 @@ from ontology_agent.lifecycle import (
     FileResourceResolver,
 )
 from ontology_agent.models import OntologyPackage
-from ontology_agent.release import StudioReleases
+from ontology_agent.io import file_checksum, sha256_value, write_json
+from ontology_agent.release import StudioReleases, verify_release_directory
 from ontology_agent.runtime import analyze_snapshot
 from ontology_agent.scenario import ScenarioEvaluation
 
@@ -109,6 +110,48 @@ def test_release_is_portable_semantic_only_and_producer_independent(
     assert "adt-fixture-v1" not in serialized
     assert "runtime_identity" not in serialized
     assert "toolchain" not in serialized
+
+
+def test_historical_release_survives_new_optional_model_defaults(
+    package: OntologyPackage,
+    tmp_path: Path,
+) -> None:
+    """Release identity belongs to stored content, not today's model defaults."""
+
+    published = StudioReleases(tmp_path / "releases").publish(package)
+    release_dir = published.path
+
+    package_path = release_dir / "package.json"
+    package_payload = json.loads(package_path.read_text(encoding="utf-8"))
+    package_payload.pop("sql_contracts", None)
+    legacy_package_checksum = sha256_value(package_payload)
+    write_json(package_path, package_payload)
+
+    validation_path = release_dir / "semantic-validation.json"
+    validation = json.loads(validation_path.read_text(encoding="utf-8"))
+    validation["package_checksum"] = legacy_package_checksum
+    write_json(validation_path, validation)
+
+    inventory_path = release_dir / "artifact-inventory.json"
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    inventory["package.json"] = file_checksum(package_path)
+    inventory["semantic-validation.json"] = file_checksum(validation_path)
+    write_json(inventory_path, inventory)
+
+    manifest_path = release_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["package_checksum"] = legacy_package_checksum
+    manifest["semantic_validation_checksum"] = sha256_value(validation)
+    manifest["artifact_inventory_checksum"] = sha256_value(inventory)
+    manifest["release_checksum"] = sha256_value(
+        {key: value for key, value in manifest.items() if key != "release_checksum"}
+    )
+    write_json(manifest_path, manifest)
+
+    verified = verify_release_directory(release_dir)
+
+    assert verified.package.package_id == package.package_id
+    assert verified.package.sql_contracts == ()
 
 
 def test_publish_prepare_and_activate_are_separate_actions(

@@ -152,16 +152,17 @@ def test_builder_creates_typed_review_candidates_without_mutating_draft(
     assert package.model_dump(mode="json") == original
 
 
-def test_builder_rejects_an_invented_source_authority(
+def test_builder_derives_source_authority_from_exact_evidence_not_the_model(
     package: OntologyPackage,
 ) -> None:
-    with pytest.raises(BuilderError, match="invented source"):
-        _builder(FakeBuilderModel(source_id="source.invented")).build(
-            run_id="construction-run." + "2" * 32,
-            workspace_id="workspace.generic",
-            intake=_intake(),
-            package=package,
-        )
+    result = _builder(FakeBuilderModel(source_id="source.invented")).build(
+        run_id="construction-run." + "2" * 32,
+        workspace_id="workspace.generic",
+        intake=_intake(),
+        package=package,
+    )
+
+    assert result.proposals[0].operation.payload["sources"] == ["source.input"]
 
 def test_builder_rejects_collection_escape_between_phases(
     package: OntologyPackage,

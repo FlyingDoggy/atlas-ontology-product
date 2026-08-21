@@ -99,11 +99,14 @@ def test_ontology_builder_gateway_executes_one_closed_versioned_skill_phase(
                         "content": json.dumps(
                             {
                                 "contract": "builder-phase-output/v1",
-                                "phase": "SEMANTIC",
-                                "request_digest": request.request_digest,
+                                # These are control-plane fields. The provider may
+                                # echo them incorrectly; the gateway must bind them
+                                # to the exact request rather than trust the model.
+                                "phase": "ANALYTICS",
+                                "request_digest": "0" * 64,
                                 "proposals": [],
                                 "gaps": [],
-                                "done": True,
+                                "done": False,
                             }
                         )
                     }
@@ -121,7 +124,9 @@ def test_ontology_builder_gateway_executes_one_closed_versioned_skill_phase(
     )
 
     assert response.status_code == 200
+    assert response.json()["output"]["phase"] == request.phase
     assert response.json()["output"]["request_digest"] == request.request_digest
+    assert response.json()["output"]["done"] is True
     provider_body = captured["body"]
     serialized = json.dumps(provider_body)
     assert "Ontology Build Skill" in serialized
