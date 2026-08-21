@@ -243,7 +243,7 @@ describe("mature Studio product views", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "载入参考材料包" }));
     await waitFor(() => expect(onInstallReferencePack).toHaveBeenCalledOnce());
-    expect(screen.getByText("逻辑角色")).toBeTruthy();
+    expect(screen.getByText("逻辑来源")).toBeTruthy();
     expect(screen.getByText("6 个")).toBeTruthy();
   });
 
@@ -297,7 +297,7 @@ describe("mature Studio product views", () => {
       onPreview={onPreview}
     />);
 
-    const previewTrigger = screen.getByRole("button", { name: "查看详情" });
+    const previewTrigger = screen.getByRole("button", { name: "查看 需求说明 详情" });
     fireEvent.click(previewTrigger);
     expect(await screen.findByRole("dialog", { name: "需求说明" })).toBeTruthy();
     expect(await screen.findByText("# 需求说明")).toBeTruthy();
@@ -344,7 +344,7 @@ describe("mature Studio product views", () => {
 
     expect(screen.getByText("6 个当前来源")).toBeTruthy();
     expect(screen.queryByText("inherited-1")).toBeNull();
-    expect(document.querySelectorAll(".source-library-table article strong")).toHaveLength(6);
+    expect(document.querySelectorAll(".source-library-table .source-library-row strong")).toHaveLength(6);
   });
 
   it("projects canonical objects, relations and metric dependencies into the graph", () => {
@@ -449,6 +449,55 @@ describe("mature Studio product views", () => {
     expect(screen.getByText("1 个枚举字段")).toBeTruthy();
     expect(screen.getByText("MAIN")).toBeTruthy();
     expect(screen.getByText("GEM")).toBeTruthy();
+  });
+
+  it("keeps installed reference solutions browseable without exposing mutation controls", () => {
+    render(<SourceLibraryView
+      ontologyPackage={ontologyPackage}
+      intake={{
+        assets: [{ asset_id: "asset.requirements", title: "需求", locator: "input/requirements.md", kind: "requirement_transcription", checksum: "a".repeat(64) }],
+        reference_source_pack: {
+          pack_id: "reference.pack",
+          title: "Reference pack",
+          physical_file_count: 1,
+          registrations: [{ source_id: "asset.requirements" }],
+          limitations: [],
+        },
+      }}
+      library={{ contract: "studio-source-library/v1", workspace_id: "workspace.reference", current: [], versions: [] }}
+      onUpload={vi.fn()}
+      onImportInstalledSources={vi.fn()}
+      onInstallReferencePack={vi.fn()}
+      readOnly
+    />);
+
+    expect(screen.getByText("ADT分析参考材料包")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "登记材料版本" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "版本化安装材料" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "载入参考材料包" })).toBeNull();
+
+    cleanup();
+    render(<MemoryRouter><SemanticAssetCatalog
+      mode="business"
+      solutionId="ontology.exchange_analytics.adt"
+      ontologyPackage={ontologyPackage}
+      busy={false}
+      error={null}
+      reviewer="atlas-operator"
+      onApply={vi.fn()}
+      readOnly
+    /></MemoryRouter>);
+    expect(screen.getAllByText("成交").length).toBeGreaterThan(0);
+    expect(screen.queryByText("＋ 新增对象")).toBeNull();
+    expect(screen.queryByRole("link", { name: "创建修订草稿" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "弃用" })).toBeNull();
+
+    cleanup();
+    render(<SchemaCatalogView ontologyPackage={ontologyPackage} onApply={vi.fn()} busy={false} readOnly />);
+    expect(screen.getAllByText("trades").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "新增数据源" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "编辑当前数据源" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "编辑合同" })).toBeNull();
   });
 
   it("authors a governed SQL contract without copying SQL text into the package", async () => {

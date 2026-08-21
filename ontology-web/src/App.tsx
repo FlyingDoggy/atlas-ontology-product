@@ -12,7 +12,6 @@ import {
   fetchSolutionQuestions,
   fetchSolutionRuntime,
   fetchStudioWorkbench,
-  fetchStudioLlmStatus,
   fetchConstructionRuns,
   fetchConstructionJobs,
   fetchConstructionReviewDraft,
@@ -92,14 +91,14 @@ const phaseLabels = {
     eyebrow: "ONTOLOGY ANALYTIC AGENT",
     title: "当前生效的分析语境",
     summary:
-      "每次分析都从同一个已验证上下文出发。这里展示的是后端确认的版本、环境和边界，不是浏览器自行推断的状态。",
+      "基于当前已激活的 Runtime Snapshot 查询、分析并追踪证据。",
     companion: "进入 Ontology Studio",
   },
   studio: {
     eyebrow: "ONTOLOGY STUDIO",
-    title: "业务语义的配置入口",
+    title: "构建和治理业务语义",
     summary:
-      "Studio 从独立 solution registration 读取 authoring、semantic、experience 与 reference components；ADT 是当前安装的场景适配器，不是浏览器里的固定业务逻辑。",
+      "登记来源材料，构建并复核 Ontology Solution，再发布给 Analytic Agent 使用。",
     companion: "进入 Analytic Agent",
   },
 } as const;
@@ -173,12 +172,16 @@ function Header({
   kind,
   solutionId,
   session,
+  directoryHome = false,
 }: {
   kind: ProductKind;
   solutionId: string;
   session: AuthSession | null;
+  directoryHome?: boolean;
 }) {
-  const otherUrl = kind === "agent"
+  const otherUrl = directoryHome
+    ? "/ontology-agent/"
+    : kind === "agent"
     ? studioPageHref("overview", solutionId)
     : `/ontology-agent/?solution=${encodeURIComponent(solutionId)}`;
   return (
@@ -202,7 +205,9 @@ function Header({
       </a>
       <div className="header-actions">
         {session?.authenticated ? <span className={`access-role is-${session.role}`}><i aria-hidden="true" />{session.role === "operator" ? "配置人员" : "只读访问"}<small>{session.username}</small></span> : <span className="access-role is-loading">正在确认权限</span>}
-        <SolutionSwitcher selectedId={solutionId} kind={kind} canOperate={session?.authenticated === true && session.role === "operator"} />
+        {directoryHome
+          ? <span className="header-directory-context">解决方案目录</span>
+          : <SolutionSwitcher selectedId={solutionId} kind={kind} canOperate={session?.authenticated === true && session.role === "operator"} />}
         <a className="product-switch" href={otherUrl}>
           {phaseLabels[kind].companion}
           <span aria-hidden="true">↗</span>
@@ -501,7 +506,7 @@ function StudioWorkspaceEditor({ workspaceId }: { workspaceId: string }) {
   if (query.isError || !editor) {
     return (
       <section className="catalog-state is-error" role="alert">
-        Workspace editor 不可用；Studio 不会退回浏览器内置表单。
+        工作区暂时不可用，请稍后重试。
       </section>
     );
   }
@@ -670,13 +675,11 @@ function StudioOverviewPanel({
   workbench,
   runtime,
   sourceLibrary,
-  llmInstalled,
   solutionId,
 }: {
   workbench: StudioWorkbench;
   runtime: AgentRuntimeStatus | null;
   sourceLibrary: StudioSourceLibrary | null;
-  llmInstalled: boolean;
   solutionId: string;
 }) {
   const validation = workbench.workspace.validation.status;
@@ -714,34 +717,48 @@ function StudioOverviewPanel({
     ? workbench.intake.reviewed_baseline as Record<string, unknown>
     : {};
   const reviewedMetricSet = Array.isArray(reviewedBaseline.metric_set) ? reviewedBaseline.metric_set : [];
-  const nextPage: StudioPageId = validation !== "PASS"
-    ? "quality"
-    : release === null
-      ? "inputs"
-      : active?.release.version !== release.version
-        ? "release"
-        : "semantic";
-  const nextSubpage: StudioSubpageId = validation !== "PASS"
-    ? "validation"
-    : release === null
-      ? "versions"
-      : active?.release.version !== release.version
-        ? "delivery"
-        : "model";
-  const nextCopy = validation !== "PASS"
-    ? "先运行验证，确认当前语义版本是否完整。"
-    : release === null
-      ? "当前草稿已验证，可以检查并发布语义版本。"
-      : active?.release.version !== release.version
-        ? "已有新发布版本，准备并激活对应运行快照。"
-        : "工作区与运行版本一致，可以继续维护业务模型。";
+  const hasInputs = Boolean(sourceLibrary?.current.length || installedAssets.length);
+  const hasDomainAssets = packageAssets > 0;
+  const nextPage: StudioPageId = !hasInputs
+    ? "inputs"
+    : !hasDomainAssets
+      ? "construction"
+      : validation !== "PASS"
+        ? "quality"
+        : release === null
+          ? "quality"
+          : active?.release.version !== release.version
+            ? "quality"
+            : "semantic";
+  const nextSubpage: StudioSubpageId = !hasInputs
+    ? "sources"
+    : !hasDomainAssets
+      ? "runs"
+      : validation !== "PASS"
+        ? "validation"
+        : release === null
+          ? "versions"
+          : active?.release.version !== release.version
+            ? "delivery"
+            : "model";
+  const nextCopy = !hasInputs
+    ? "登记第一份来源材料。"
+    : !hasDomainAssets
+      ? "使用已登记材料生成待复核候选。"
+      : validation !== "PASS"
+        ? "验证当前 Draft 并处理阻断问题。"
+        : release === null
+          ? "创建第一个不可变 Release。"
+          : active?.release.version !== release.version
+            ? "准备并激活新的 Runtime Snapshot。"
+            : "当前运行版本已同步，可继续维护语义模型。";
 
   const steps: Array<{ page: StudioPageId; subpage?: StudioSubpageId; number: string; title: string; copy: string }> = [
-    { page: "inputs", number: "01", title: "整理输入", copy: "复核需求、指标、证据与缺口" },
-    { page: "semantic", number: "02", title: "维护语义", copy: "管理对象、关系、指标与策略" },
-    { page: "data", number: "03", title: "绑定数据", copy: "连接字段、表与关联关系" },
-    { page: "quality", number: "04", title: "验证与复核", copy: "执行检查并处置候选观察" },
-    { page: "release", number: "05", title: "发布版本", copy: "审批、认证、激活与回滚" },
+    { page: "inputs", number: "01", title: "登记输入", copy: "维护需求、材料和 exact version" },
+    { page: "construction", number: "02", title: "构建与复核", copy: "生成候选、机器复核并人工处置" },
+    { page: "semantic", number: "03", title: "维护语义", copy: "管理对象、关系、指标和分析能力" },
+    { page: "data", number: "04", title: "绑定数据", copy: "维护 Schema、映射、Join 和 SQL 合同" },
+    { page: "quality", number: "05", title: "验证与发布", copy: "检查、审批、激活与回滚" },
   ];
 
   return (
@@ -790,7 +807,7 @@ function StudioOverviewPanel({
         <div><span>语义资产</span><strong>{packageAssets}</strong><small>核心对象、关系、指标、规则、映射与分析模式</small></div>
         <div><span>待处理变更</span><strong>{workbench.semantic_change_requests.length}</strong><small>来自分析端的语义变更请求</small></div>
         <div><span>输入缺口</span><strong>{intakeGaps}</strong><small>已记录且需要后续确认的材料缺口</small></div>
-        <div><span>AI 辅助</span><strong>{llmInstalled ? "可用" : "未安装"}</strong><small>观察只进入人工复核，不会直接改写模型</small></div>
+        <div><span>构建链路</span><strong>已就绪</strong><small>Builder、Reviewer 与人工复核</small></div>
       </section>
     </div>
   );
@@ -802,12 +819,14 @@ function StudioPackageWorkbench({
   subpage,
   solutionId,
   reviewer,
+  readOnly = false,
 }: {
   workspaceId: string;
   page: StudioPageId;
   subpage: StudioSubpageId;
   solutionId: string;
   reviewer: string;
+  readOnly?: boolean;
 }) {
   const queryClient = useQueryClient();
   const queryScope = studioQueryScope(page, subpage);
@@ -819,11 +838,6 @@ function StudioPackageWorkbench({
     queryKey: ["studio-runtime-status", query.data?.package.package_id],
     queryFn: () => fetchAgentRuntimeStatus(query.data!.package.package_id),
     enabled: Boolean(query.data) && queryScope.runtime,
-  });
-  const llmStatusQuery = useQuery({
-    queryKey: ["studio-llm-status", workspaceId],
-    queryFn: () => fetchStudioLlmStatus(workspaceId),
-    enabled: Boolean(query.data) && queryScope.llmStatus,
   });
   const constructionRunsQuery = useQuery({
     queryKey: ["studio-construction-runs", workspaceId],
@@ -1038,7 +1052,7 @@ function StudioPackageWorkbench({
     return <section className="catalog-state">正在 materialize exact ontology package…</section>;
   }
   if (query.isError || !query.data) {
-    return <section className="catalog-state is-error" role="alert">语义工作台不可用；Studio 不会回退到浏览器 hard-code 模型。</section>;
+    return <section className="catalog-state is-error" role="alert">工作区读取失败，请刷新后重试。</section>;
   }
   const busy = prepare.isPending
     ? "prepare" as const
@@ -1076,7 +1090,6 @@ function StudioPackageWorkbench({
             workbench={query.data}
             runtime={runtimeQuery.data ?? null}
             sourceLibrary={sourceLibraryQuery.data ?? null}
-            llmInstalled={llmStatusQuery.data?.installed === true}
             solutionId={solutionId}
           />;
   } else if (page === "inputs" && subpage === "requirements") {
@@ -1094,8 +1107,9 @@ function StudioPackageWorkbench({
       onPreview={(sourceVersionId) => fetchStudioSourcePreview(workspaceId, sourceVersionId)}
       onInstallReferencePack={async () => { await installReferencePack.mutateAsync(); }}
       onImportInstalledSources={async () => { await importInstalledSources.mutateAsync(); }}
+      readOnly={readOnly}
     />;
-  } else if (page === "inputs" && subpage === "runs") {
+  } else if (page === "construction" && subpage === "runs") {
     content = <ConstructionRunsView
         runs={constructionRunsQuery.data ?? null}
         jobs={constructionJobsQuery.data ?? null}
@@ -1106,6 +1120,7 @@ function StudioPackageWorkbench({
         onStart={(sourceVersionIds) => startConstruction.mutate(sourceVersionIds)}
         onCancel={(jobId) => cancelConstruction.mutate(jobId)}
         onRetry={(jobId) => retryConstruction.mutate(jobId)}
+        readOnly={readOnly}
       />;
   } else if (page === "semantic" && subpage === "model") {
     content = <SemanticAssetCatalog
@@ -1121,6 +1136,7 @@ function StudioPackageWorkbench({
       onDeprecate={applyOperation}
       assetChecksums={query.data.asset_checksums}
       reviewer={reviewer}
+      readOnly={readOnly}
     />;
   } else if (page === "semantic" && subpage === "metrics") {
     content = <SemanticAssetCatalog
@@ -1137,16 +1153,18 @@ function StudioPackageWorkbench({
       onDeprecate={applyOperation}
       assetChecksums={query.data.asset_checksums}
       reviewer={reviewer}
+      readOnly={readOnly}
     />;
   } else if (page === "semantic" && subpage === "graph") {
     const pendingCandidateRun = constructionRunsQuery.data?.runs.find((item) => item.decision === null)?.run;
     content = <OntologyGraphEditor
       ontologyPackage={query.data.package}
       candidates={pendingCandidateRun?.candidates ?? []}
-      reviewHref={studioPageHref("quality", solutionId, "review")}
+      reviewHref={studioPageHref("construction", solutionId, "review")}
       createEntityHref={semanticAssetHref(solutionId, "entities")}
       createRelationshipHref={semanticAssetHref(solutionId, "relationships")}
       editAssetHref={(collection, objectId) => semanticAssetHref(solutionId, collection, objectId)}
+      readOnly={readOnly}
     />;
   } else if (page === "semantic" && subpage === "experience") {
     content = <SemanticAssetCatalog
@@ -1162,6 +1180,7 @@ function StudioPackageWorkbench({
       onDeprecate={applyOperation}
       assetChecksums={query.data.asset_checksums}
       reviewer={reviewer}
+      readOnly={readOnly}
     />;
   } else if (page === "quality" && subpage === "policies") {
     content = <SemanticAssetCatalog
@@ -1176,8 +1195,9 @@ function StudioPackageWorkbench({
       onDeprecate={applyOperation}
       assetChecksums={query.data.asset_checksums}
       reviewer={reviewer}
+      readOnly={readOnly}
     />;
-  } else if (page === "quality" && subpage === "review") content = <ConstructionReviewCenter
+  } else if (page === "construction" && subpage === "review") content = <ConstructionReviewCenter
     runs={constructionRunsQuery.data ?? null}
     reviewDraft={reviewDraftQuery.data ?? null}
     currentRevision={query.data.workspace.revision}
@@ -1185,24 +1205,28 @@ function StudioPackageWorkbench({
     error={(reviewConstruction.error ?? saveReviewDraft.error ?? reviewDraftQuery.error ?? constructionRunsQuery.error) instanceof Error ? String((reviewConstruction.error ?? saveReviewDraft.error ?? reviewDraftQuery.error ?? constructionRunsQuery.error)?.message) : null}
     onSave={(runId, dispositions) => saveReviewDraft.mutateAsync({ runId, dispositions })}
     onReview={(runId, dispositions, reviewBatchChecksum) => reviewConstruction.mutate({ runId, dispositions, reviewBatchChecksum })}
+    readOnly={readOnly}
   />;
   else if (page === "data" && subpage === "schemas") content = <SchemaCatalogView
     ontologyPackage={query.data.package}
     busy={author.isPending}
     error={author.error instanceof Error ? author.error.message : null}
     onApply={applyOperation}
+    readOnly={readOnly}
   />;
   else if (page === "data" && subpage === "mappings") content = <MappingWorkbenchView
     ontologyPackage={query.data.package}
     busy={author.isPending}
     error={author.error instanceof Error ? author.error.message : null}
     onApply={applyOperation}
+    readOnly={readOnly}
   />;
   else if (page === "data" && subpage === "sql") content = <SqlContractCatalogView
     ontologyPackage={query.data.package}
     busy={author.isPending}
     error={author.error instanceof Error ? author.error.message : null}
     onApply={applyOperation}
+    readOnly={readOnly}
   />;
   else if (page === "data" && subpage === "samples") content = <SampleAndEnumView
     ontologyPackage={query.data.package}
@@ -1210,15 +1234,16 @@ function StudioPackageWorkbench({
     busy={author.isPending}
     error={author.error instanceof Error ? author.error.message : null}
     onApply={applyOperation}
+    readOnly={readOnly}
   />;
   const activeTab: WorkbenchTab | undefined = page === "quality" && subpage === "validation"
         ? "validate"
         : page === "quality" && subpage === "changes"
           ? "evidence"
-          : page === "release" && subpage === "delivery"
+          : page === "quality" && subpage === "delivery"
             ? "release"
             : undefined;
-  if (activeTab) content = <StudioWorkbenchView activeTab={activeTab} navigation="hidden" presentation="page" workbench={query.data} authoring={{
+  if (activeTab) content = <StudioWorkbenchView activeTab={activeTab} navigation="hidden" presentation="page" workbench={query.data} readOnly={readOnly} authoring={{
     busy: author.isPending,
     error: author.error instanceof Error ? author.error.message : null,
     onApply: applyOperation,
@@ -1238,13 +1263,14 @@ function StudioPackageWorkbench({
     onVerify: () => verify.mutate(),
     onRollback: () => rollback.mutate(),
   }} />;
-  if (page === "release" && subpage === "versions") {
+  if (page === "quality" && subpage === "versions") {
     content = <section className="release-version-page">
       <header className="object-page-heading"><div><span>VERSION & APPROVAL</span><h2>版本与审批</h2><p>Draft 修订、精确验证和不可变发布记录在这里汇合；运行准备与激活在“交付与运行”中操作。</p></div><div className="object-page-counts"><strong>{query.data.revisions.length} 个 Draft 修订</strong><span>{query.data.workspace.last_published ? `已发布 v${query.data.workspace.last_published.version}` : "尚未发布"}</span></div></header>
-      <div className="release-version-layout"><section><h3>不可变 Draft 修订</h3>{[...query.data.revisions].reverse().map((revision, index) => <article key={`${String(revision.revision)}:${String(revision.record_checksum)}`}><span>r{String(revision.revision)}</span><div><strong>v{String(revision.target_version)}</strong><small>{String(revision.recorded_at)}</small></div><code>{shortDigest(String(revision.draft_checksum))}</code><em>{index === 0 ? "CURRENT" : "HISTORICAL"}</em></article>)}</section><aside><span>LATEST PUBLICATION</span><h3>{query.data.workspace.last_published ? `v${query.data.workspace.last_published.version}` : "尚未发布"}</h3><p>{query.data.workspace.last_published ? "该语义 Release 已冻结；它不会自动成为 Agent Active。" : "当前 Draft 通过精确验证后，才可以发布为不可变语义 Release。"}</p><code>{query.data.workspace.last_published?.checksum ?? query.data.workspace.draft_checksum}</code><Link to={studioPageHref("release", solutionId, "delivery")}>前往交付与运行 →</Link></aside></div>
+      <div className="release-version-layout"><section><h3>不可变 Draft 修订</h3>{[...query.data.revisions].reverse().map((revision, index) => <article key={`${String(revision.revision)}:${String(revision.record_checksum)}`}><span>r{String(revision.revision)}</span><div><strong>v{String(revision.target_version)}</strong><small>{String(revision.recorded_at)}</small></div><code>{shortDigest(String(revision.draft_checksum))}</code><em>{index === 0 ? "CURRENT" : "HISTORICAL"}</em></article>)}</section><aside><span>LATEST PUBLICATION</span><h3>{query.data.workspace.last_published ? `v${query.data.workspace.last_published.version}` : "尚未发布"}</h3><p>{query.data.workspace.last_published ? "该语义 Release 已冻结；它不会自动成为 Agent Active。" : "当前 Draft 通过精确验证后，才可以发布为不可变语义 Release。"}</p><code>{query.data.workspace.last_published?.checksum ?? query.data.workspace.draft_checksum}</code><Link to={studioPageHref("quality", solutionId, "delivery")}>前往交付与运行 →</Link></aside></div>
     </section>;
   }
-  return <>{controls}{content}</>;
+  const showDraftControls = !readOnly && page === "quality" && ["validation", "versions"].includes(subpage);
+  return <>{showDraftControls ? controls : null}{content}</>;
 }
 
 function SolutionLineage({
@@ -1489,36 +1515,6 @@ function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }) {
   );
 }
 
-function StudioAboutPage({
-  solution,
-  runtime,
-}: {
-  solution: AgentSolution | StudioSolution;
-  runtime: SolutionRuntime | null;
-}) {
-  return (
-    <div className="studio-about">
-      <section className="studio-about-card">
-        <div className="studio-panel-heading"><div><span>产品与工作区</span><h2>{solution.display_name.zh}</h2></div><code>{solution.solution_id}</code></div>
-        <dl>
-          <div><dt>Solution version</dt><dd>{solution.solution_version}</dd></div>
-          <div><dt>Semantic source</dt><dd>{solution.semantic_source_version}</dd></div>
-          <div><dt>Scenario</dt><dd>{solution.scenario_id}</dd></div>
-          <div><dt>Workspace</dt><dd>{solution.workspace_id}</dd></div>
-          <div><dt>Registry</dt><dd>{solution.persistence}</dd></div>
-          <div><dt>Registration</dt><dd>{shortDigest(solution.subject_checksum)}</dd></div>
-          <div><dt>Runtime</dt><dd>{runtime ? `${runtime.version} · ${runtime.environment_id}` : "未激活"}</dd></div>
-        </dl>
-      </section>
-      <section className="studio-about-card is-note">
-        <div className="studio-panel-heading"><div><span>数据与版本说明</span><h2>当前参考数据的适用范围</h2></div></div>
-        <p>当前安装的数据集为构造型参考数据，用于展示从材料整理、语义建模到分析运行的完整流程；它不代表 HKEX 的最终业务口径或生产结论。</p>
-        <ul>{solution.limitations.map((item) => <li key={item}>{item}</li>)}</ul>
-      </section>
-    </div>
-  );
-}
-
 function StudioApplication({
   solution,
   runtime,
@@ -1536,6 +1532,7 @@ function StudioApplication({
   const page = studioPageFromPath(location.pathname);
   const subpage = studioSubpageFromPath(location.pathname, page);
   const definition = studioPageDefinition(page);
+  const referenceMode = solution.directory?.creation_mode === "INSTALLED";
   if (page === "solutions") {
     return (
       <div className="studio-directory-application">
@@ -1543,8 +1540,9 @@ function StudioApplication({
         <fieldset className="role-gated-content" disabled={!canOperate}>
           <StudioSolutionDirectory
             catalog={catalog}
-            selectedSolutionId={solution.solution_id}
+            selectedSolutionId=""
             openCreateOnLoad={canOperate && new URLSearchParams(location.search).get("new") === "1"}
+            openReferenceCopyId={canOperate ? new URLSearchParams(location.search).get("copy") : null}
           />
         </fieldset>
       </div>
@@ -1569,9 +1567,10 @@ function StudioApplication({
           <StudioSubnavigation page={page} activeSubpage={subpage} solutionId={solution.solution_id} />
         </header>
         {!canOperate ? <div className="readonly-role-banner"><strong>只读访问</strong><span>模型和运行状态可查看；新建、修改、审核、发布与激活已锁定。</span></div> : null}
+        {referenceMode ? <div className="reference-solution-banner"><div><strong>参考方案 · 只读</strong><span>浏览已确认的内容与运行结果；要重新构建或修改，请先复制为独立方案。</span></div><Link to={`/ontology-studio/solutions/?copy=${encodeURIComponent(solution.solution_id)}`}>复制为可编辑方案</Link></div> : null}
         <fieldset className="role-gated-content studio-page-content" disabled={!canOperate}>
-          {page === "overview" || page === "semantic" || page === "data" || page === "quality" || page === "release" || page === "inputs" ? (
-            <StudioPackageWorkbench workspaceId={solution.workspace_id} page={page} subpage={subpage} solutionId={solution.solution_id} reviewer={reviewer} />
+          {page === "overview" || page === "inputs" || page === "construction" || page === "semantic" || page === "data" || page === "quality" ? (
+            <StudioPackageWorkbench workspaceId={solution.workspace_id} page={page} subpage={subpage} solutionId={solution.solution_id} reviewer={reviewer} readOnly={referenceMode} />
           ) : null}
         </fieldset>
       </section>
@@ -1580,6 +1579,8 @@ function StudioApplication({
 }
 
 function GenericSolutionView({ kind, solutionId }: { kind: ProductKind; solutionId: string }) {
+  const location = useLocation();
+  const directoryHome = kind === "studio" && studioPageFromPath(location.pathname) === "solutions";
   const authSession = useQuery({
     queryKey: ["auth-session"],
     queryFn: fetchAuthSession,
@@ -1624,7 +1625,7 @@ function GenericSolutionView({ kind, solutionId }: { kind: ProductKind; solution
 
   return (
     <div className="product-shell">
-      <Header kind={kind} solutionId={solution.solution_id} session={authSession.data ?? null} />
+      <Header kind={kind} solutionId={solution.solution_id} session={authSession.data ?? null} directoryHome={directoryHome} />
       {kind === "agent" ? (
         <main className="agent-main"><AgentSolutionWorkspace solution={selectedSolution!} /></main>
       ) : (

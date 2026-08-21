@@ -55,7 +55,7 @@ const solution = {
 afterEach(cleanup);
 
 describe("StudioSolutionDirectory", () => {
-  it("opens a real blank workflow and keeps template creation explicit", () => {
+  it("opens a real blank workflow and exposes installed solutions as copyable references", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
     queryClient.setQueryData(["agent-solution-catalog", "directory"], {
       contract: "agent-solution-catalog/v1",
@@ -75,15 +75,19 @@ describe("StudioSolutionDirectory", () => {
     expect(screen.getByRole("heading", { name: "全部解决方案" })).toBeTruthy();
     expect(screen.getByText("ADT参考分析")).toBeTruthy();
     expect(screen.getByRole("link", { name: "打开" })).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("管理ADT参考分析"));
+    expect(screen.getByRole("button", { name: "复制为可编辑方案" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "编辑信息" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "归档" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "新建解决方案" }));
     expect(screen.getByRole("dialog", { name: "新建解决方案" })).toBeTruthy();
     expect(screen.getByText("空白创建")).toBeTruthy();
-    expect(screen.getByText("从模板创建")).toBeTruthy();
+    expect(screen.getByText("复制参考方案")).toBeTruthy();
     expect(screen.queryByText("导入 Ontology Package")).toBeNull();
     expect(screen.getByRole("radio", { name: /空白创建/ })).toHaveProperty("checked", true);
-    expect(screen.queryByText(/模板版本 v1.4.0/)).toBeNull();
-    fireEvent.click(screen.getByRole("radio", { name: /从模板创建/ }));
-    expect(screen.getByText(/模板版本 v1.4.0/)).toBeTruthy();
+    expect(screen.queryByText(/参考版本 v1.4.0/)).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: /复制参考方案/ }));
+    expect(screen.getByText(/参考版本 v1.4.0/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "创建 Draft Solution" })).toBeTruthy();
   });
 });

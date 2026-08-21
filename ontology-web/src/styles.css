@@ -1940,15 +1940,29 @@ a:focus-visible, button:focus-visible {
 .reference-source-pack.is-installed { box-shadow: inset 4px 0 0 #70c1b5; }
 .source-library-table { display: grid; }
 .source-library-head,
-.source-library-table article { display: grid; grid-template-columns: minmax(260px, 1.3fr) .7fr .65fr 150px; gap: 18px; align-items: center; }
+.source-library-table article,
+.source-library-row { display: grid; grid-template-columns: minmax(260px, 1.3fr) .7fr .65fr 150px; gap: 18px; align-items: center; }
 .source-library-head { min-height: 41px; padding: 0 22px; color: #75888c; background: #e8eeee; border-bottom: 1px solid var(--line); font-size: var(--semantic-type-meta); font-weight: 750; }
-.source-library-table article { min-height: 76px; padding: 13px 22px; border-bottom: 1px solid #dce4e4; }
-.source-library-table article > div { min-width: 0; display: grid; gap: 5px; }
-.source-library-table article strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.source-library-table article small { overflow: hidden; color: #74868a; text-overflow: ellipsis; white-space: nowrap; font-size: var(--semantic-type-meta); }
-.source-library-table article > span { color: #506a70; font-size: var(--semantic-type-meta); }
-.source-library-table article em { width: max-content; padding: 5px 7px; color: #275e58; background: #e1efeb; font: 650 var(--semantic-type-meta)/1 var(--mono); font-style: normal; }
-.source-library-table article code { overflow: hidden; color: #75878b; text-overflow: ellipsis; white-space: nowrap; font: 450 var(--semantic-type-meta)/1 var(--mono); }
+.source-library-table article,
+.source-library-row { min-height: 76px; padding: 13px 22px; border: 0; border-bottom: 1px solid #dce4e4; }
+.source-library-row { width: 100%; color: inherit; background: var(--semantic-surface-paper); text-align: left; cursor: pointer; }
+.source-library-row:hover { background: var(--semantic-action-hover); }
+.source-library-row:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--semantic-action-primary); outline-offset: -2px; }
+.source-library-row:disabled { cursor: default; }
+.source-library-table article > div,
+.source-library-primary { min-width: 0; display: grid; gap: 5px; }
+.source-library-table article strong,
+.source-library-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--semantic-type-supporting); }
+.source-library-table article small,
+.source-library-row small { overflow: hidden; color: #74868a; text-overflow: ellipsis; white-space: nowrap; font-size: var(--semantic-type-meta); }
+.source-library-table article > span,
+.source-library-type { color: #506a70; font-size: var(--semantic-type-control); }
+.source-library-table article em,
+.source-library-row em { width: max-content; padding: 5px 7px; color: #275e58; background: #e1efeb; font: 650 var(--semantic-type-meta)/1 var(--mono); font-style: normal; }
+.source-library-table article code,
+.source-library-row code { overflow: hidden; color: #75878b; text-overflow: ellipsis; white-space: nowrap; font: 450 var(--semantic-type-meta)/1 var(--mono); }
+.source-library-version { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--semantic-space-3); align-items: center; }
+.source-library-version b { color: var(--semantic-action-primary); font-size: var(--semantic-type-body); font-weight: 500; }
 .source-identity-actions { display: flex !important; grid-auto-flow: column; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px !important; }
 .source-identity-actions button { min-height: 28px; padding: 0 9px; color: #255d58; background: #eef6f4; border: 1px solid #a9c8c4; cursor: pointer; font-size: var(--semantic-type-meta); font-weight: 700; }
 .source-library-page .object-page-counts button { margin-top: 8px; }
@@ -2391,9 +2405,9 @@ a:focus-visible, button:focus-visible {
 /* EIX 2.0 application contract: flat object pages, raised overlays, explicit actions. */
 .studio-page-header,
 .role-gated-content.studio-page-content {
-  width: min(100%, var(--studio-content-max));
-  max-width: var(--studio-content-max);
-  margin-inline: auto;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
 }
 .role-gated-content.studio-page-content {
   /* This deliberately overrides the later generic fieldset reset. Without it,
@@ -2546,15 +2560,21 @@ a:focus-visible, button:focus-visible {
 .source-title-action:disabled:hover strong { color: inherit; text-decoration: none; }
 .source-library-head { min-height: 44px; font-size: var(--semantic-type-meta); }
 .source-library-head,
-.source-library-table article {
+.source-library-table article,
+.source-library-row {
   grid-template-columns: minmax(320px, 1.4fr) minmax(180px, .62fr) minmax(170px, .58fr) minmax(232px, .72fr);
   column-gap: var(--semantic-space-6);
 }
-.source-library-table article { min-height: 88px; }
-.source-library-table article strong { font-size: var(--semantic-type-supporting); }
+.source-library-table article,
+.source-library-row { min-height: 88px; }
+.source-library-table article strong,
+.source-library-row strong { font-size: var(--semantic-type-supporting); }
 .source-library-table article small,
 .source-library-table article em,
-.source-library-table article code { font-size: var(--semantic-type-meta); }
+.source-library-table article code,
+.source-library-row small,
+.source-library-row em,
+.source-library-row code { font-size: var(--semantic-type-meta); }
 .source-library-table article > span {
   color: var(--semantic-text-secondary);
   font-size: var(--semantic-type-control);
@@ -2620,7 +2640,8 @@ a:focus-visible, button:focus-visible {
   }
   .reference-source-pack > button { grid-column: 2; justify-self: end; }
   .source-library-head,
-  .source-library-table article {
+  .source-library-table article,
+  .source-library-row {
     grid-template-columns: minmax(280px, 1.3fr) minmax(132px, .58fr) minmax(140px, .6fr) minmax(220px, .8fr);
     column-gap: var(--semantic-space-4);
   }
@@ -2631,7 +2652,8 @@ a:focus-visible, button:focus-visible {
   .reference-source-pack > button { grid-column: 1; justify-self: start; }
   .source-library-table { overflow-x: auto; }
   .source-library-head,
-  .source-library-table article { min-width: 860px; }
+  .source-library-table article,
+  .source-library-row { min-width: 860px; }
 }
 .source-version-section { border-top: 1px solid var(--semantic-border-subtle); }
 .source-version-section > header { min-height: 72px; display: flex; align-items: center; justify-content: space-between; padding: var(--semantic-space-4) var(--semantic-space-6); background: var(--semantic-surface-subtle); }
@@ -2840,8 +2862,9 @@ a:focus-visible, button:focus-visible {
 
 /* Solution directory: a product home, not a poster. */
 .solution-directory { width: min(var(--studio-content-max), 100%); }
-.solution-directory-hero h1 { font-family: var(--semantic-font-display); }
-.solution-directory-hero p { font-size: var(--semantic-type-body); }
+.solution-directory-hero { align-items: center; padding-bottom: var(--semantic-space-6); }
+.solution-directory-hero h1 { font-family: var(--semantic-font-display); font-size: var(--component-type-heading-lg); }
+.solution-directory-hero p { font-size: var(--semantic-type-control); }
 .solution-directory-tabs button,
 .directory-row-actions > a,
 .directory-row-actions details button,
@@ -2865,12 +2888,25 @@ a:focus-visible, button:focus-visible {
 .studio-version-lineage li strong { font-size: var(--semantic-type-supporting); }
 .studio-version-lineage li p,
 .studio-version-lineage li em,
-.studio-version-lineage > footer { font-size: var(--semantic-type-meta); }
+.studio-version-lineage > footer { font-size: var(--semantic-type-control); }
 .studio-version-lineage li a { min-height: 36px; display: inline-flex; align-items: center; font-size: var(--semantic-type-control); }
 .studio-flow-list a { min-height: 96px; }
 .studio-flow-list a strong { font-size: var(--semantic-type-supporting); }
 .studio-flow-list a small,
 .studio-asset-summary small { font-size: var(--semantic-type-control); }
+.studio-asset-summary > div > span { font-size: var(--semantic-type-meta); }
+
+.header-directory-context {
+  min-height: var(--component-button-height);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--semantic-space-4);
+  color: var(--semantic-text-inverse);
+  background: color-mix(in srgb, var(--semantic-action-primary) 20%, var(--semantic-surface-inverse));
+  border: 1px solid color-mix(in srgb, var(--semantic-action-inverse-accent) 35%, transparent);
+  font-size: var(--semantic-type-control);
+  font-weight: 700;
+}
 
 /* Authoring and configuration controls */
 .workspace-editor-heading p,
@@ -2973,7 +3009,8 @@ a:focus-visible, button:focus-visible {
 .solution-directory-table { line-height: var(--semantic-line-height-compact); }
 .workbench-table-wrap td { font-size: var(--semantic-type-control); }
 .workbench-table-wrap th { font-size: var(--semantic-type-meta); }
-.source-library-table article { min-height: 96px; }
+.source-library-table article,
+.source-library-row { min-height: 96px; }
 
 /* Content selection is expressed with a surface. Accent rails belong to the
    primary sidebar/workflow, not every master-detail row. */
@@ -3075,3 +3112,39 @@ a:focus-visible, button:focus-visible {
   .repeatable-contract-row,
   .repeatable-contract-row.is-parameter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Installed reference solutions are browseable authority snapshots. Mutation
+   controls stay available only after the user creates an independent copy. */
+.reference-solution-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--semantic-space-4);
+  padding: var(--semantic-space-3) var(--semantic-space-4);
+  background: var(--semantic-surface-info);
+  border: 1px solid var(--semantic-border-subtle);
+}
+.reference-solution-banner > div { display: grid; gap: var(--semantic-space-1); }
+.reference-solution-banner strong { font-size: var(--semantic-type-supporting); }
+.reference-solution-banner span { color: var(--semantic-text-secondary); font-size: var(--semantic-type-control); }
+.reference-solution-banner > a {
+  flex: 0 0 auto;
+  min-height: var(--component-button-height);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--semantic-space-4);
+  color: var(--semantic-text-inverse);
+  background: var(--semantic-action-primary);
+  text-decoration: none;
+  font-size: var(--semantic-type-control);
+  font-weight: 700;
+}
+.mapping-product-page.is-readonly .mapping-index > header > button,
+.mapping-product-page.is-readonly .mapping-inspector .inspector-actions,
+.mapping-product-page.is-readonly .mapping-inspector .data-deprecate-confirm,
+.mapping-product-page.is-readonly .mapping-inspector .data-empty-state button,
+.mapping-product-page.is-readonly .join-catalog > header > button,
+.mapping-product-page.is-readonly .join-catalog article footer > button,
+.mapping-product-page.is-readonly .join-inspector > button,
+.mapping-product-page.is-readonly .join-inspector .data-deprecate-confirm,
+.mapping-product-page.is-readonly .join-editor { display: none; }

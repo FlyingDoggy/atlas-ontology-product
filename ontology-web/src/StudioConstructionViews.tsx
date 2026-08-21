@@ -96,6 +96,7 @@ export function ConstructionRunsView({
   onStart,
   onCancel,
   onRetry,
+  readOnly = false,
 }: {
   runs: ConstructionRunList | null;
   jobs: ConstructionJobList | null;
@@ -106,6 +107,7 @@ export function ConstructionRunsView({
   onStart: (sourceVersionIds: string[]) => void;
   onCancel: (jobId: string) => void;
   onRetry: (jobId: string) => void;
+  readOnly?: boolean;
 }) {
   const latest = runs?.runs[0]?.run ?? null;
   const latestJob = jobs?.jobs[0] ?? null;
@@ -146,22 +148,22 @@ export function ConstructionRunsView({
                 ? "案例编译档已匹配"
                 : "当前使用来源投影"}
           </span>
-          <button type="button" onClick={() => onStart(selectedSourceIds)} disabled={busy || Boolean(activeJob) || (sources.length > 0 && selectedSourceIds.length === 0)}>
+          {!readOnly ? <button type="button" onClick={() => onStart(selectedSourceIds)} disabled={busy || Boolean(activeJob) || (sources.length > 0 && selectedSourceIds.length === 0)}>
             {busy ? "正在处理…" : activeJob ? "构建任务运行中" : "开始自动构建"}
-          </button>
+          </button> : null}
         </div>
       </header>
 
       <section className="construction-source-selection" aria-labelledby="construction-source-selection-title">
-        <header><div><span>EXACT INPUT SELECTION</span><h3 id="construction-source-selection-title">选择本次构建使用的材料版本</h3><p>任务会持久化这些 exact source version；后台 worker 不会擅自扩大到其他材料。</p></div><strong>{sources.length ? `${selectedSourceIds.length} / ${sources.length}` : "固定来源集"}</strong></header>
-        {sources.length ? <div>{sources.map((source) => <label key={source.source_version_id}><input type="checkbox" checked={selectedSourceIds.includes(source.source_version_id)} disabled={Boolean(activeJob)} onChange={(event) => setSelectedSourceIds((current) => event.target.checked ? [...current, source.source_version_id] : current.filter((id) => id !== source.source_version_id))} /><span><strong>{source.title}</strong><small>{source.kind} · {source.original_name}</small><code>{source.source_version_id}</code></span></label>)}</div> : <p className="construction-fixed-source-note">当前案例尚未安装 Source Library 版本，构建将使用工作区内已登记的固定来源集；要进行可选版本构建，请先到“来源材料”登记 exact version。</p>}
+        <header><div><span>INPUT SELECTION</span><h3 id="construction-source-selection-title">选择本次构建使用的材料版本</h3><p>构建任务只读取本次选定的来源版本。</p></div><strong>{sources.length ? `${selectedSourceIds.length} / ${sources.length}` : "工作区来源"}</strong></header>
+        {sources.length ? <div>{sources.map((source) => <label key={source.source_version_id}><input type="checkbox" checked={selectedSourceIds.includes(source.source_version_id)} disabled={readOnly || Boolean(activeJob)} onChange={(event) => setSelectedSourceIds((current) => event.target.checked ? [...current, source.source_version_id] : current.filter((id) => id !== source.source_version_id))} /><span><strong>{source.title}</strong><small>{source.kind} · {source.original_name}</small><code>{source.source_version_id}</code></span></label>)}</div> : <p className="construction-fixed-source-note">当前 Solution 尚无可选来源版本。{readOnly ? "复制参考方案后可登记材料并重新构建。" : "构建将读取工作区已登记材料；如需锁定特定版本，请先到“来源材料”登记。"}</p>}
       </section>
 
       {latestJob ? <section className={`construction-job-banner is-${latestJob.status.toLowerCase()}`} aria-live="polite">
-        <div><span>DURABLE JOB</span><strong>{latestJob.status === "QUEUED" ? "已排队" : latestJob.status === "RUNNING" ? "正在后台构建" : latestJob.status === "COMMITTING" ? "正在提交候选集合" : latestJob.status === "CANCEL_REQUESTED" ? "正在取消" : latestJob.status === "SUCCEEDED" ? "构建完成" : latestJob.status === "STALE" ? "输入已变化，结果未应用" : latestJob.status === "CANCELLED" ? "已取消" : "构建失败"}</strong><code>{shortId(latestJob.job_id)} · {latestJob.selected_source_version_ids.length ? `${latestJob.selected_source_version_ids.length} exact sources` : "fixed source set"} · lease {latestJob.lease_epoch}</code></div>
-        <p>{activeJob ? "任务保存在 PostgreSQL；可以离开本页，后台 worker 会继续运行。" : runSyncPending ? "任务已经完成，正在读取不可变候选集合…" : latestJob.error_code ? `终态：${latestJob.error_code}` : "候选集合已经写入不可变运行记录。"}</p>
-        {activeJob && ["QUEUED", "RUNNING"].includes(activeJob.status) ? <button type="button" disabled={busy} onClick={() => onCancel(activeJob.job_id)}>取消任务</button> : null}
-        {latestJob && ["FAILED", "CANCELLED", "STALE"].includes(latestJob.status) ? <button type="button" disabled={busy || latestJob.base_revision !== currentRevision} onClick={() => onRetry(latestJob.job_id)}>重试同一输入</button> : null}
+        <div><span>BUILD TASK</span><strong>{latestJob.status === "QUEUED" ? "已排队" : latestJob.status === "RUNNING" ? "正在后台构建" : latestJob.status === "COMMITTING" ? "正在提交候选集合" : latestJob.status === "CANCEL_REQUESTED" ? "正在取消" : latestJob.status === "SUCCEEDED" ? "构建完成" : latestJob.status === "STALE" ? "输入已变化，结果未应用" : latestJob.status === "CANCELLED" ? "已取消" : "构建失败"}</strong><code>{shortId(latestJob.job_id)} · {latestJob.selected_source_version_ids.length ? `${latestJob.selected_source_version_ids.length} 个来源版本` : "工作区来源"}</code></div>
+        <p>{activeJob ? "可以离开本页；任务会在后台继续运行。" : runSyncPending ? "任务已经完成，正在读取候选集合…" : latestJob.error_code ? `终态：${latestJob.error_code}` : "候选集合已保存，可进入复核。"}</p>
+        {!readOnly && activeJob && ["QUEUED", "RUNNING"].includes(activeJob.status) ? <button type="button" disabled={busy} onClick={() => onCancel(activeJob.job_id)}>取消任务</button> : null}
+        {!readOnly && latestJob && ["FAILED", "CANCELLED", "STALE"].includes(latestJob.status) ? <button type="button" disabled={busy || latestJob.base_revision !== currentRevision} onClick={() => onRetry(latestJob.job_id)}>重试同一输入</button> : null}
       </section> : null}
 
       {latest ? (
@@ -254,6 +256,7 @@ export function ConstructionReviewCenter({
   error,
   onReview,
   onSave,
+  readOnly = false,
 }: {
   runs: ConstructionRunList | null;
   reviewDraft: ConstructionReviewDraft | null;
@@ -262,6 +265,7 @@ export function ConstructionReviewCenter({
   error: string | null;
   onSave: (runId: string, dispositions: ConstructionDisposition[]) => Promise<ConstructionReviewDraft>;
   onReview: (runId: string, dispositions: ConstructionDisposition[], reviewBatchChecksum: string | null) => void;
+  readOnly?: boolean;
 }) {
   const activeRecord = runs?.runs.find((item) => item.decision === null) ?? runs?.runs[0] ?? null;
   const run = activeRecord?.run ?? null;
@@ -437,7 +441,7 @@ export function ConstructionReviewCenter({
         </label>
         <label>风险等级<select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value)}><option value="ALL">全部风险</option><option value="HIGH">高风险</option><option value="MEDIUM">中风险</option><option value="LOW">低风险</option></select></label>
         <label>处理状态<select value={decisionFilter} onChange={(event) => setDecisionFilter(event.target.value)}><option value="ALL">全部状态</option><option value="UNREVIEWED">未决定</option><option value="DECIDED">已处理</option></select></label>
-        <div className="review-toolbar-summary"><span>筛选结果 {filtered.length}</span><span>可编译 {run.candidates.filter((item) => item.compile_eligible).length}</span><span>高风险 {run.candidates.filter((item) => item.risk_class === "HIGH").length}</span><button type="button" disabled={stale || busy || Boolean(activeRecord?.decision) || visible.length === 0} onClick={fillConservativeRecommendations}>本页填入保守建议</button><small>只处理当前 {visible.length} 项，不保存、不发布、不激活</small></div>
+        <div className="review-toolbar-summary"><span>筛选结果 {filtered.length}</span><span>可编译 {run.candidates.filter((item) => item.compile_eligible).length}</span><span>高风险 {run.candidates.filter((item) => item.risk_class === "HIGH").length}</span>{!readOnly ? <button type="button" disabled={stale || busy || Boolean(activeRecord?.decision) || visible.length === 0} onClick={fillConservativeRecommendations}>本页填入保守建议</button> : null}<small>{readOnly ? "参考方案仅展示已保存的复核记录" : `只处理当前 ${visible.length} 项，不保存、不发布、不激活`}</small></div>
       </div>
       <div className="review-workspace">
         <div className="review-queue" role="list" aria-label="候选队列">
@@ -452,7 +456,7 @@ export function ConstructionReviewCenter({
                   <em className={`risk-${candidate.risk_class.toLowerCase()}`}>{candidate.risk_class}</em>
                 </button>
                 <label>复核动作 {candidate.label}
-                  <select aria-label={`复核动作 ${candidate.label}`} value={action} disabled={Boolean(activeRecord?.decision)} onChange={(event) => choose(candidate, event.target.value as ReviewAction)}>
+                  <select aria-label={`复核动作 ${candidate.label}`} value={action} disabled={readOnly || Boolean(activeRecord?.decision)} onChange={(event) => choose(candidate, event.target.value as ReviewAction)}>
                     <option value="UNREVIEWED">未决定</option>
                     <option value="ACCEPT" disabled={!candidate.compile_eligible}>接受并应用</option>
                     <option value="EDIT" disabled={!candidate.proposed_operation}>修改后应用</option>
@@ -491,7 +495,7 @@ export function ConstructionReviewCenter({
                 {selected.draft_diff.changed_paths.length ? <p>{selected.draft_diff.changed_paths.join(" · ")}</p> : null}
                 {selected.compile_eligible ? <div><section><b>当前 Draft</b><pre>{selected.draft_diff.before ? JSON.stringify(selected.draft_diff.before, null, 2) : "尚不存在"}</pre></section><section><b>候选结果</b><pre>{selected.draft_diff.after ? JSON.stringify(selected.draft_diff.after, null, 2) : "—"}</pre></section></div> : <p>该候选没有可应用的类型化变更。</p>}
               </section>
-              {(actions[selected.candidate_id] ?? "UNREVIEWED") === "EDIT" && selected.proposed_operation?.payload ? <section className="typed-candidate-editor"><span>REVIEWER-AUTHORED TYPED EDIT</span><label>完整 typed operation<textarea aria-label={`修改 typed operation ${selected.label}`} rows={16} spellCheck={false} value={editTexts[selected.candidate_id] ?? JSON.stringify(edits[selected.candidate_id] ?? selected.proposed_operation, null, 2)} onChange={(event) => updateEditedOperation(selected, event.target.value)} /></label>{editErrors[selected.candidate_id] ? <p className="operator-error" role="alert">{editErrors[selected.candidate_id]}</p> : <p>允许修改 payload 中的定义、公式、查询与映射字段；action、collection 与 object_id 被锁定，服务端仍会执行完整 typed validation。</p>}</section> : null}
+              {!readOnly && (actions[selected.candidate_id] ?? "UNREVIEWED") === "EDIT" && selected.proposed_operation?.payload ? <section className="typed-candidate-editor"><span>REVIEWER-AUTHORED TYPED EDIT</span><label>完整 typed operation<textarea aria-label={`修改 typed operation ${selected.label}`} rows={16} spellCheck={false} value={editTexts[selected.candidate_id] ?? JSON.stringify(edits[selected.candidate_id] ?? selected.proposed_operation, null, 2)} onChange={(event) => updateEditedOperation(selected, event.target.value)} /></label>{editErrors[selected.candidate_id] ? <p className="operator-error" role="alert">{editErrors[selected.candidate_id]}</p> : <p>允许修改 payload 中的定义、公式、查询与映射字段；action、collection 与 object_id 被锁定，服务端仍会执行完整 typed validation。</p>}</section> : null}
               {selected.source_anchors.map((anchor) => <div className="source-anchor-card" key={anchor.snippet_checksum}><strong>{anchor.source_id}</strong><code>{anchor.locator}</code><small>{anchor.sheet_name && anchor.cell_range ? `${anchor.sheet_name}!${anchor.cell_range}` : `line ${anchor.line_number}`} · {shortId(anchor.snippet_checksum)}</small></div>)}
               {selected.limitations.length ? <div className="candidate-limitations"><strong>限制 / 缺口</strong>{selected.limitations.map((item) => <p key={item}>{item}</p>)}</div> : null}
               <details><summary>技术详情</summary><pre>{JSON.stringify(selected.proposal, null, 2)}</pre></details>
@@ -501,7 +505,7 @@ export function ConstructionReviewCenter({
       </div>
       <footer className="review-commit-bar">
         <div><strong>{hasEditErrors ? "存在未通过结构校验的人工修改" : allDecided ? progressDirty ? "全部已处理；请先保存复核进度" : "所有候选均已保存 disposition" : `还有 ${run.candidates.length - decidedCount} 项未决定`}</strong><p>{reviewDraft ? `服务端 Review r${reviewDraft.review_revision} · ${shortId(reviewDraft.batch_checksum)}` : "尚未形成服务端复核批次"}；最终提交会再次核对候选、批次和 Draft。</p></div>
-        <div className="review-commit-actions"><button type="button" disabled={!progressDirty || !currentDispositions.length || hasEditErrors || stale || busy || Boolean(activeRecord?.decision)} onClick={() => { void onSave(run.run_id, currentDispositions); }}>{busy ? "正在保存…" : "保存复核进度"}</button><button type="button" disabled={!allDecided || progressDirty || hasEditErrors || !reviewDraft || stale || busy || Boolean(activeRecord?.decision)} onClick={submit}>{busy ? "正在提交…" : activeRecord?.decision ? "本轮已完成" : "完成本轮复核并应用"}</button></div>
+        {!readOnly ? <div className="review-commit-actions"><button type="button" disabled={!progressDirty || !currentDispositions.length || hasEditErrors || stale || busy || Boolean(activeRecord?.decision)} onClick={() => { void onSave(run.run_id, currentDispositions); }}>{busy ? "正在保存…" : "保存复核进度"}</button><button type="button" disabled={!allDecided || progressDirty || hasEditErrors || !reviewDraft || stale || busy || Boolean(activeRecord?.decision)} onClick={submit}>{busy ? "正在提交…" : activeRecord?.decision ? "本轮已完成" : "完成本轮复核并应用"}</button></div> : null}
       </footer>
       {error ? <p className="operator-error" role="alert">{error}</p> : null}
     </section>

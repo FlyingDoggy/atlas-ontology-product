@@ -19,10 +19,11 @@ describe("StudioNavigation", () => {
     expect(studioPageFromPath("/ontology-studio/solutions")).toBe("solutions");
     expect(studioPageFromPath("/ontology-studio/solutions/ontology.exchange_analytics.adt/semantic/graph/")).toBe("semantic");
     expect(studioPageFromPath("/ontology-studio/ontology")).toBe("semantic");
-    expect(studioPageFromPath("/ontology-studio/release/")).toBe("release");
+    expect(studioPageFromPath("/ontology-studio/release/")).toBe("quality");
     expect(studioPageFromPath("/ontology-studio/not-a-page")).toBe("overview");
     expect(studioSubpageFromPath("/ontology-studio/solutions/ontology.exchange_analytics.adt/semantic/graph/", "semantic")).toBe("graph");
-    expect(studioSubpageFromPath("/ontology-studio/quality/assistant/", "quality")).toBe("review");
+    expect(studioSubpageFromPath("/ontology-studio/assistant/", "construction")).toBe("review");
+    expect(studioSubpageFromPath("/ontology-studio/solutions/ontology.exchange_analytics.adt/release/delivery/", "quality")).toBe("delivery");
     expect(studioSubpageFromPath("/ontology-studio/sources/", "quality")).toBe("changes");
     expect(studioSolutionIdFromPath("/ontology-studio/solutions/ontology.exchange_analytics.adt/semantic/graph/")).toBe("ontology.exchange_analytics.adt");
     expect(studioSolutionIdFromPath("/ontology-studio/solutions/")).toBeNull();
@@ -30,7 +31,7 @@ describe("StudioNavigation", () => {
 
   it("preserves the selected solution in page links", () => {
     expect(studioPageHref("quality", "ontology.exchange_analytics.cash_trading"))
-      .toBe("/ontology-studio/solutions/ontology.exchange_analytics.cash_trading/quality/review/");
+      .toBe("/ontology-studio/solutions/ontology.exchange_analytics.cash_trading/quality/validation/");
     expect(studioPageHref("quality", "ontology.exchange_analytics.adt", "validation"))
       .toBe("/ontology-studio/solutions/ontology.exchange_analytics.adt/quality/validation/");
   });
@@ -55,10 +56,10 @@ describe("StudioNavigation", () => {
     expect(screen.getByText("解决方案工作区")).toBeTruthy();
     expect(screen.getByRole("link", { name: /概览/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: /输入与证据/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /构建与复核/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: /语义模型/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: /^数据/ }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("link", { name: /质量与治理/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /版本与发布/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /质量与发布/ })).toBeTruthy();
     expect(screen.getByText("方案定义")).toBeTruthy();
     expect(screen.getByText("运行语义")).toBeTruthy();
     expect(screen.getAllByRole("link", { name: /解决方案目录/ })).toHaveLength(1);
@@ -69,15 +70,14 @@ describe("StudioNavigation", () => {
     render(
       <MemoryRouter>
         <StudioSubnavigation
-          page="quality"
+          page="construction"
           activeSubpage="review"
           solutionId="ontology.exchange_analytics.adt"
         />
       </MemoryRouter>,
     );
-    expect(screen.getByRole("navigation", { name: "质量与治理子页面" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /复核中心/ }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("link", { name: /验证结果/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /问题与变更/ })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "构建与复核子页面" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /复核队列/ }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: /构建任务/ })).toBeTruthy();
   });
 });

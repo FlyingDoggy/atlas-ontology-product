@@ -9,7 +9,7 @@ describe("studioQueryScope", () => {
       ["inputs", "requirements"],
       ["data", "schemas"],
       ["quality", "validation"],
-      ["release", "versions"],
+      ["quality", "versions"],
     ] as const) {
       const scope = studioQueryScope(page, subpage);
       expect(scope.constructionRuns).toBe(false);
@@ -19,7 +19,7 @@ describe("studioQueryScope", () => {
   });
 
   it("loads each construction dataset only where the page consumes it", () => {
-    expect(studioQueryScope("inputs", "runs")).toMatchObject({
+    expect(studioQueryScope("construction", "runs")).toMatchObject({
       constructionRuns: true,
       constructionJobs: true,
       reviewDraft: false,
@@ -34,7 +34,7 @@ describe("studioQueryScope", () => {
       constructionJobs: false,
       reviewDraft: false,
     });
-    expect(studioQueryScope("quality", "review")).toMatchObject({
+    expect(studioQueryScope("construction", "review")).toMatchObject({
       constructionRuns: true,
       constructionJobs: false,
       reviewDraft: true,
@@ -45,18 +45,15 @@ describe("studioQueryScope", () => {
     expect(studioQueryScope("overview", "summary")).toMatchObject({
       sourceLibrary: true,
       runtime: true,
-      llmStatus: true,
     });
     expect(studioQueryScope("inputs", "sources")).toMatchObject({ sourceLibrary: true });
-    expect(studioQueryScope("inputs", "runs")).toMatchObject({
-      llmStatus: true,
+    expect(studioQueryScope("construction", "runs")).toMatchObject({
       sourceLibrary: true,
     });
-    expect(studioQueryScope("release", "delivery")).toMatchObject({ runtime: true });
+    expect(studioQueryScope("quality", "delivery")).toMatchObject({ runtime: true });
     expect(studioQueryScope("data", "mappings")).toMatchObject({
       sourceLibrary: false,
       runtime: false,
-      llmStatus: false,
     });
   });
 });

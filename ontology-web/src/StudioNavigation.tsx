@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 export type StudioPageId =
   | "overview"
   | "inputs"
+  | "construction"
   | "semantic"
   | "data"
   | "quality"
-  | "release"
   | "solutions";
 
 export type StudioSubpageId =
@@ -49,12 +49,21 @@ export const studioPages: StudioPageDefinition[] = [
   {
     id: "inputs",
     label: "输入与证据",
-    description: "需求、指标与来源材料",
+    description: "需求、材料与证据版本",
     defaultSubpage: "requirements",
     subpages: [
       { id: "requirements", label: "业务需求", description: "业务过程、分析问题和期望输出" },
       { id: "sources", label: "来源材料", description: "材料版本、证据锚点和处理状态" },
-      { id: "runs", label: "构建运行", description: "选择材料、自动构建和任务历史" },
+    ],
+  },
+  {
+    id: "construction",
+    label: "构建与复核",
+    description: "生成候选、机器复核与人工处置",
+    defaultSubpage: "runs",
+    subpages: [
+      { id: "runs", label: "构建任务", description: "选择材料、运行 Builder 并查看产出" },
+      { id: "review", label: "复核队列", description: "证据、差异、机器发现与人工处置" },
     ],
   },
   {
@@ -83,22 +92,13 @@ export const studioPages: StudioPageDefinition[] = [
   },
   {
     id: "quality",
-    label: "质量与治理",
-    description: "验证、复核与变更请求",
-    defaultSubpage: "review",
+    label: "质量与发布",
+    description: "策略、验证、版本与运行",
+    defaultSubpage: "validation",
     subpages: [
-      { id: "review", label: "复核中心", description: "候选内容、冲突与人工处置" },
       { id: "policies", label: "访问与披露策略", description: "角色、粒度和字段披露边界" },
       { id: "validation", label: "验证结果", description: "结构、语义和运行检查" },
       { id: "changes", label: "问题与变更", description: "缺口、反馈和修订历史" },
-    ],
-  },
-  {
-    id: "release",
-    label: "版本与发布",
-    description: "版本、认证、激活与回滚",
-    defaultSubpage: "versions",
-    subpages: [
       { id: "versions", label: "版本与审批", description: "草稿、验证和发布记录" },
       { id: "delivery", label: "交付与运行", description: "绑定、认证、激活和回滚" },
     ],
@@ -115,10 +115,11 @@ const globalPage: StudioPageDefinition = {
 
 const legacyPageAliases: Record<string, StudioPageId> = {
   authoring: "inputs",
-  assistant: "quality",
+  assistant: "construction",
   ontology: "semantic",
   validation: "quality",
   sources: "quality",
+  release: "quality",
   about: "overview",
 };
 
@@ -167,6 +168,10 @@ export function studioSubpageFromPath(
   const explicitSolution = segments[0] === "solutions" && segments.length >= 2;
   const requested = segments[explicitSolution ? 3 : 1] as StudioSubpageId | undefined;
   if (requested && definition.subpages.some((item) => item.id === requested)) return requested;
+  const requestedPage = segments[explicitSolution ? 2 : 0];
+  if (requestedPage === "release" && (requested === "versions" || requested === "delivery")) {
+    return requested;
+  }
   const legacy = legacySubpageAliases[explicitSolution ? segments[2] : segments[0]];
   if (legacy && definition.subpages.some((item) => item.id === legacy)) return legacy;
   return definition.defaultSubpage;
@@ -197,10 +202,10 @@ function StudioNavIcon({ page }: { page: StudioPageId }) {
     solutions: <><path d="M4 6.5h6l1.8 2H20v9.5H4z" /><path d="M4 9h16M7 3.5h7" /></>,
     overview: <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="4" /><rect x="14" y="11" width="7" height="10" /><rect x="3" y="14" width="7" height="7" /></>,
     inputs: <><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v5h5M9 12h6M9 16h6" /></>,
+    construction: <><path d="M4 7h10M4 12h7M4 17h10" /><path d="m15 13 2 2 4-5" /><circle cx="18" cy="12" r="5" /></>,
     semantic: <><circle cx="12" cy="5" r="2.5" /><circle cx="5" cy="18" r="2.5" /><circle cx="19" cy="18" r="2.5" /><path d="M10.6 7.1 6.4 15.8M13.4 7.1l4.2 8.7M7.5 18h9" /></>,
     data: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" /></>,
     quality: <><path d="m12 3 7 3v5c0 4.6-2.8 8.1-7 10-4.2-1.9-7-5.4-7-10V6z" /><path d="m8.5 12 2.2 2.2 4.8-5" /></>,
-    release: <><path d="M5 7h14M5 12h14M5 17h9" /><circle cx="18" cy="17" r="3" /><path d="m17 17 .7.7 1.5-1.7" /></>,
   };
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[page]}</svg>;
 }

@@ -437,6 +437,7 @@ export function SemanticAssetCatalog({
   onDeprecate,
   assetChecksums = {},
   reviewer,
+  readOnly = false,
 }: {
   mode: CatalogMode;
   solutionId: string;
@@ -451,6 +452,7 @@ export function SemanticAssetCatalog({
   onDeprecate?: (operation: PackageDraftOperation) => Promise<void> | void;
   assetChecksums?: Record<string, string>;
   reviewer: string;
+  readOnly?: boolean;
 }) {
   const allowedCollections = modeCollections[mode];
   const [searchParams, setSearchParams] = useSearchParams();
@@ -475,7 +477,7 @@ export function SemanticAssetCatalog({
   const editingItem = requestedId && requestedId !== "new"
     ? items.find((item) => item.id === requestedId) ?? null
     : null;
-  const editorOpen = requestedId === "new" || Boolean(editingItem);
+  const editorOpen = !readOnly && (requestedId === "new" || Boolean(editingItem));
   const sourceCount = mode === "metrics" ? authoring?.metric_candidates.length ?? 0 : 0;
   const pendingCount = candidates.filter((candidate) => candidate.review_status === "UNREVIEWED").length;
   const runtimeMetricIds = new Set(ontologyPackage.analysis_patterns.flatMap((pattern) => pattern.required_metrics));
@@ -518,11 +520,11 @@ export function SemanticAssetCatalog({
   const title = mode === "business" ? "业务模型" : mode === "metrics" ? "指标与规则" : mode === "experience" ? "分析能力" : "访问与披露策略";
   const description = mode === "business" ? "从业务对象到流程与维度的统一资产目录" : mode === "metrics" ? "权威指标、计算口径与规则目录" : mode === "experience" ? "Agent 可以理解的问题与可以执行的分析" : "运行权限、数据粒度与结果披露边界";
   return <section className="semantic-asset-catalog" aria-labelledby="semantic-assets-title">
-    <header className="asset-catalog-heading"><div><span>SEMANTIC ASSET CATALOG</span><h2 id="semantic-assets-title">{title}</h2><p>{description}</p></div><AssetCreateMenu solutionId={solutionId} /></header>
+    <header className="asset-catalog-heading"><div><span>SEMANTIC ASSET CATALOG</span><h2 id="semantic-assets-title">{title}</h2><p>{description}</p></div>{!readOnly ? <AssetCreateMenu solutionId={solutionId} /> : null}</header>
     <div className="asset-authority-summary"><div><span>当前 Draft</span><strong>{allowedCollections.reduce((total, collection) => total + recordsFor(ontologyPackage, collection).length, 0)}</strong><small>可追踪语义资产</small></div><div><span>来源定义</span><strong>{sourceCount}</strong><small>原始材料转写层</small></div><div><span>待复核候选</span><strong>{pendingCount}</strong><small>尚未进入权威模型</small></div><div><span>Agent 已支持</span><strong>{supportedCount}</strong><small>已有执行能力</small></div></div>
     {sourceCount ? <div className="asset-layer-notice"><strong>来源层与权威层已分开。</strong><span>{sourceCount} 条来源指标保留为证据，不会替换下方 {ontologyPackage.metrics.length} 条 Ontology 指标。</span></div> : null}
     <nav className="asset-category-nav" aria-label={`${title}资产类型`}>{allowedCollections.map((collection) => <button type="button" className={selectedCollection === collection ? "is-active" : ""} key={collection} onClick={() => { const next = new URLSearchParams(searchParams); next.set("assetType", collection); next.delete("assetId"); setSearchParams(next); setSelectedId(""); }}><strong>{collectionConfig[collection].label}</strong><span>{recordsFor(ontologyPackage, collection).length}</span><small>{collectionConfig[collection].description}</small></button>)}</nav>
-    <div className="asset-catalog-toolbar"><label><span>搜索当前类型</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="名称、ID 或定义" /></label><label><span>治理状态</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">全部状态</option><option value="proposed">Proposed</option><option value="needs_clarification">Needs clarification</option><option value="confirmed">Confirmed</option></select></label><Link className="context-create-action" to={semanticAssetHref(solutionId, selectedCollection)}>＋ 新增{collectionConfig[selectedCollection].singular}</Link></div>
+    <div className="asset-catalog-toolbar"><label><span>搜索当前类型</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="名称、ID 或定义" /></label><label><span>治理状态</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">全部状态</option><option value="proposed">Proposed</option><option value="needs_clarification">Needs clarification</option><option value="confirmed">Confirmed</option></select></label>{!readOnly ? <Link className="context-create-action" to={semanticAssetHref(solutionId, selectedCollection)}>＋ 新增{collectionConfig[selectedCollection].singular}</Link> : null}</div>
     <div className="asset-catalog-layout">
       <div className="asset-list" role="list" aria-label={`${collectionConfig[selectedCollection].label}目录`}><header><span>资产</span><span>状态</span><span>责任 / 来源</span></header>{visible.map((item) => { const name = localizedName(item); return <button type="button" role="listitem" className={selected?.id === item.id ? "is-selected" : ""} key={stringValue(item.id)} onClick={() => { setSelectedId(stringValue(item.id)); setDeprecating(null); setDeprecationAcknowledged(false); }}><span><strong>{name.zh || name.en}</strong><small>{name.en}</small><code>{stringValue(item.id)}</code></span><em className={`is-${stringValue(item.status)}`}>{stringValue(item.status)}</em><span><strong>{stringValue(item.owner)}</strong><small>{stringList(item.sources).length} 项证据</small></span></button>; })}{visible.length === 0 ? <div className="asset-empty"><h3>没有匹配资产</h3><p>调整搜索或状态筛选；也可以创建第一项。</p></div> : null}</div>
       <aside className="asset-inspector">
@@ -538,12 +540,12 @@ export function SemanticAssetCatalog({
             <div><dt>来源</dt><dd>{stringList(selected.sources).join(" · ")}</dd></div>
           </dl>
           <details><summary>查看完整 typed contract</summary><pre>{JSON.stringify(selected, null, 2)}</pre></details>
-          <div className="asset-inspector-actions">
+          {!readOnly ? <div className="asset-inspector-actions">
             <Link to={editHref(selected)}>{selected.status === "confirmed" ? "创建修订草稿" : "继续编辑"}</Link>
             {["proposed", "needs_clarification"].includes(stringValue(selected.status)) && onConfirm ? <button type="button" disabled={busy || !assetChecksums[`${selectedCollection}:${stringValue(selected.id)}`]} onClick={() => void confirmAsset(selected)}>{confirming === selected.id ? "确认中…" : assetChecksums[`${selectedCollection}:${stringValue(selected.id)}`] ? "确认当前摘要" : "等待权威摘要"}</button> : null}
             {onDeprecate ? <button type="button" className="is-danger" onClick={() => { setDeprecating(stringValue(selected.id)); setDeprecationAcknowledged(false); }}>弃用</button> : null}
-          </div>
-          {deprecating === selected.id ? <div className="asset-deprecate-confirm">
+          </div> : null}
+          {!readOnly && deprecating === selected.id ? <div className="asset-deprecate-confirm">
             <strong>先确认影响，再弃用</strong>
             <p>系统会检查对象、指标、规则、映射和流程中的所有活动引用；仍有依赖时操作会被后端阻止，当前输入不会丢失。</p>
             <label><input type="checkbox" checked={deprecationAcknowledged} onChange={(event) => setDeprecationAcknowledged(event.target.checked)} />我已确认这是当前选中的 <code>{stringValue(selected.id)}</code></label>

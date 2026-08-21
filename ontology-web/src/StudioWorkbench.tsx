@@ -116,6 +116,7 @@ export function StudioWorkbenchView({
   activeTab,
   navigation = "rail",
   presentation = "standalone",
+  readOnly = false,
 }: {
   workbench: StudioWorkbench;
   lifecycle?: StudioRuntimeLifecycle;
@@ -123,6 +124,7 @@ export function StudioWorkbenchView({
   activeTab?: WorkbenchTab;
   navigation?: "rail" | "hidden";
   presentation?: "standalone" | "page";
+  readOnly?: boolean;
 }) {
   const [localTab, setLocalTab] = useState<WorkbenchTab>("model");
   const tab = activeTab ?? localTab;
@@ -552,7 +554,7 @@ export function StudioWorkbenchView({
                 </li>
               </ol>
               <div className="operator-actions">
-                <button type="button" disabled={!lifecycle || !workbench.workspace.last_published || lifecycle.busy !== null} onClick={lifecycle?.onPrepare}>
+                {!readOnly ? <><button type="button" disabled={!lifecycle || !workbench.workspace.last_published || lifecycle.busy !== null} onClick={lifecycle?.onPrepare}>
                   {lifecycle?.busy === "prepare" ? "准备中…" : "准备并认证"}
                 </button>
                 <button type="button" disabled={!lifecycle || !preparedSnapshot || lifecycle.busy !== null || preparedSnapshot.checksum === activeSnapshot?.checksum} onClick={lifecycle?.onActivate}>
@@ -566,6 +568,7 @@ export function StudioWorkbenchView({
                     {lifecycle.busy === "rollback" ? "回滚中…" : `回滚到上一版本 ${lifecycle.rollbackTarget.release.version}`}
                   </button>
                 ) : null}
+                </> : null}
                 <a href={`/ontology-agent/?solution=${encodeURIComponent(workbench.package.package_id)}`}>在 Agent 中打开 ↗</a>
               </div>
               {lifecycle?.error ? <p className="operator-error" role="alert">{lifecycle.error}</p> : null}

@@ -18,8 +18,8 @@ import { studioPageHref } from "./StudioNavigation";
 type DialogState =
   | {
       kind: "create";
-      initialMode: "BLANK" | "TEMPLATE";
-      template?: StudioSolution;
+      initialMode: "BLANK" | "REFERENCE_COPY";
+      reference?: StudioSolution;
     }
   | { kind: "edit"; solution: StudioSolution }
   | { kind: "delete"; solution: StudioSolution }
@@ -43,6 +43,10 @@ function latestSolutions(catalog: SolutionCatalog): StudioSolution[] {
 
 function solutionStatus(solution: StudioSolution): "ACTIVE" | "ARCHIVED" {
   return solution.directory?.status === "ARCHIVED" ? "ARCHIVED" : "ACTIVE";
+}
+
+function isReferenceSolution(solution: StudioSolution): boolean {
+  return solution.directory?.creation_mode === "INSTALLED";
 }
 
 function dateLabel(value?: string): string {
@@ -78,33 +82,34 @@ function DirectoryDialog({
   }) => void;
   onDelete: (solution: StudioSolution) => void;
 }) {
-  const [creationMode, setCreationMode] = useState<"BLANK" | "TEMPLATE">(
+  const referenceSolutions = solutions.filter(isReferenceSolution);
+  const [creationMode, setCreationMode] = useState<"BLANK" | "REFERENCE_COPY">(
     state?.kind === "create" ? state.initialMode : "BLANK",
   );
-  const [templateId, setTemplateId] = useState(
+  const [referenceId, setReferenceId] = useState(
     state?.kind === "create"
-      ? state.template?.solution_id ?? solutions[0]?.solution_id ?? ""
-      : solutions[0]?.solution_id ?? "",
+      ? state.reference?.solution_id ?? referenceSolutions[0]?.solution_id ?? ""
+      : referenceSolutions[0]?.solution_id ?? "",
   );
-  const selectedTemplate = solutions.find((item) => item.solution_id === templateId)
-    ?? (state?.kind === "create" ? state.template : solutions[0]);
+  const selectedReference = referenceSolutions.find((item) => item.solution_id === referenceId)
+    ?? (state?.kind === "create" ? state.reference : referenceSolutions[0]);
   const editing = state?.kind === "edit" ? state.solution : null;
   const [nameZh, setNameZh] = useState(
     editing?.display_name.zh
-    ?? (state?.kind === "create" && state.initialMode === "TEMPLATE" && state.template
-      ? `${state.template.display_name.zh}副本`
+    ?? (state?.kind === "create" && state.initialMode === "REFERENCE_COPY" && state.reference
+      ? `${state.reference.display_name.zh}副本`
       : ""),
   );
   const [nameEn, setNameEn] = useState(
     editing?.display_name.en
-    ?? (state?.kind === "create" && state.initialMode === "TEMPLATE" && state.template
-      ? `${state.template.display_name.en} Copy`
+    ?? (state?.kind === "create" && state.initialMode === "REFERENCE_COPY" && state.reference
+      ? `${state.reference.display_name.en} Copy`
       : ""),
   );
   const [description, setDescription] = useState(
     editing?.directory?.description
-    ?? (state?.kind === "create" && state.initialMode === "TEMPLATE" && state.template
-      ? `基于“${state.template.display_name.zh}”结构创建的独立本体解决方案。`
+    ?? (state?.kind === "create" && state.initialMode === "REFERENCE_COPY" && state.reference
+      ? `基于“${state.reference.display_name.zh}”创建的独立可编辑解决方案。`
       : ""),
   );
   const [owner, setOwner] = useState(
@@ -127,8 +132,11 @@ function DirectoryDialog({
     if (state.kind === "edit") onUpdate(state.solution, input);
     else onCreate({
       ...input,
-      creation_mode: creationMode,
-      template_solution_id: creationMode === "TEMPLATE" ? templateId : null,
+      // The v1 API calls this compatibility operation TEMPLATE. In the product
+      // it is deliberately exposed as a Reference Solution copy: ADT/Cash are
+      // examples with business facts, not reusable templates.
+      creation_mode: creationMode === "REFERENCE_COPY" ? "TEMPLATE" : "BLANK",
+      template_solution_id: creationMode === "REFERENCE_COPY" ? referenceId : null,
     });
   };
   const title = state.kind === "create"
@@ -162,30 +170,30 @@ function DirectoryDialog({
                   <strong>空白创建</strong>
                   <small>创建不含任何业务对象、指标或规则的独立 Draft。</small>
                 </label>
-                <label className={creationMode === "TEMPLATE" ? "is-selected" : ""}>
+                <label className={creationMode === "REFERENCE_COPY" ? "is-selected" : ""}>
                   <input
                     type="radio"
                     name="creation-mode"
-                    value="TEMPLATE"
-                    checked={creationMode === "TEMPLATE"}
-                    onChange={() => setCreationMode("TEMPLATE")}
-                    disabled={!solutions.some((item) => solutionStatus(item) === "ACTIVE")}
+                    value="REFERENCE_COPY"
+                    checked={creationMode === "REFERENCE_COPY"}
+                    onChange={() => setCreationMode("REFERENCE_COPY")}
+                    disabled={!referenceSolutions.length}
                   />
-                  <strong>从模板创建</strong>
-                  <small>复制已安装模板的结构；源材料、运行记录和发布历史不会继承。</small>
+                  <strong>复制参考方案</strong>
+                  <small>从已安装参考方案创建独立 Draft；运行记录和发布历史不会继承。</small>
                 </label>
               </fieldset>
-              {creationMode === "TEMPLATE" ? (
+              {creationMode === "REFERENCE_COPY" ? (
                 <>
                   <label className="solution-form-field">
-                    <span>模板</span>
-                    <select value={templateId} onChange={(event) => setTemplateId(event.target.value)} required>
-                      {solutions.filter((item) => solutionStatus(item) === "ACTIVE").map((item) => (
+                    <span>参考方案</span>
+                    <select value={referenceId} onChange={(event) => setReferenceId(event.target.value)} required>
+                      {referenceSolutions.map((item) => (
                         <option value={item.solution_id} key={item.solution_id}>{item.display_name.zh}</option>
                       ))}
                     </select>
                   </label>
-                  {selectedTemplate ? <p className="template-contract">模板版本 v{selectedTemplate.solution_version} · {selectedTemplate.resource_count ?? 0} 项资源 · {selectedTemplate.components.length} 个核心组件</p> : null}
+                  {selectedReference ? <p className="template-contract">参考版本 v{selectedReference.solution_version} · {selectedReference.resource_count ?? 0} 项资源 · {selectedReference.components.length} 个核心组件</p> : null}
                 </>
               ) : null}
             </>
@@ -225,18 +233,23 @@ export function StudioSolutionDirectory({
   catalog,
   selectedSolutionId,
   openCreateOnLoad = false,
+  openReferenceCopyId = null,
 }: {
   catalog: SolutionCatalog;
   selectedSolutionId: string;
   openCreateOnLoad?: boolean;
+  openReferenceCopyId?: string | null;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const solutions = useMemo(() => latestSolutions(catalog), [catalog]);
   const selected = solutions.find((item) => item.solution_id === selectedSolutionId) ?? solutions[0];
+  const requestedReference = solutions.find((item) => item.solution_id === openReferenceCopyId && isReferenceSolution(item));
   const [dialog, setDialog] = useState<DialogState>(
-    openCreateOnLoad
-      ? { kind: "create", initialMode: "BLANK", template: selected }
+    requestedReference
+      ? { kind: "create", initialMode: "REFERENCE_COPY", reference: requestedReference }
+      : openCreateOnLoad
+      ? { kind: "create", initialMode: "BLANK", reference: isReferenceSolution(selected) ? selected : solutions.find(isReferenceSolution) }
       : null,
   );
   const [filter, setFilter] = useState<"ALL" | "ACTIVE" | "ARCHIVED">("ALL");
@@ -292,9 +305,9 @@ export function StudioSolutionDirectory({
         <div>
           <span>ONTOLOGY SOLUTIONS</span>
           <h1>全部解决方案</h1>
-          <p>在一个目录中切换业务场景、创建独立 Draft，并管理每个本体解决方案的生命周期。</p>
+          <p>创建、复制和管理 Ontology Solution。</p>
         </div>
-        <button type="button" className="primary" onClick={() => setDialog({ kind: "create", initialMode: "BLANK", template: selected })}>新建解决方案</button>
+        <button type="button" className="primary" onClick={() => setDialog({ kind: "create", initialMode: "BLANK", reference: isReferenceSolution(selected) ? selected : solutions.find(isReferenceSolution) })}>新建解决方案</button>
       </header>
       <section className="solution-directory-toolbar" aria-label="解决方案筛选">
         <div className="solution-directory-tabs">
@@ -321,8 +334,8 @@ export function StudioSolutionDirectory({
                 <code>{solution.solution_id}</code>
               </div>
               <div><span className={`directory-status is-${status.toLowerCase()}`}>{status === "ACTIVE" ? "使用中" : "已归档"}</span></div>
-              <div><strong>v{solution.solution_version}</strong><small>{solution.directory?.creation_mode === "TEMPLATE" ? "模板创建" : solution.directory?.creation_mode === "BLANK" ? "空白创建" : solution.directory?.creation_mode === "IMPORT" ? "导入创建" : "已安装"}</small></div>
-              <div><strong>{runtime?.state === "ACTIVE" ? "Active" : "未激活"}</strong><small>{runtime?.environment_id ?? "—"}</small></div>
+              <div><strong>v{solution.solution_version}</strong><small>{solution.directory?.creation_mode === "TEMPLATE" ? "参考方案副本" : solution.directory?.creation_mode === "BLANK" ? "空白创建" : solution.directory?.creation_mode === "IMPORT" ? "导入创建" : "参考方案"}</small></div>
+              <div><strong>{runtime?.state === "ACTIVE" ? "已激活" : "未激活"}</strong><small>{runtime?.state === "ACTIVE" ? "Runtime 已绑定" : "—"}</small></div>
               <div><strong>{dateLabel(solution.directory?.updated_at)}</strong><small>{solution.directory?.owner ?? "Ontology Product Team"}</small></div>
               <div className="directory-row-actions">
                 {status === "ACTIVE" ? <Link to={studioPageHref("overview", solution.solution_id)}>打开</Link> : null}
@@ -330,9 +343,11 @@ export function StudioSolutionDirectory({
                   <summary aria-label={`管理${solution.display_name.zh}`}>•••</summary>
                   <div>
                     {status === "ACTIVE" ? (
-                      <>
+                      isReferenceSolution(solution) ? <>
+                        <button type="button" onClick={() => setDialog({ kind: "create", initialMode: "REFERENCE_COPY", reference: solution })}>复制为可编辑方案</button>
+                        {runtime?.state === "ACTIVE" ? <a href={`/ontology-agent/?solution=${encodeURIComponent(solution.solution_id)}`}>在 Agent 中打开</a> : null}
+                      </> : <>
                         <button type="button" onClick={() => setDialog({ kind: "edit", solution })}>编辑信息</button>
-                        <button type="button" onClick={() => setDialog({ kind: "create", initialMode: "TEMPLATE", template: solution })}>复制为新方案</button>
                         {runtime?.state === "ACTIVE" ? <a href={`/ontology-agent/?solution=${encodeURIComponent(solution.solution_id)}`}>在 Agent 中打开</a> : null}
                         <button type="button" onClick={() => archive.mutate(solution.solution_id)} disabled={isBusy}>归档</button>
                       </>
@@ -355,7 +370,7 @@ export function StudioSolutionDirectory({
         <p>编辑发生在 Draft；归档只隐藏日常工作入口。永久移除不会擦除依法需要保留的发布与审计工件。</p>
       </aside>
       <DirectoryDialog
-        key={dialog ? `${dialog.kind}-${dialog.kind === "create" ? `${dialog.initialMode}-${dialog.template?.solution_id ?? "blank"}` : dialog.solution.solution_id}` : "closed"}
+        key={dialog ? `${dialog.kind}-${dialog.kind === "create" ? `${dialog.initialMode}-${dialog.reference?.solution_id ?? "blank"}` : dialog.solution.solution_id}` : "closed"}
         state={dialog}
         solutions={solutions}
         busy={isBusy}

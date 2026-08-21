@@ -6,7 +6,6 @@ export type StudioQueryScope = {
   reviewDraft: boolean;
   sourceLibrary: boolean;
   runtime: boolean;
-  llmStatus: boolean;
 };
 
 export function studioQueryScope(
@@ -14,16 +13,16 @@ export function studioQueryScope(
   subpage: StudioSubpageId,
 ): StudioQueryScope {
   const constructionRuns = (
-    (page === "inputs" && subpage === "runs")
+    page === "construction"
     || page === "semantic"
-    || (page === "quality" && subpage === "review")
   );
-  const constructionJobs = page === "inputs" && subpage === "runs";
-  const reviewDraft = page === "quality" && subpage === "review";
+  const constructionJobs = page === "construction" && subpage === "runs";
+  const reviewDraft = page === "construction" && subpage === "review";
   const sourceLibrary = page === "overview"
-    || (page === "inputs" && ["sources", "runs"].includes(subpage));
-  const runtime = page === "overview" || page === "release";
-  const llmStatus = page === "overview" || constructionJobs;
+    || (page === "inputs" && subpage === "sources")
+    || constructionJobs;
+  const runtime = page === "overview"
+    || (page === "quality" && ["versions", "delivery"].includes(subpage));
 
   return {
     constructionRuns,
@@ -31,6 +30,5 @@ export function studioQueryScope(
     reviewDraft,
     sourceLibrary,
     runtime,
-    llmStatus,
   };
 }

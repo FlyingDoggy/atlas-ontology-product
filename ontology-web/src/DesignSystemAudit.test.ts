@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 const stylesheet = readFileSync("src/styles.css", "utf8");
+const sourceLibrary = readFileSync("src/StudioProductViews.tsx", "utf8");
+const construction = readFileSync("src/StudioConstructionViews.tsx", "utf8");
 
 describe("EIX design-system contract", () => {
   it("keeps the EIX readable type floor at 12px", () => {
@@ -42,5 +44,23 @@ describe("EIX design-system contract", () => {
     ].map((match) => Number(match[1]));
 
     expect(literalSizes.filter((size) => !allowedLiteralSizes.has(size))).toEqual([]);
+  });
+
+  it("uses the full workspace width and a shared alignment edge", () => {
+    expect(stylesheet).toMatch(/\.studio-page-header,\s*\.role-gated-content\.studio-page-content\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*none;[\s\S]*?margin-inline:\s*0;/);
+  });
+
+  it("uses a whole-row source preview affordance instead of a narrow action column", () => {
+    expect(sourceLibrary).toContain('className="source-library-row"');
+    expect(sourceLibrary).toContain('aria-label={`查看 ${source.title} 详情`}');
+    expect(sourceLibrary).not.toContain('>查看详情</button>');
+  });
+
+  it("keeps scenario-specific language out of reusable source and construction components", () => {
+    expect(sourceLibrary).not.toContain("Cash Trading 参考材料包");
+    expect(sourceLibrary).not.toContain("Deloitte HK 提供");
+    expect(construction).not.toContain("当前案例");
+    expect(construction).not.toContain("fixed source set");
+    expect(construction).not.toContain("Not installed");
   });
 });
