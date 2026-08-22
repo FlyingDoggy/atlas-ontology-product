@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..contracts import Sha256
-from ..models import StrictModel
+from ..models import AuthoringLanguage, StrictModel
 from ..product_context import Base, ProductInfrastructureSettings
 
 
@@ -30,6 +30,16 @@ ConstructionJobStatus = Literal[
     "COMMITTING",
     "CANCEL_REQUESTED",
     "SUCCEEDED",
+    "FAILED",
+    "CANCELLED",
+    "STALE",
+]
+ConstructionJobStage = Literal[
+    "QUEUED",
+    "SOURCE_SETTLEMENT",
+    "BUILDING_CANDIDATES",
+    "PERSISTING_RESULT",
+    "COMPLETED",
     "FAILED",
     "CANCELLED",
     "STALE",
@@ -53,6 +63,8 @@ class ConstructionJobInputV1(StrictModel):
     base_draft_checksum: Sha256
     source_set_digest: Sha256
     selected_source_version_ids: tuple[str, ...] = ()
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: Sha256 | None = None
     profile_ref: str = Field(min_length=1, max_length=255)
 
 
@@ -66,6 +78,8 @@ class ConstructionJobV1(StrictModel):
     base_draft_checksum: Sha256
     source_set_digest: Sha256
     selected_source_version_ids: tuple[str, ...] = ()
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: Sha256 | None = None
     profile_ref: str = Field(min_length=1, max_length=255)
     status: ConstructionJobStatus
     attempt_id: str | None = Field(
@@ -80,6 +94,10 @@ class ConstructionJobV1(StrictModel):
     error_code: str | None = Field(
         default=None, pattern=r"^[A-Z][A-Z0-9_]{2,99}$"
     )
+    current_stage: ConstructionJobStage = "QUEUED"
+    completed_stages: int = Field(default=0, ge=0, le=6)
+    total_stages: int = Field(default=6, ge=1, le=20)
+    progress_message: str = Field(default="JOB_QUEUED", min_length=1, max_length=100)
     created_at: datetime
     started_at: datetime | None = None
     completed_at: datetime | None = None
@@ -104,12 +122,25 @@ class ConstructionJobStore(Protocol):
 
     def list(self, workspace_id: str) -> tuple[ConstructionJobV1, ...]: ...
 
+    def list_all(self) -> tuple[ConstructionJobV1, ...]: ...
+
     def claim_next(
         self, worker_id: str, *, lease_seconds: int = 120
     ) -> ConstructionJobV1 | None: ...
 
     def begin_commit(
         self, job_id: str, worker_id: str, lease_epoch: int
+    ) -> ConstructionJobV1: ...
+
+    def report_progress(
+        self,
+        job_id: str,
+        worker_id: str,
+        lease_epoch: int,
+        *,
+        current_stage: ConstructionJobStage,
+        completed_stages: int,
+        progress_message: str,
     ) -> ConstructionJobV1: ...
 
     def complete_success(
@@ -146,6 +177,8 @@ def _new_job(value: ConstructionJobInputV1, now: datetime) -> ConstructionJobV1:
         base_draft_checksum=value.base_draft_checksum,
         source_set_digest=value.source_set_digest,
         selected_source_version_ids=value.selected_source_version_ids,
+        authoring_language=value.authoring_language,
+        language_policy_digest=value.language_policy_digest,
         profile_ref=value.profile_ref,
         status="QUEUED",
         lease_epoch=0,
@@ -163,6 +196,8 @@ def _same_input(job: ConstructionJobV1, value: ConstructionJobInputV1) -> bool:
             job.base_draft_checksum == value.base_draft_checksum,
             job.source_set_digest == value.source_set_digest,
             job.selected_source_version_ids == value.selected_source_version_ids,
+            job.authoring_language == value.authoring_language,
+            job.language_policy_digest == value.language_policy_digest,
             job.profile_ref == value.profile_ref,
         )
     )
@@ -212,6 +247,15 @@ class InMemoryConstructionJobStore:
             )
         )
 
+    def list_all(self) -> tuple[ConstructionJobV1, ...]:
+        return tuple(
+            sorted(
+                self._jobs.values(),
+                key=lambda item: item.created_at,
+                reverse=True,
+            )
+        )
+
     def claim_next(
         self, worker_id: str, *, lease_seconds: int = 120
     ) -> ConstructionJobV1 | None:
@@ -234,6 +278,9 @@ class InMemoryConstructionJobStore:
                         "lease_owner": worker_id,
                         "lease_expires_at": now + timedelta(seconds=lease_seconds),
                         "started_at": job.started_at or now,
+                        "current_stage": "SOURCE_SETTLEMENT",
+                        "completed_stages": 1,
+                        "progress_message": "SOURCE_VERSIONS_BOUND",
                         "updated_at": now,
                     }
                 )
@@ -269,7 +316,40 @@ class InMemoryConstructionJobStore:
             if job.status != "RUNNING":
                 raise ConstructionJobConflict("Construction attempt is not authorized to commit")
             updated = job.model_copy(
-                update={"status": "COMMITTING", "updated_at": self.clock()}
+                update={
+                    "status": "COMMITTING",
+                    "current_stage": "PERSISTING_RESULT",
+                    "completed_stages": 5,
+                    "progress_message": "IMMUTABLE_RUN_COMMITTING",
+                    "updated_at": self.clock(),
+                }
+            )
+            self._jobs[job_id] = updated
+            return updated
+
+    def report_progress(
+        self,
+        job_id: str,
+        worker_id: str,
+        lease_epoch: int,
+        *,
+        current_stage: ConstructionJobStage,
+        completed_stages: int,
+        progress_message: str,
+    ) -> ConstructionJobV1:
+        with self._lock:
+            job = self._leased(job_id, worker_id, lease_epoch)
+            if job.status != "RUNNING":
+                raise ConstructionJobConflict("Construction attempt is not running")
+            if completed_stages < job.completed_stages or completed_stages >= job.total_stages:
+                raise ConstructionJobConflict("Construction progress is not monotonic")
+            updated = job.model_copy(
+                update={
+                    "current_stage": current_stage,
+                    "completed_stages": completed_stages,
+                    "progress_message": progress_message,
+                    "updated_at": self.clock(),
+                }
             )
             self._jobs[job_id] = updated
             return updated
@@ -291,6 +371,9 @@ class InMemoryConstructionJobStore:
                 update={
                     "status": "SUCCEEDED",
                     "result_run_id": run_id,
+                    "current_stage": "COMPLETED",
+                    "completed_stages": job.total_stages,
+                    "progress_message": "IMMUTABLE_RUN_COMMITTED",
                     "completed_at": now,
                     "updated_at": now,
                 }
@@ -323,6 +406,14 @@ class InMemoryConstructionJobStore:
                 update={
                     "status": status,
                     "error_code": error_code,
+                    "current_stage": (
+                        "CANCELLED"
+                        if status == "CANCELLED"
+                        else "STALE"
+                        if status == "STALE"
+                        else "FAILED"
+                    ),
+                    "progress_message": error_code,
                     "completed_at": now,
                     "updated_at": now,
                 }
@@ -339,13 +430,19 @@ class InMemoryConstructionJobStore:
                     update={
                         "status": "CANCELLED",
                         "error_code": "CANCELLED_BY_USER",
+                        "current_stage": "CANCELLED",
+                        "progress_message": "CANCELLED_BY_USER",
                         "completed_at": now,
                         "updated_at": now,
                     }
                 )
             elif job.status == "RUNNING":
                 updated = job.model_copy(
-                    update={"status": "CANCEL_REQUESTED", "updated_at": now}
+                    update={
+                        "status": "CANCEL_REQUESTED",
+                        "progress_message": "CANCEL_REQUESTED",
+                        "updated_at": now,
+                    }
                 )
             else:
                 return job
@@ -365,6 +462,8 @@ class InMemoryConstructionJobStore:
                     base_draft_checksum=job.base_draft_checksum,
                     source_set_digest=job.source_set_digest,
                     selected_source_version_ids=job.selected_source_version_ids,
+                    authoring_language=job.authoring_language,
+                    language_policy_digest=job.language_policy_digest,
                     profile_ref=job.profile_ref,
                 )
             )
@@ -383,6 +482,8 @@ class StudioConstructionJobRow(Base):
     selected_source_version_ids: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, default=list
     )
+    authoring_language: Mapped[str | None] = mapped_column(String(8))
+    language_policy_digest: Mapped[str | None] = mapped_column(String(64))
     profile_ref: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     attempt_id: Mapped[str | None] = mapped_column(String(80))
@@ -391,6 +492,10 @@ class StudioConstructionJobRow(Base):
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     result_run_id: Mapped[str | None] = mapped_column(String(80))
     error_code: Mapped[str | None] = mapped_column(String(100))
+    current_stage: Mapped[str] = mapped_column(String(64), nullable=False, default="QUEUED")
+    completed_stages: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_stages: Mapped[int] = mapped_column(Integer, nullable=False, default=6)
+    progress_message: Mapped[str] = mapped_column(String(100), nullable=False, default="JOB_QUEUED")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -495,6 +600,20 @@ class PostgresConstructionJobStore:
         except SQLAlchemyError as exc:
             raise ConstructionJobError("Construction job list failed") from exc
 
+    def list_all(self) -> tuple[ConstructionJobV1, ...]:
+        try:
+            from sqlalchemy.orm import Session
+
+            with Session(self.engine) as session:
+                rows = session.scalars(
+                    select(StudioConstructionJobRow).order_by(
+                        StudioConstructionJobRow.created_at.desc()
+                    )
+                ).all()
+                return tuple(self._value(row) for row in rows)
+        except SQLAlchemyError as exc:
+            raise ConstructionJobError("Construction job list failed") from exc
+
     def claim_next(
         self, worker_id: str, *, lease_seconds: int = 120
     ) -> ConstructionJobV1 | None:
@@ -526,6 +645,9 @@ class PostgresConstructionJobStore:
                 row.lease_owner = worker_id
                 row.lease_expires_at = now + timedelta(seconds=lease_seconds)
                 row.started_at = row.started_at or now
+                row.current_stage = "SOURCE_SETTLEMENT"
+                row.completed_stages = 1
+                row.progress_message = "SOURCE_VERSIONS_BOUND"
                 row.updated_at = now
                 session.flush()
                 return self._value(row)
@@ -577,8 +699,33 @@ class PostgresConstructionJobStore:
             {"RUNNING"},
             lambda row, now: (
                 setattr(row, "status", "COMMITTING"),
+                setattr(row, "current_stage", "PERSISTING_RESULT"),
+                setattr(row, "completed_stages", 5),
+                setattr(row, "progress_message", "IMMUTABLE_RUN_COMMITTING"),
                 setattr(row, "updated_at", now),
             ),
+        )
+
+    def report_progress(
+        self,
+        job_id: str,
+        worker_id: str,
+        lease_epoch: int,
+        *,
+        current_stage: ConstructionJobStage,
+        completed_stages: int,
+        progress_message: str,
+    ) -> ConstructionJobV1:
+        def mutate(row: StudioConstructionJobRow, now: datetime) -> None:
+            if completed_stages < row.completed_stages or completed_stages >= row.total_stages:
+                raise ConstructionJobConflict("Construction progress is not monotonic")
+            row.current_stage = current_stage
+            row.completed_stages = completed_stages
+            row.progress_message = progress_message
+            row.updated_at = now
+
+        return self._transition(
+            job_id, worker_id, lease_epoch, {"RUNNING"}, mutate
         )
 
     def complete_success(
@@ -594,6 +741,9 @@ class PostgresConstructionJobStore:
                 raise ConstructionJobConflict("Construction result run identity mismatch")
             row.status = "SUCCEEDED"
             row.result_run_id = run_id
+            row.current_stage = "COMPLETED"
+            row.completed_stages = row.total_stages
+            row.progress_message = "IMMUTABLE_RUN_COMMITTED"
             row.completed_at = now
             row.updated_at = now
 
@@ -619,6 +769,14 @@ class PostgresConstructionJobStore:
                 else "FAILED"
             )
             row.error_code = error_code
+            row.current_stage = (
+                "CANCELLED"
+                if row.status == "CANCELLED"
+                else "STALE"
+                if row.status == "STALE"
+                else "FAILED"
+            )
+            row.progress_message = error_code
             row.completed_at = now
             row.updated_at = now
 
@@ -646,10 +804,13 @@ class PostgresConstructionJobStore:
                 if row.status == "QUEUED":
                     row.status = "CANCELLED"
                     row.error_code = "CANCELLED_BY_USER"
+                    row.current_stage = "CANCELLED"
+                    row.progress_message = "CANCELLED_BY_USER"
                     row.completed_at = now
                     row.updated_at = now
                 elif row.status == "RUNNING":
                     row.status = "CANCEL_REQUESTED"
+                    row.progress_message = "CANCEL_REQUESTED"
                     row.updated_at = now
                 session.flush()
                 return self._value(row)
@@ -672,6 +833,8 @@ class PostgresConstructionJobStore:
                 base_draft_checksum=previous.base_draft_checksum,
                 source_set_digest=previous.source_set_digest,
                 selected_source_version_ids=previous.selected_source_version_ids,
+                authoring_language=previous.authoring_language,
+                language_policy_digest=previous.language_policy_digest,
                 profile_ref=previous.profile_ref,
             )
         )

@@ -150,6 +150,7 @@ export function studioSolutionIdFromPath(pathname: string): string | null {
 export function studioPageFromPath(pathname: string): StudioPageId {
   const segments = studioPathSegments(pathname);
   if (segments.length === 0) return "solutions";
+  if (segments[0] === "solutions" && segments[2] === "builds") return "construction";
   const segment = segments[0] === "solutions" && segments.length >= 2
     ? segments[2]
     : segments[0];
@@ -164,6 +165,7 @@ export function studioSubpageFromPath(
 ): StudioSubpageId {
   if (pageId === "solutions") return "summary";
   const segments = studioPathSegments(pathname);
+  if (segments[0] === "solutions" && segments[2] === "builds") return "review";
   const definition = studioPageDefinition(pageId);
   const explicitSolution = segments[0] === "solutions" && segments.length >= 2;
   const requested = segments[explicitSolution ? 3 : 1] as StudioSubpageId | undefined;
@@ -175,6 +177,29 @@ export function studioSubpageFromPath(
   const legacy = legacySubpageAliases[explicitSolution ? segments[2] : segments[0]];
   if (legacy && definition.subpages.some((item) => item.id === legacy)) return legacy;
   return definition.defaultSubpage;
+}
+
+export type StudioBuildRoute = {
+  runId: string;
+  decisionId: string | null;
+};
+
+export function studioBuildRouteFromPath(pathname: string): StudioBuildRoute | null {
+  const segments = studioPathSegments(pathname);
+  if (segments[0] !== "solutions" || segments[2] !== "builds" || segments[4] !== "review") return null;
+  const runId = segments[3];
+  if (!/^construction-run\.[0-9a-f]{32}$/.test(runId ?? "")) return null;
+  const decisionId = segments[5] === "results" ? segments[6] ?? null : null;
+  if (decisionId !== null && !/^construction-decision\.[0-9a-f]{32}$/.test(decisionId)) return null;
+  return { runId, decisionId };
+}
+
+export function studioBuildReviewHref(solutionId: string, runId: string): string {
+  return `/ontology-studio/solutions/${encodeURIComponent(solutionId)}/builds/${encodeURIComponent(runId)}/review/`;
+}
+
+export function studioBuildResultHref(solutionId: string, runId: string, decisionId: string): string {
+  return `${studioBuildReviewHref(solutionId, runId)}results/${encodeURIComponent(decisionId)}/`;
 }
 
 export function studioPageHref(
@@ -229,6 +254,10 @@ export function StudioNavigation({
         <Link className="studio-product-home" to="/ontology-studio/solutions/">
           <span className="studio-nav-icon"><StudioNavIcon page="solutions" /></span>
           <div><strong>解决方案目录</strong><small>切换、新建与管理</small></div>
+        </Link>
+        <Link className="studio-product-home" to="/ontology-studio/tasks/">
+          <span className="studio-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg></span>
+          <div><strong>构建任务</strong><small>进度、结果与待处理</small></div>
         </Link>
       </nav>
       <div className="studio-sidebar-context">

@@ -10,7 +10,7 @@ from pydantic import Field, model_validator
 
 from ..contracts import Sha256
 from ..io import canonical_bytes, sha256_value
-from ..models import GovernedObject, OntologyPackage, StrictModel
+from ..models import AuthoringLanguage, GovernedObject, OntologyPackage, StrictModel
 from .evidence import (
     EvidenceBundleV1,
     EvidenceFragmentV1,
@@ -39,6 +39,55 @@ PHASE_COLLECTIONS: dict[BuilderPhase, tuple[str, ...]] = {
     ),
     "DATA": ("data_sources", "bindings", "joins", "sql_contracts"),
 }
+
+PHASE_PROPOSAL_LIMITS: dict[BuilderPhase, int] = {
+    "SEMANTIC": 24,
+    "ANALYTICS": 24,
+    "DATA": 24,
+}
+
+PHASE_EVIDENCE_KIND_PRIORITY: dict[BuilderPhase, tuple[str, ...]] = {
+    "SEMANTIC": (
+        "data_model",
+        "data_dictionary",
+        "requirement_transcription",
+        "metric_transcription",
+        "sql",
+    ),
+    "ANALYTICS": (
+        "metric_transcription",
+        "requirement_transcription",
+        "sql",
+        "data_model",
+        "data_dictionary",
+    ),
+    "DATA": (
+        "data_model",
+        "data_dictionary",
+        "sql",
+        "metric_transcription",
+        "requirement_transcription",
+    ),
+}
+
+
+def _phase_evidence_fragments(
+    bundle: EvidenceBundleV1,
+    phase: BuilderPhase,
+    *,
+    limit: int = 160,
+) -> tuple[EvidenceFragmentV1, ...]:
+    priorities = {
+        kind: rank for rank, kind in enumerate(PHASE_EVIDENCE_KIND_PRIORITY[phase])
+    }
+    ordered = sorted(
+        enumerate(bundle.fragments),
+        key=lambda indexed: (
+            priorities.get(indexed[1].source_kind, len(priorities)),
+            indexed[0],
+        ),
+    )
+    return tuple(fragment for _, fragment in ordered[:limit])
 
 _SOURCE_TYPE_BY_KIND: dict[str, str] = {
     "requirement_transcription": "requirement_transcription",
@@ -119,6 +168,8 @@ class BuilderPhaseRequestV1(StrictModel):
     skill_version: str
     skill_checksum: Sha256
     source_set_digest: Sha256
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: Sha256 | None = None
     evidence_fragments: tuple[EvidenceFragmentV1, ...] = Field(max_length=256)
     unsupported_sources: tuple[UnsupportedEvidenceSourceV1, ...] = Field(max_length=256)
     draft_context: dict[str, Any]
@@ -249,14 +300,25 @@ def _phase_request(
         "skill_version": skill.manifest.version,
         "skill_checksum": skill.package_checksum,
         "source_set_digest": bundle.source_set_digest,
-        "evidence_fragments": bundle.fragments,
+        "authoring_language": (
+            package.authoring_policy.authoring_language
+            if package.authoring_policy is not None
+            else None
+        ),
+        "language_policy_digest": (
+            package.authoring_policy.policy_digest
+            if package.authoring_policy is not None
+            else None
+        ),
+        "evidence_fragments": _phase_evidence_fragments(bundle, phase),
         "unsupported_sources": bundle.unsupported_sources,
         "draft_context": package.model_dump(mode="json"),
         "prior_operations": prior_operations,
         "allowed_collections": allowed,
         "asset_contract_schemas": package_collection_schemas(allowed),
-        "max_proposals": 64,
+        "max_proposals": PHASE_PROPOSAL_LIMITS[phase],
     }
+    unsigned = {key: value for key, value in unsigned.items() if value is not None}
     return BuilderPhaseRequestV1(**unsigned, request_digest=sha256_value(unsigned))
 
 

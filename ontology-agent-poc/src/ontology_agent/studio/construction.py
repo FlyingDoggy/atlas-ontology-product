@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import uuid
@@ -19,7 +20,8 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from ..contracts import Sha256
 from ..io import canonical_bytes, sha256_value, write_json
-from ..models import OntologyPackage, StrictModel
+from ..language_policy import operation_language_violations
+from ..models import AuthoringLanguage, OntologyPackage, StrictModel
 from ..product_context import (
     Base,
     ExactStoredArtifactRef,
@@ -27,7 +29,13 @@ from ..product_context import (
     ProductInfrastructureSettings,
     S3ArtifactStore,
 )
-from .package_authoring import PackageDraftOperation, PackageDraftOperationsV1
+from .package_authoring import (
+    PackageCollection,
+    PackageDraftOperation,
+    PackageDraftOperationsV1,
+    ReviewFinalizationOperationsV1,
+    apply_package_operations,
+)
 from .builder import (
     BoundedBuilderOrchestrator,
     BuilderError,
@@ -148,6 +156,8 @@ class SemanticaConstructionRequestV1(StrictModel):
     run_id: str = Field(pattern=r"^construction-run\.[0-9a-f]{32}$")
     workspace_id: str = Field(min_length=1, max_length=255)
     source_set_digest: Sha256
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: Sha256 | None = None
     requirements: tuple[dict[str, Any], ...]
     metric_candidates: tuple[dict[str, Any], ...]
     canonical_context: dict[str, Any]
@@ -272,6 +282,8 @@ class ConstructionRunV1(StrictModel):
     base_revision: int = Field(ge=1)
     base_draft_checksum: Sha256
     source_set_digest: Sha256
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: Sha256 | None = None
     profile_ref: str = Field(min_length=1, max_length=255)
     status: Literal[
         "QUEUED",
@@ -318,10 +330,23 @@ class ConstructionReviewRequestV1(StrictModel):
     review_batch_checksum: Sha256 | None = None
 
 
+class ConstructionAppliedAssetV1(StrictModel):
+    candidate_id: str = Field(pattern=r"^candidate\.[0-9a-f]{32}$")
+    collection: PackageCollection
+    object_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+    change_type: Literal["CREATE", "UPDATE", "NO_CHANGE", "UNKNOWN"]
+    changed_paths: tuple[str, ...] = ()
+    previous_asset_digest: Sha256 | None = None
+    reviewed_content_digest: Sha256
+    final_confirmed_asset_digest: Sha256
+    confirmation_status: Literal["CONFIRMED", "EXACT_REGISTERED"] = "CONFIRMED"
+
+
 class ConstructionReviewDecisionV1(StrictModel):
-    contract: Literal["construction-review-decision/v1"] = (
-        "construction-review-decision/v1"
-    )
+    contract: Literal[
+        "construction-review-decision/v1",
+        "construction-review-decision/v2",
+    ] = "construction-review-decision/v2"
     decision_id: str = Field(pattern=r"^construction-decision\.[0-9a-f]{32}$")
     run_id: str = Field(pattern=r"^construction-run\.[0-9a-f]{32}$")
     run_checksum: Sha256
@@ -335,13 +360,165 @@ class ConstructionReviewDecisionV1(StrictModel):
     status: Literal["APPLIED", "APPLIED_WITH_DEFERRED", "REVIEWED_NO_CHANGE"]
     resulting_revision: int = Field(ge=1)
     resulting_draft_checksum: Sha256
+    applied: tuple[ConstructionAppliedAssetV1, ...] = ()
+    deferred_candidate_ids: tuple[str, ...] = ()
+    rejected_candidate_ids: tuple[str, ...] = ()
+    server_blockers: tuple[str, ...] = ()
     decided_at: datetime
     decision_checksum: Sha256
+
+
+_LEGACY_DECISION_V1_V2_FIELDS = {
+    "applied",
+    "deferred_candidate_ids",
+    "rejected_candidate_ids",
+    "server_blockers",
+}
+
+
+def _decision_canonical_payload(
+    decision: ConstructionReviewDecisionV1,
+    *,
+    exclude_checksum: bool = False,
+) -> dict[str, Any]:
+    """Preserve the exact canonical shape of immutable v1 decisions.
+
+    The v2 reader supplies empty defaults for fields that did not exist in v1.
+    Those defaults are useful to callers, but they must not change the checksum
+    or exact artifact identity of an already-published v1 decision.
+    """
+
+    excluded = set(_LEGACY_DECISION_V1_V2_FIELDS) if decision.contract.endswith("/v1") else set()
+    if exclude_checksum:
+        excluded.add("decision_checksum")
+    return decision.model_dump(
+        mode="json",
+        exclude=excluded,
+        exclude_none=True,
+    )
+
+
+def _construction_subject_bytes(
+    subject: ConstructionRunV1 | ConstructionReviewDecisionV1,
+) -> bytes:
+    if isinstance(subject, ConstructionReviewDecisionV1):
+        return canonical_bytes(_decision_canonical_payload(subject))
+    return canonical_bytes(subject)
+
+
+def _construction_subject_checksum(
+    subject: ConstructionRunV1 | ConstructionReviewDecisionV1,
+) -> str:
+    if isinstance(subject, ConstructionReviewDecisionV1):
+        return sha256_value(_decision_canonical_payload(subject))
+    return sha256_value(subject)
 
 
 class ConstructionReviewResultV1(StrictModel):
     decision: ConstructionReviewDecisionV1
     workspace: dict[str, Any]
+
+
+def _package_asset(
+    package: OntologyPackage,
+    collection: PackageCollection,
+    object_id: str,
+) -> StrictModel | None:
+    return next(
+        (item for item in getattr(package, collection) if item.id == object_id),
+        None,
+    )
+
+
+def _review_finalization_command(
+    *,
+    package: OntologyPackage,
+    expected_revision: int,
+    reviewer: str,
+    reviewed_at: datetime,
+    candidates_by_id: dict[str, ConstructionCandidateV1],
+    accepted: tuple[tuple[ConstructionDispositionV1, PackageDraftOperation], ...],
+) -> tuple[ReviewFinalizationOperationsV1, tuple[ConstructionAppliedAssetV1, ...]]:
+    """Compile human decisions into server-issued UPSERT+CONFIRM pairs."""
+
+    working = package
+    expanded: list[PackageDraftOperation] = []
+    applications: list[ConstructionAppliedAssetV1] = []
+    for disposition, operation in accepted:
+        assert operation.payload is not None
+        previous = _package_asset(working, operation.collection, operation.object_id)
+        payload = dict(operation.payload)
+        governed = operation.collection not in {"sources", "decisions"}
+        reviewed_operation = operation.model_copy(update={"payload": payload})
+        proposed = apply_package_operations(working, (reviewed_operation,))
+        reviewed_asset = _package_asset(
+            proposed, operation.collection, operation.object_id
+        )
+        if reviewed_asset is None:
+            raise ConstructionError("Reviewed operation did not materialize its target")
+        reviewed_digest = sha256_value(reviewed_asset.model_dump(mode="json"))
+        confirmation = (
+            PackageDraftOperation(
+                action="CONFIRM",
+                collection=operation.collection,
+                object_id=operation.object_id,
+                payload={
+                    "reviewer": reviewer,
+                    "reviewed_at": reviewed_at,
+                    "asset_checksum": reviewed_digest,
+                },
+            )
+            if governed
+            else None
+        )
+        confirmed = (
+            apply_package_operations(proposed, (confirmation,))
+            if confirmation is not None
+            else proposed
+        )
+        final_asset = _package_asset(
+            confirmed, operation.collection, operation.object_id
+        )
+        if final_asset is None:
+            raise ConstructionError("Confirmed operation lost its target")
+        candidate = candidates_by_id[disposition.candidate_id]
+        change_type = candidate.draft_diff.change_type
+        applications.append(
+            ConstructionAppliedAssetV1(
+                candidate_id=disposition.candidate_id,
+                collection=operation.collection,
+                object_id=operation.object_id,
+                change_type=(
+                    change_type
+                    if change_type in {"CREATE", "UPDATE", "NO_CHANGE", "UNKNOWN"}
+                    else "UNKNOWN"
+                ),
+                changed_paths=candidate.draft_diff.changed_paths,
+                previous_asset_digest=(
+                    sha256_value(previous.model_dump(mode="json"))
+                    if previous is not None
+                    else None
+                ),
+                reviewed_content_digest=reviewed_digest,
+                final_confirmed_asset_digest=sha256_value(
+                    final_asset.model_dump(mode="json")
+                ),
+                confirmation_status=(
+                    "CONFIRMED" if governed else "EXACT_REGISTERED"
+                ),
+            )
+        )
+        expanded.append(reviewed_operation)
+        if confirmation is not None:
+            expanded.append(confirmation)
+        working = confirmed
+    return (
+        ReviewFinalizationOperationsV1(
+            expected_revision=expected_revision,
+            operations=tuple(expanded),
+        ),
+        tuple(applications),
+    )
 
 
 class FileConstructionRunStore:
@@ -436,9 +613,7 @@ class FileConstructionRunStore:
             )
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             raise ConstructionError("Construction review decision is invalid") from exc
-        unsigned = decision.model_dump(
-            mode="json", exclude={"decision_checksum"}, exclude_none=True
-        )
+        unsigned = _decision_canonical_payload(decision, exclude_checksum=True)
         if sha256_value(unsigned) != decision.decision_checksum:
             raise ConstructionError("Construction review decision checksum mismatch")
         return decision
@@ -522,7 +697,7 @@ class PostgresConstructionRunStore:
         *,
         namespace: str,
     ) -> ExactStoredArtifactRef:
-        body = canonical_bytes(subject)
+        body = _construction_subject_bytes(subject)
         try:
             artifact = self.artifacts.publish_blob(
                 body,
@@ -540,14 +715,34 @@ class PostgresConstructionRunStore:
         self,
         subject: ConstructionRunV1 | ConstructionReviewDecisionV1,
         artifact_value: dict[str, object],
+        subject_checksum: str,
     ) -> None:
         try:
             artifact = ExactStoredArtifactRef.model_validate(artifact_value)
             body = self.artifacts.get_exact(artifact)
         except (ValueError, ProductInfrastructureError) as exc:
             raise ConstructionError("Construction exact artifact is unavailable") from exc
-        if body != canonical_bytes(subject):
+        if (
+            artifact.sha256 != subject_checksum
+            or hashlib.sha256(body).hexdigest() != subject_checksum
+        ):
+            raise ConstructionError("Construction exact artifact identity mismatch")
+        try:
+            payload = json.loads(body)
+            restored = type(subject).model_validate(payload)
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ConstructionError("Construction exact artifact is invalid") from exc
+        if restored != subject:
             raise ConstructionError("Construction exact artifact content mismatch")
+        checksum_field = (
+            "run_checksum"
+            if isinstance(subject, ConstructionRunV1)
+            else "decision_checksum"
+        )
+        unsigned = dict(payload)
+        checksum = unsigned.pop(checksum_field, None)
+        if checksum is None or sha256_value(unsigned) != checksum:
+            raise ConstructionError("Construction exact artifact checksum mismatch")
 
     @staticmethod
     def _run_from_row(row: StudioConstructionRunRow) -> ConstructionRunV1:
@@ -555,7 +750,11 @@ class PostgresConstructionRunStore:
             run = ConstructionRunV1.model_validate(row.subject)
         except ValueError as exc:
             raise ConstructionError("Construction run database subject is invalid") from exc
-        if row.run_checksum != run.run_checksum or row.subject_checksum != sha256_value(run):
+        if (
+            row.run_id != run.run_id
+            or row.workspace_id != run.workspace_id
+            or row.run_checksum != run.run_checksum
+        ):
             raise ConstructionError("Construction run database identity mismatch")
         return run
 
@@ -568,8 +767,10 @@ class PostgresConstructionRunStore:
         except ValueError as exc:
             raise ConstructionError("Construction decision database subject is invalid") from exc
         if (
-            row.decision_checksum != decision.decision_checksum
-            or row.subject_checksum != sha256_value(decision)
+            row.run_id != decision.run_id
+            or row.decision_id != decision.decision_id
+            or row.workspace_id != decision.workspace_id
+            or row.decision_checksum != decision.decision_checksum
             or row.request_digest != decision.request_digest
         ):
             raise ConstructionError("Construction decision database identity mismatch")
@@ -582,7 +783,13 @@ class PostgresConstructionRunStore:
             with Session(self.engine) as session, session.begin():
                 existing = session.get(StudioConstructionRunRow, run.run_id)
                 if existing is not None:
-                    if self._run_from_row(existing) != run:
+                    existing_run = self._run_from_row(existing)
+                    self._verify_artifact(
+                        existing_run,
+                        existing.artifact,
+                        existing.subject_checksum,
+                    )
+                    if existing_run != run:
                         raise ConstructionConflict("Construction run id collision")
                     return
                 session.add(
@@ -614,7 +821,7 @@ class PostgresConstructionRunStore:
         if row is None:
             raise ConstructionError("Construction run is unavailable")
         run = self._run_from_row(row)
-        self._verify_artifact(run, row.artifact)
+        self._verify_artifact(run, row.artifact, row.subject_checksum)
         return run
 
     def list_runs(self, workspace_id: str) -> tuple[ConstructionRunV1, ...]:
@@ -632,7 +839,7 @@ class PostgresConstructionRunStore:
         values: list[ConstructionRunV1] = []
         for row in rows:
             run = self._run_from_row(row)
-            self._verify_artifact(run, row.artifact)
+            self._verify_artifact(run, row.artifact, row.subject_checksum)
             values.append(run)
         return tuple(values)
 
@@ -647,7 +854,13 @@ class PostgresConstructionRunStore:
             raise ConstructionConflict("Construction decision has no exact run authority")
         existing = session.get(StudioConstructionDecisionRow, decision.run_id)
         if existing is not None:
-            if self._decision_from_row(existing) != decision:
+            existing_decision = self._decision_from_row(existing)
+            self._verify_artifact(
+                existing_decision,
+                existing.artifact,
+                existing.subject_checksum,
+            )
+            if existing_decision != decision:
                 raise ConstructionConflict("Construction run already has a decision")
             return
         session.add(
@@ -657,7 +870,7 @@ class PostgresConstructionRunStore:
                 workspace_id=decision.workspace_id,
                 request_digest=decision.request_digest,
                 decision_checksum=decision.decision_checksum,
-                subject_checksum=sha256_value(decision),
+                subject_checksum=_construction_subject_checksum(decision),
                 subject=decision.model_dump(mode="json"),
                 artifact=artifact.model_dump(mode="json"),
                 decided_at=decision.decided_at,
@@ -738,7 +951,7 @@ class PostgresConstructionRunStore:
         if row is None:
             return None
         decision = self._decision_from_row(row)
-        self._verify_artifact(decision, row.artifact)
+        self._verify_artifact(decision, row.artifact, row.subject_checksum)
         return decision
 
 
@@ -1442,6 +1655,16 @@ class StudioConstructionService:
             run_id=run_id,
             workspace_id=self._workspace().workspace_id,
             source_set_digest=source_set_digest,
+            authoring_language=(
+                self.package.authoring_policy.authoring_language
+                if self.package.authoring_policy is not None
+                else None
+            ),
+            language_policy_digest=(
+                self.package.authoring_policy.policy_digest
+                if self.package.authoring_policy is not None
+                else None
+            ),
             requirements=tuple(
                 item.model_dump(mode="json") for item in self.authoring.requirements
             ),
@@ -1501,6 +1724,16 @@ class StudioConstructionService:
             base_draft_checksum=workspace.draft_checksum,
             source_set_digest=source_set_digest,
             selected_source_version_ids=self.selected_source_version_ids,
+            authoring_language=(
+                self.package.authoring_policy.authoring_language
+                if self.package.authoring_policy is not None
+                else None
+            ),
+            language_policy_digest=(
+                self.package.authoring_policy.policy_digest
+                if self.package.authoring_policy is not None
+                else None
+            ),
             profile_ref=self.PROFILE_REF,
         )
 
@@ -1866,6 +2099,16 @@ class StudioConstructionService:
                 "base_revision": workspace.revision,
                 "base_draft_checksum": workspace.draft_checksum,
                 "source_set_digest": source_set_digest,
+                "authoring_language": (
+                    self.package.authoring_policy.authoring_language
+                    if self.package.authoring_policy is not None
+                    else None
+                ),
+                "language_policy_digest": (
+                    self.package.authoring_policy.policy_digest
+                    if self.package.authoring_policy is not None
+                    else None
+                ),
                 "profile_ref": self.PROFILE_REF,
                 "status": "NEEDS_REVIEW",
                 "engine_status": (
@@ -1921,6 +2164,17 @@ class StudioConstructionService:
         request: ConstructionReviewRequestV1,
     ) -> ConstructionReviewResultV1:
         run = self.get(run_id)
+        request_digest = sha256_value(request)
+        existing = self.store.get_decision(run_id)
+        if existing is not None:
+            if existing.request_digest != request_digest:
+                raise ConstructionConflict(
+                    "Construction run already has a different final decision"
+                )
+            return ConstructionReviewResultV1(
+                decision=existing,
+                workspace=self.workspace.get(run.workspace_id).model_dump(mode="json"),
+            )
         review_batch = None
         if self.review_drafts is not None:
             review_batch = self.review_drafts.get(run_id)
@@ -1934,7 +2188,6 @@ class StudioConstructionService:
                 raise ConstructionConflict("Review batch checksum mismatch")
             if review_batch.dispositions != request.dispositions:
                 raise ConstructionConflict("Final dispositions differ from review batch")
-        request_digest = sha256_value(request)
         with self.store.lock(run.workspace_id):
             existing = self.store.get_decision(run_id)
             if existing is not None:
@@ -1962,18 +2215,69 @@ class StudioConstructionService:
             if set(disposition_ids) != set(by_id):
                 raise ValueError("Every candidate requires one final disposition")
             operations: list[PackageDraftOperation] = []
+            accepted_operations: list[
+                tuple[ConstructionDispositionV1, PackageDraftOperation]
+            ] = []
             deferred = False
+            rejected_candidate_ids: list[str] = []
+            deferred_candidate_ids: list[str] = []
+            server_blockers: list[str] = []
             for disposition in request.dispositions:
                 candidate = by_id[disposition.candidate_id]
+                candidate_blockers = tuple(
+                    finding.finding_id
+                    for finding in run.machine_findings
+                    if finding.blocks_release
+                    and disposition.candidate_id in finding.candidate_ids
+                )
+                if disposition.action in {"ACCEPT", "EDIT"} and candidate_blockers:
+                    raise ValueError(
+                        "Blocked candidate cannot be applied: "
+                        + ", ".join(candidate_blockers)
+                    )
                 if disposition.action == "ACCEPT":
                     if not candidate.compile_eligible or candidate.proposed_operation is None:
                         raise ValueError("Candidate is not compile eligible")
+                    if self.package.authoring_policy is not None:
+                        violations = operation_language_violations(
+                            candidate.proposed_operation.payload,
+                            self.package.authoring_policy,
+                        )
+                        if violations:
+                            raise ValueError(
+                                "Candidate violates the Solution language policy: "
+                                + "; ".join(violations[:8])
+                            )
                     operations.append(candidate.proposed_operation)
+                    accepted_operations.append(
+                        (disposition, candidate.proposed_operation)
+                    )
                 elif disposition.action == "EDIT":
                     assert disposition.edited_operation is not None
+                    if self.package.authoring_policy is not None:
+                        violations = operation_language_violations(
+                            disposition.edited_operation.payload,
+                            self.package.authoring_policy,
+                        )
+                        if violations:
+                            raise ValueError(
+                                "Edited candidate violates the Solution language policy: "
+                                + "; ".join(violations[:8])
+                            )
                     operations.append(disposition.edited_operation)
+                    accepted_operations.append(
+                        (disposition, disposition.edited_operation)
+                    )
                 elif disposition.action == "DEFER":
                     deferred = True
+                    deferred_candidate_ids.append(disposition.candidate_id)
+                    if candidate.risk_class == "HIGH":
+                        server_blockers.append(
+                            f"DEFERRED_HIGH_RISK:{disposition.candidate_id}"
+                        )
+                    server_blockers.extend(candidate_blockers)
+                elif disposition.action == "REJECT":
+                    rejected_candidate_ids.append(disposition.candidate_id)
             if len({(item.collection, item.object_id) for item in operations}) != len(
                 operations
             ):
@@ -1984,11 +2288,23 @@ class StudioConstructionService:
             else:
                 status = "REVIEWED_NO_CHANGE"
             decided_at = datetime.now(timezone.utc)
+            decision_id = "construction-decision." + uuid.uuid4().hex
+            application_items: tuple[ConstructionAppliedAssetV1, ...] = ()
+            finalization_command: ReviewFinalizationOperationsV1 | None = None
+            if operations:
+                finalization_command, application_items = _review_finalization_command(
+                    package=self.workspace.candidate_package(run.workspace_id),
+                    expected_revision=current.revision,
+                    reviewer=request.reviewer,
+                    reviewed_at=decided_at,
+                    candidates_by_id=by_id,
+                    accepted=tuple(accepted_operations),
+                )
 
             def decision_for(resulting_workspace: Any) -> ConstructionReviewDecisionV1:
                 unsigned = {
-                    "contract": "construction-review-decision/v1",
-                    "decision_id": "construction-decision." + uuid.uuid4().hex,
+                    "contract": "construction-review-decision/v2",
+                    "decision_id": decision_id,
                     "run_id": run.run_id,
                     "run_checksum": run.run_checksum,
                     "workspace_id": run.workspace_id,
@@ -2001,6 +2317,10 @@ class StudioConstructionService:
                     "status": status,
                     "resulting_revision": resulting_workspace.revision,
                     "resulting_draft_checksum": resulting_workspace.draft_checksum,
+                    "applied": application_items,
+                    "deferred_candidate_ids": tuple(deferred_candidate_ids),
+                    "rejected_candidate_ids": tuple(rejected_candidate_ids),
+                    "server_blockers": tuple(sorted(set(server_blockers))),
                     "decided_at": decided_at,
                 }
                 provisional = ConstructionReviewDecisionV1(
@@ -2017,6 +2337,7 @@ class StudioConstructionService:
             resulting = current
             decision: ConstructionReviewDecisionV1
             if operations and isinstance(self.store, PostgresConstructionRunStore):
+                assert finalization_command is not None
                 decision_holder: list[ConstructionReviewDecisionV1] = []
 
                 def hook_factory(resulting_workspace: Any) -> Callable[[Session], None]:
@@ -2037,10 +2358,7 @@ class StudioConstructionService:
                     )
 
                 resulting = self.workspace.apply_package_operations(
-                    PackageDraftOperationsV1(
-                        expected_revision=current.revision,
-                        operations=tuple(operations),
-                    ),
+                    finalization_command,
                     workspace_id=run.workspace_id,
                     transaction_hook_factory=hook_factory,
                 )
@@ -2048,11 +2366,9 @@ class StudioConstructionService:
                     raise ConstructionError("Review decision transaction was not formed")
                 decision = decision_holder[0]
             elif operations:
+                assert finalization_command is not None
                 resulting = self.workspace.apply_package_operations(
-                    PackageDraftOperationsV1(
-                        expected_revision=current.revision,
-                        operations=tuple(operations),
-                    ),
+                    finalization_command,
                     workspace_id=run.workspace_id,
                 )
                 decision = decision_for(resulting)

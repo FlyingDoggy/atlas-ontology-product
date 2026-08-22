@@ -254,6 +254,11 @@ class SolutionDirectoryService:
             updated_at=now,
         )
 
+    def list(self) -> tuple[SolutionDirectoryEntryV1, ...]:
+        """List product directory entries without loading immutable packages."""
+
+        return self.store.list()
+
     def create(
         self,
         *,

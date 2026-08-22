@@ -65,6 +65,13 @@ class ConstructionWorker:
             # must not reinterpret the current terminal outcome.
             return self.jobs.get(job.job_id)
 
+    @staticmethod
+    def _language_matches(job: ConstructionJobV1, run: ConstructionRunV1) -> bool:
+        return (
+            run.authoring_language == job.authoring_language
+            and run.language_policy_digest == job.language_policy_digest
+        )
+
     def process_one(self) -> ConstructionJobV1 | None:
         job = self.jobs.claim_next(
             self.worker_id, lease_seconds=self.lease_seconds
@@ -81,6 +88,8 @@ class ConstructionWorker:
             existing = service.get(job.run_id)
         except ConstructionError:
             existing = None
+        if existing is not None and not self._language_matches(job, existing):
+            return self._finish_failure(job, error_code="LANGUAGE_POLICY_MISMATCH")
         if existing is not None:
             try:
                 self.jobs.begin_commit(job.job_id, self.worker_id, job.lease_epoch)
@@ -94,6 +103,14 @@ class ConstructionWorker:
                 return self.jobs.get(job.job_id)
 
         try:
+            self.jobs.report_progress(
+                job.job_id,
+                self.worker_id,
+                job.lease_epoch,
+                current_stage="BUILDING_CANDIDATES",
+                completed_stages=2,
+                progress_message="BUILDER_RUNNING",
+            )
             run = service.start(
                 expected_revision=job.base_revision,
                 planned_run_id=job.run_id,
@@ -103,6 +120,10 @@ class ConstructionWorker:
                     job.job_id, self.worker_id, job.lease_epoch
                 ),
             )
+            if not self._language_matches(job, run):
+                return self._finish_failure(
+                    job, error_code="LANGUAGE_POLICY_MISMATCH"
+                )
             return self.jobs.complete_success(
                 job.job_id,
                 self.worker_id,

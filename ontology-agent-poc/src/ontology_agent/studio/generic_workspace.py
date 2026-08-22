@@ -3,6 +3,7 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import re
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,12 +13,14 @@ from pydantic import Field
 
 from ..contracts import ReleaseRef
 from ..io import load_package, package_checksum, sha256_value, write_json
-from ..models import OntologyPackage, StrictModel
+from ..language_policy import create_authoring_policy
+from ..models import Actor, AuthoringLanguage, OntologyPackage, StrictModel
 from ..release import PublishedReleaseHandle, StudioReleases
 from ..validation import validate_semantic_package
 from .package_authoring import (
     PackageDraftOperation,
     PackageDraftOperationsV1,
+    ReviewFinalizationOperationsV1,
     apply_package_operations,
 )
 from .workspace import (
@@ -35,6 +38,7 @@ from .workspace_store import (
 
 
 GENERIC_WORKSPACE_SCHEMA = "generic-draft-workspace/v1"
+_ONTOLOGY_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 class GenericIntakeSnapshot(StrictModel):
@@ -58,6 +62,10 @@ class GenericDraftWorkspace(StrictModel):
     updated_at: datetime
     revision_created_at: datetime
     solution_intent: str = Field(min_length=1, max_length=4000)
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     modified_fields: tuple[str, ...] = ()
     package_operations: tuple[PackageDraftOperation, ...] = ()
     draft_checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -74,6 +82,10 @@ class GenericDraftRevision(StrictModel):
     target_version: str
     recorded_at: datetime
     solution_intent: str
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     modified_fields: tuple[str, ...]
     package_operations: tuple[PackageDraftOperation, ...]
     draft_checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -88,19 +100,25 @@ def _revision_record(workspace: GenericDraftWorkspace) -> GenericDraftRevision:
         "target_version": workspace.target_version,
         "recorded_at": workspace.revision_created_at,
         "solution_intent": workspace.solution_intent,
+        "authoring_language": workspace.authoring_language,
+        "language_policy_digest": workspace.language_policy_digest,
         "modified_fields": workspace.modified_fields,
         "package_operations": workspace.package_operations,
         "draft_checksum": workspace.draft_checksum,
     }
     return GenericDraftRevision(
         **unsigned,
-        record_checksum=sha256_value(unsigned),
+        record_checksum=sha256_value(
+            {key: value for key, value in unsigned.items() if value is not None}
+        ),
     )
 
 
 def _validated_revision(payload: dict[str, Any]) -> GenericDraftRevision:
     record = GenericDraftRevision.model_validate(payload)
-    unsigned = record.model_dump(mode="python", exclude={"record_checksum"})
+    unsigned = record.model_dump(
+        mode="python", exclude={"record_checksum"}, exclude_none=True
+    )
     if sha256_value(unsigned) != record.record_checksum:
         raise WorkspaceStateError("Generic draft revision checksum mismatch")
     return record
@@ -241,11 +259,51 @@ class GenericDraftWorkspaceService:
 
     def _candidate(self, workspace: GenericDraftWorkspace) -> OntologyPackage:
         base = self._base()
+        actor_ids = {item.id for item in base.actors}
+        scenario_owner = base.scenario.owner
+        if scenario_owner not in actor_ids:
+            owner_id = (
+                scenario_owner
+                if _ONTOLOGY_ID.fullmatch(scenario_owner)
+                else "actor.solution_owner"
+            )
+            language = workspace.authoring_language or "en"
+            owner = Actor.model_validate(
+                {
+                    "id": owner_id,
+                    "version": base.version,
+                    "status": "confirmed",
+                    "name": {language: scenario_owner},
+                    "definition": (
+                        "Accountable owner of this Ontology Solution."
+                        if language == "en"
+                        else "本体解决方案的责任负责人。"
+                    ),
+                    "owner": owner_id,
+                    "sources": ["source.solution_brief"],
+                    "decisions": [],
+                    "tags": ["governance:solution-owner"],
+                    "roles": ["ontology_solution_owner"],
+                }
+            )
+            base = base.model_copy(update={"actors": (*base.actors, owner)})
+            scenario_owner = owner_id
         scenario = base.scenario.model_copy(
-            update={"definition": workspace.solution_intent}
+            update={
+                "definition": workspace.solution_intent,
+                "owner": scenario_owner,
+            }
         )
         candidate = base.model_copy(
-            update={"version": workspace.target_version, "scenario": scenario}
+            update={
+                "version": workspace.target_version,
+                "scenario": scenario,
+                "authoring_policy": (
+                    create_authoring_policy(workspace.authoring_language)
+                    if workspace.authoring_language is not None
+                    else base.authoring_policy
+                ),
+            }
         )
         return apply_package_operations(candidate, workspace.package_operations)
 
@@ -338,9 +396,54 @@ class GenericDraftWorkspaceService:
             self._write(updated)
             return updated
 
+    def configure_authoring_language(
+        self,
+        language: AuthoringLanguage,
+        *,
+        expected_revision: int,
+        workspace_id: str | None = None,
+    ) -> GenericDraftWorkspace:
+        """Set the Solution language once, before confirmed package assets exist."""
+
+        resolved = self._workspace_id(workspace_id)
+        with self._lock(resolved):
+            current = self._ensure(resolved)
+            if current.revision != expected_revision:
+                raise WorkspaceConflictError("Draft revision conflict")
+            if current.authoring_language is not None:
+                if current.authoring_language != language:
+                    raise WorkspaceConflictError(
+                        "Ontology authoring language is locked for this Solution"
+                    )
+                return current
+            if current.package_operations:
+                raise WorkspaceConflictError(
+                    "Ontology authoring language must be set before semantic assets"
+                )
+            policy = create_authoring_policy(language)
+            now = datetime.now(timezone.utc)
+            provisional = current.model_copy(
+                update={
+                    "revision": current.revision + 1,
+                    "updated_at": now,
+                    "revision_created_at": now,
+                    "authoring_language": language,
+                    "language_policy_digest": policy.policy_digest,
+                    "modified_fields": tuple(
+                        sorted({*current.modified_fields, "authoring_language"})
+                    ),
+                    "validation": DraftValidation(status="STALE"),
+                }
+            )
+            updated = provisional.model_copy(
+                update={"draft_checksum": package_checksum(self._candidate(provisional))}
+            )
+            self._write(updated)
+            return updated
+
     def apply_package_operations(
         self,
-        request: PackageDraftOperationsV1,
+        request: PackageDraftOperationsV1 | ReviewFinalizationOperationsV1,
         *,
         workspace_id: str | None = None,
         transaction_hook_factory: (

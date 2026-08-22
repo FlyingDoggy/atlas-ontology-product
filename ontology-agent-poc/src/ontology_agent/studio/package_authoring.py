@@ -175,6 +175,45 @@ class PackageDraftOperationsV1(StrictModel):
         return self
 
 
+class ReviewFinalizationOperationsV1(StrictModel):
+    """Internal UPSERT+CONFIRM command formed only by the review authority.
+
+    The public authoring API intentionally cannot construct this contract.
+    """
+
+    contract: Literal["studio-review-finalization-operations/v1"] = (
+        "studio-review-finalization-operations/v1"
+    )
+    expected_revision: int = Field(ge=1)
+    operations: tuple[PackageDraftOperation, ...] = Field(min_length=1, max_length=512)
+
+    @model_validator(mode="after")
+    def exact_review_pairs(self) -> ReviewFinalizationOperationsV1:
+        targets: set[tuple[str, str]] = set()
+        index = 0
+        while index < len(self.operations):
+            upsert = self.operations[index]
+            target = (upsert.collection, upsert.object_id)
+            if upsert.action != "UPSERT":
+                raise ValueError("Review finalization starts each target with UPSERT")
+            if upsert.collection in {"sources", "decisions"}:
+                index += 1
+            else:
+                if index + 1 >= len(self.operations):
+                    raise ValueError("Governed review finalization requires confirmation")
+                confirm = self.operations[index + 1]
+                if (
+                    confirm.action != "CONFIRM"
+                    or target != (confirm.collection, confirm.object_id)
+                ):
+                    raise ValueError("Review finalization must pair UPSERT then CONFIRM")
+                index += 2
+            if target in targets:
+                raise ValueError("Review finalization cannot mutate one target twice")
+            targets.add(target)
+        return self
+
+
 def apply_package_operations(
     package: OntologyPackage,
     operations: tuple[PackageDraftOperation, ...],

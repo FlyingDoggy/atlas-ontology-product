@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .io import package_checksum
+from .language_policy import package_language_violations
 from .models import (
     FormulaNode,
     OntologyPackage,
@@ -85,6 +86,22 @@ def _static_checks(package: OntologyPackage) -> list[ValidationCheck]:
             package.status is Status.CONFIRMED,
             "Draft package is confirmed before publication",
             status=package.status.value,
+        )
+    )
+
+    language_violations = package_language_violations(package)
+    checks.append(
+        _check(
+            "AUTHORING_LANGUAGE_POLICY",
+            "semantic",
+            not language_violations,
+            "Human-readable ontology content follows the Solution authoring language",
+            authoring_language=(
+                package.authoring_policy.authoring_language
+                if package.authoring_policy is not None
+                else None
+            ),
+            violations=language_violations,
         )
     )
 

@@ -203,6 +203,64 @@ describe("mature Studio product views", () => {
     }))); 
   });
 
+  it("registers a multi-file intake after one purpose confirmation step", async () => {
+    const onUploadBatch = vi.fn().mockResolvedValue({
+      contract: "source-intake-batch-receipt/v1",
+      batch_id: `source-batch.${"1".repeat(32)}`,
+      workspace_id: "workspace.adt.reference",
+      idempotency_key: "browser-test-batch",
+      request_digest: "2".repeat(64),
+      physical_files: [
+        {
+          client_file_id: "placeholder",
+          original_name: "requirements.md",
+          content_checksum: "3".repeat(64),
+          size_bytes: 12,
+          declared_media_type: "text/markdown",
+          detected_media_type: "text/markdown",
+          parser_id: "utf8-lines",
+          parser_version: "1",
+          capability: "TEXT_EXTRACTED",
+          reason_code: "TEXT_CONTENT_AVAILABLE",
+          selected_ranges: ["lines:1-1"],
+          truncated: false,
+        },
+      ],
+      registrations: [],
+      failures: [],
+      completed_at: "2026-08-22T00:00:00Z",
+      subject_checksum: "4".repeat(64),
+    });
+    render(<SourceLibraryView
+      ontologyPackage={ontologyPackage}
+      intake={{ assets: [] }}
+      library={{ contract: "studio-source-library/v1", workspace_id: "workspace.adt.reference", current: [], versions: [] }}
+      onUploadBatch={async (items, key) => {
+        const receipt = await onUploadBatch(items, key);
+        receipt.physical_files[0].client_file_id = items[0].clientFileId;
+        receipt.registrations = [{
+          client_file_id: items[0].clientFileId,
+          source_version_id: `source-version.${"5".repeat(32)}`,
+          source_id: "asset.requirements",
+          kind: "requirement_transcription",
+          capability: "TEXT_EXTRACTED",
+        }];
+        return receipt;
+      }}
+    />);
+
+    fireEvent.click(screen.getByRole("button", { name: "登记来源材料" }));
+    const picker = screen.getByLabelText(/选择或拖入文件/);
+    fireEvent.change(picker, { target: { files: [new File(["# 需求"], "requirements.md", { type: "text/markdown" })] } });
+    fireEvent.click(screen.getByRole("button", { name: "下一步：确认用途" }));
+    expect(screen.getByText("确认每份文件的用途")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "登记全部材料" }));
+
+    await waitFor(() => expect(onUploadBatch).toHaveBeenCalledOnce());
+    expect(await screen.findByText("材料登记完成")).toBeTruthy();
+    expect(screen.getByText("文本已提取")).toBeTruthy();
+  });
+
   it("does not silently discard a partially transcribed source", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<SourceLibraryView

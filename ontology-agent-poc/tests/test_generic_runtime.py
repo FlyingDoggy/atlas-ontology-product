@@ -11,7 +11,11 @@ from ontology_agent import api as api_module
 from ontology_agent.api import app
 from ontology_agent.contracts import DataResourceBinding, RuntimePreparationError
 from ontology_agent.generic_scenario import generic_semantic_binding
-from ontology_agent.io import load_package, sha256_value
+from ontology_agent.io import (
+    DEFAULT_CASH_TRADING_SCENARIO_DIR,
+    load_package,
+    sha256_value,
+)
 from ontology_agent.lifecycle import AgentRuntime, FileResourceResolver
 from ontology_agent.models import OntologyPackage
 from ontology_agent.release import StudioReleases
@@ -35,8 +39,20 @@ from ontology_agent.studio.reviewer import (
     ReviewerResponseV1,
 )
 from ontology_agent.studio.skill_packages import load_skill_package
-from ontology_agent.studio.source_projection import StudioAuthoringProjectionV1
+from ontology_agent.studio.source_library import (
+    FileSourceLibraryStore,
+    SourceIntakeBatchManifestV1,
+    StudioSourceLibraryService,
+)
+from ontology_agent.studio.source_projection import (
+    StudioAuthoringProjectionV1,
+    build_authoring_projection,
+)
 from ontology_agent.studio.solutions import SolutionDisplayName, _write_blank_solution_files
+
+
+PROJECT_ROOT = Path(__file__).parents[1]
+HKEX_ROOT = PROJECT_ROOT.parent
 
 
 def _service_request_package(root: Path) -> OntologyPackage:
@@ -439,6 +455,95 @@ class _ServiceRequestReviewerModel:
         )
 
 
+class _CashPackageBuilderModel:
+    """Deterministic Cash fixture behind the same bounded Builder port as Qwen."""
+
+    def __init__(self, target: OntologyPackage) -> None:
+        self.target = target
+
+    def generate(self, request):
+        fragment_id = request.evidence_fragments[0].fragment_id
+        proposals = []
+        for collection in request.allowed_collections:
+            for item in getattr(self.target, collection):
+                payload = item.model_dump(mode="json")
+                payload["status"] = "proposed"
+                # Source authority is replaced by the orchestrator from the cited
+                # exact fragment. A model cannot import decisions from a reference
+                # package into a new Solution.
+                payload["decisions"] = []
+                proposals.append(
+                    {
+                        "contract": "builder-proposal/v1",
+                        "proposal_id": f"proposal.cash.{collection}.{item.id}",
+                        "operation": {
+                            "action": "UPSERT",
+                            "collection": collection,
+                            "object_id": item.id,
+                            "payload": payload,
+                        },
+                        "evidence_fragment_ids": [fragment_id],
+                        "rationale": (
+                            "The selected Cash Trading source versions support this "
+                            "review candidate; a human remains the publication authority."
+                        ),
+                        "assumptions": [],
+                        "confidence": 0.9,
+                    }
+                )
+        output = BuilderPhaseOutputV1.model_validate(
+            {
+                "contract": "builder-phase-output/v1",
+                "phase": request.phase,
+                "request_digest": request.request_digest,
+                "proposals": proposals,
+                "gaps": [],
+                "done": True,
+            }
+        )
+        return BuilderPhaseResponseV1(
+            requested_model="contract-test-model",
+            response_model="contract-test-model",
+            provider_request_id=f"cash-e2e-{request.phase.lower()}",
+            output=output,
+            output_digest=sha256_value(output),
+        )
+
+
+def _cash_build_target() -> OntologyPackage:
+    """Keep the reviewed Cash semantics while respecting one bounded phase call."""
+
+    target = load_package(
+        DEFAULT_CASH_TRADING_SCENARIO_DIR / "ontology" / "package.yaml"
+    )
+    omitted_relationship_ids = {
+        "relationship.trade_participant",
+        "relationship.order_participant",
+    }
+    omitted_property_ids = {
+        "property.order.order_id",
+        "property.order.trading_date",
+        "property.order.order_status",
+        "property.order.transaction_timestamp",
+        "property.instrument.primary_symbol",
+        "property.calendar.is_trading_day",
+    }
+    return target.model_copy(
+        update={
+            "properties": tuple(
+                item
+                for item in target.properties
+                if item.id not in omitted_property_ids
+            ),
+            "relationships": tuple(
+                item
+                for item in target.relationships
+                if item.id not in omitted_relationship_ids
+            ),
+        }
+    )
+
+
 def test_third_case_runs_from_blank_solution_through_build_review_release_and_ask(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -521,8 +626,8 @@ def test_third_case_runs_from_blank_solution_through_build_review_release_and_as
     )
     assert reviewed.decision.status == "APPLIED"
 
-    proposed = workspace.candidate_package(workspace_id)
-    confirmation_operations = []
+    confirmed_package = workspace.candidate_package(workspace_id)
+    confirmed_assets = []
     for collection in (
         "actors",
         "processes",
@@ -540,28 +645,11 @@ def test_third_case_runs_from_blank_solution_through_build_review_release_and_as
         "policies",
         "questions",
     ):
-        for item in getattr(proposed, collection):
-            confirmation_operations.append(
-                {
-                    "action": "CONFIRM",
-                    "collection": collection,
-                    "object_id": item.id,
-                    "payload": {
-                        "reviewer": "service-owner.demo",
-                        "reviewed_at": datetime.now(timezone.utc),
-                        "asset_checksum": sha256_value(item.model_dump(mode="json")),
-                    },
-                }
-            )
-    confirmed = workspace.apply_package_operations(
-        PackageDraftOperationsV1.model_validate(
-            {
-                "expected_revision": reviewed.workspace["revision"],
-                "operations": confirmation_operations,
-            }
-        ),
-        workspace_id=workspace_id,
-    )
+        confirmed_assets.extend(getattr(confirmed_package, collection))
+    assert confirmed_assets
+    assert all(item.status.value == "confirmed" for item in confirmed_assets)
+    assert len(reviewed.decision.applied) == len(confirmed_assets) + 1
+    confirmed = workspace.get(workspace_id)
     validated = workspace.validate(
         expected_revision=confirmed.revision,
         workspace_id=workspace_id,
@@ -650,3 +738,265 @@ def test_third_case_runs_from_blank_solution_through_build_review_release_and_as
     assert api_answer.json()["llm"]["status"] == "DETERMINISTIC_ONLY"
     assert api_runtime.status_code == 200
     assert api_runtime.json()["default_role"] == "ServiceAnalyst"
+
+
+def test_cash_materials_build_a_blank_solution_through_human_review_and_release(
+    tmp_path: Path,
+) -> None:
+    """Cash acceptance: five physical files become one reviewed immutable release."""
+
+    scenario_root = tmp_path / "cash-build"
+    workspace_id = "workspace.cash_trading.e2e"
+    _write_blank_solution_files(
+        scenario_root,
+        solution_id="ontology.exchange_analytics.cash_trading.e2e",
+        scenario_id="scenario.exchange_analytics.cash_trading.e2e",
+        workspace_id=workspace_id,
+        display_name=SolutionDisplayName(
+            en="Cash Market Order and Trading Activity Monitoring",
+            zh="现金市场订单与成交活动监控",
+        ),
+        description=(
+            "Build a governed Cash Trading ontology from registered business material."
+        ),
+        owner="actor.cash_trading_solution_owner",
+    )
+    releases = StudioReleases(tmp_path / "published" / "releases")
+    workspace = GenericDraftWorkspaceService(
+        tmp_path / "studio" / "workspaces",
+        scenario_root,
+        releases,
+    )
+    initial = workspace.get(workspace_id)
+    configured = workspace.configure_authoring_language(
+        "en",
+        expected_revision=initial.revision,
+        workspace_id=workspace_id,
+    )
+
+    material_root = HKEX_ROOT / "HKEX DTT Input"
+    physical_files = (
+        material_root
+        / "HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+        material_root / "order_trade_activities_data_dictionary.xlsx",
+        material_root / "cash_trading_sample_data.xlsx",
+        material_root / "email screenshot.jpeg",
+        DEFAULT_CASH_TRADING_SCENARIO_DIR / "sql" / "reference_controls.sql",
+    )
+    library = StudioSourceLibraryService(
+        FileSourceLibraryStore(tmp_path / "studio" / "sources")
+    )
+    manifest = SourceIntakeBatchManifestV1.model_validate(
+        {
+            "idempotency_key": "cash-trading-e2e-materials-v1",
+            "items": [
+                {
+                    "client_file_id": "requirements-and-metrics",
+                    "original_name": physical_files[0].name,
+                    "declared_media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "registrations": [
+                        {
+                            "kind": "requirement_transcription",
+                            "title": "Cash Trading requirements and analytical workflow",
+                        },
+                        {
+                            "kind": "metric_transcription",
+                            "title": "Eight Cash Trading metric definitions",
+                        },
+                    ],
+                },
+                {
+                    "client_file_id": "data-model-and-dictionary",
+                    "original_name": physical_files[1].name,
+                    "declared_media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "registrations": [
+                        {
+                            "kind": "data_model",
+                            "title": "Order and trading logical data model",
+                        },
+                        {
+                            "kind": "data_dictionary",
+                            "title": "Order and trading field dictionary",
+                        },
+                    ],
+                },
+                {
+                    "client_file_id": "sample-data",
+                    "original_name": physical_files[2].name,
+                    "declared_media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "registrations": [
+                        {
+                            "kind": "data_dictionary",
+                            "title": "Cash Trading data dictionary and sample data",
+                        }
+                    ],
+                },
+                {
+                    "client_file_id": "source-boundary-email",
+                    "original_name": physical_files[3].name,
+                    "declared_media_type": "image/jpeg",
+                    "registrations": [
+                        {
+                            "kind": "other",
+                            "title": "Material source and limitation record",
+                        }
+                    ],
+                },
+                {
+                    "client_file_id": "reference-sql",
+                    "original_name": physical_files[4].name,
+                    "declared_media_type": "text/sql",
+                    "registrations": [
+                        {
+                            "kind": "sql",
+                            "title": "Internally synthesized reference control SQL",
+                        }
+                    ],
+                },
+            ],
+        }
+    )
+    bodies = tuple(path.read_bytes() for path in physical_files)
+    receipt = library.register_batch(
+        workspace_id=workspace_id,
+        manifest=manifest,
+        bodies=bodies,
+    )
+    current_sources = library.list_current(workspace_id)
+
+    assert receipt.failures == ()
+    assert len(receipt.physical_files) == 5
+    assert len(receipt.registrations) == 7
+    assert len(current_sources) == 7
+    assert sum(item.capability == "ARCHIVED_ONLY" for item in receipt.physical_files) == 1
+    physical_checksums = {item.content_checksum for item in receipt.physical_files}
+    assert {
+        hashlib.sha256(library.read_exact(item)).hexdigest()
+        for item in current_sources
+    } == physical_checksums
+
+    package = workspace.candidate_package(workspace_id)
+    intake = {
+        "contract": "cash-trading-e2e-intake/v1",
+        "assets": library.current_intake_assets(
+            workspace_id,
+            include_parsed_attachments=True,
+        ),
+    }
+    authoring = build_authoring_projection(
+        package=package,
+        intake=intake,
+        scenario_dir=DEFAULT_CASH_TRADING_SCENARIO_DIR,
+    )
+    construction = StudioConstructionService(
+        store=FileConstructionRunStore(tmp_path / "studio" / "construction"),
+        workspace=workspace,
+        workspace_id=workspace_id,
+        package=package,
+        intake=intake,
+        authoring=authoring,
+        builder=BoundedBuilderOrchestrator(
+            model=_CashPackageBuilderModel(_cash_build_target()),
+            skill=load_skill_package("ontology-build", "1.1.0"),
+        ),
+        reviewer=BoundedReviewerOrchestrator(
+            model=_ServiceRequestReviewerModel(),
+            skill=load_skill_package("ontology-review", "1.0.0"),
+        ),
+        engine=None,
+    )
+
+    run = construction.start(expected_revision=configured.revision)
+
+    assert authoring.source_mode == "EXACT_TRANSCRIPTION"
+    assert run.status == "NEEDS_REVIEW"
+    assert run.engine_status == "COMPLETED"
+    assert run.authoring_language == "en"
+    assert len(run.selected_sources) == 7
+    assert workspace.get(workspace_id).revision == configured.revision
+    required_metric_ids = {
+        "metric.order_rejection_rate",
+        "metric.order_fill_rate",
+        "metric.trade_capture_latency_ms",
+        "metric.active_client_trading_volume",
+        "metric.client_order_completion_rate",
+        "metric.cancel_to_trade_ratio",
+        "metric.order_to_trade_ratio",
+        "metric.potential_self_trade_rate",
+    }
+    metric_targets = {
+        item.proposed_operation.object_id
+        for item in run.candidates
+        if item.candidate_type == "METRIC" and item.proposed_operation is not None
+    }
+    assert required_metric_ids <= metric_targets
+    assert {
+        "OBJECT",
+        "PROPERTY",
+        "LINK",
+        "METRIC",
+        "DATA_SOURCE",
+        "MAPPING",
+    } <= {item.candidate_type for item in run.candidates}
+
+    reviewed = construction.review(
+        run.run_id,
+        ConstructionReviewRequestV1(
+            expected_revision=run.base_revision,
+            reviewer="cash-domain-owner.demo",
+            dispositions=tuple(
+                ConstructionDispositionV1(
+                    candidate_id=item.candidate_id,
+                    action="ACCEPT" if item.compile_eligible else "REJECT",
+                    note=(
+                        "Accepted against the exact registered Cash Trading evidence."
+                        if item.compile_eligible
+                        else "Retained as evidence only; it is not an ontology mutation."
+                    ),
+                    blocks_release=False,
+                )
+                for item in run.candidates
+            ),
+        ),
+    )
+
+    assert reviewed.decision.status == "APPLIED"
+    assert reviewed.decision.server_blockers == ()
+    assert reviewed.decision.resulting_revision > run.base_revision
+    confirmed_package = workspace.candidate_package(workspace_id)
+    assert required_metric_ids <= {item.id for item in confirmed_package.metrics}
+    assert {item.id for item in confirmed_package.data_sources}
+    assert {item.id for item in confirmed_package.bindings}
+    assert {
+        item.status.value
+        for collection in (
+            "actors",
+            "processes",
+            "entities",
+            "properties",
+            "relationships",
+            "dimensions",
+            "rules",
+            "metrics",
+            "data_sources",
+            "bindings",
+            "joins",
+            "analysis_patterns",
+            "policies",
+            "questions",
+        )
+        for item in getattr(confirmed_package, collection)
+    } == {"confirmed"}
+
+    confirmed = workspace.get(workspace_id)
+    validated = workspace.validate(
+        expected_revision=confirmed.revision,
+        workspace_id=workspace_id,
+    )
+    assert validated.validation.status == "PASS", validated.validation.report
+    published_workspace, publication = workspace.publish(
+        expected_revision=validated.revision,
+        workspace_id=workspace_id,
+    )
+    assert published_workspace.last_published == publication.ref
+    assert publication.ref.package_id == "ontology.exchange_analytics.cash_trading.e2e"

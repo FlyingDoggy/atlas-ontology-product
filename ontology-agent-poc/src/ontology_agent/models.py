@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -21,9 +23,59 @@ class Status(StrEnum):
     DEPRECATED = "deprecated"
 
 
+AuthoringLanguage = Literal["en", "zh"]
+
+
 class LocalizedName(StrictModel):
-    en: str = Field(min_length=1)
-    zh: str = Field(min_length=1)
+    """Human-readable name translations.
+
+    Historical reference packages contain both languages. New packages only need
+    the Solution's primary authoring language; forcing a model to manufacture the
+    other translation was the root cause of mixed-language assets.
+    """
+
+    en: str | None = Field(default=None, min_length=1)
+    zh: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def at_least_one_language(self) -> LocalizedName:
+        if self.en is None and self.zh is None:
+            raise ValueError("A localized name requires at least one language")
+        return self
+
+    def primary(self, language: AuthoringLanguage) -> str:
+        value = self.en if language == "en" else self.zh
+        if value is None:
+            raise ValueError(f"Localized name has no {language} value")
+        return value
+
+
+class OntologyAuthoringPolicyV1(StrictModel):
+    contract: Literal["ontology-authoring-policy/v1"] = (
+        "ontology-authoring-policy/v1"
+    )
+    authoring_language: AuthoringLanguage
+    allowed_verbatim_terms: tuple[str, ...] = ()
+    policy_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def digest_is_exact(self) -> OntologyAuthoringPolicyV1:
+        payload = {
+            "authoring_language": self.authoring_language,
+            "allowed_verbatim_terms": list(self.allowed_verbatim_terms),
+            "contract": self.contract,
+        }
+        expected = hashlib.sha256(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        if self.policy_digest != expected:
+            raise ValueError("Ontology authoring policy digest mismatch")
+        return self
 
 
 class SourceReference(StrictModel):
@@ -337,6 +389,7 @@ class OntologyPackage(StrictModel):
     version: str = Field(pattern=r"^\d+\.\d+\.\d+$")
     status: Status
     created_at: datetime
+    authoring_policy: OntologyAuthoringPolicyV1 | None = None
     scenario: Scenario
     actors: tuple[Actor, ...]
     processes: tuple[Process, ...]
@@ -355,6 +408,19 @@ class OntologyPackage(StrictModel):
     analysis_patterns: tuple[AnalysisPattern, ...]
     policies: tuple[Policy, ...]
     questions: tuple[BusinessQuestion, ...]
+
+    @model_validator(mode="after")
+    def primary_language_names_exist(self) -> OntologyPackage:
+        if self.authoring_policy is None:
+            return self
+        language = self.authoring_policy.authoring_language
+        missing = [item.id for item in self.governed_objects() if getattr(item.name, language) is None]
+        if missing:
+            raise ValueError(
+                f"Primary authoring language {language} is missing for: "
+                + ", ".join(missing[:20])
+            )
+        return self
 
     def governed_objects(self) -> tuple[GovernedObject, ...]:
         return (

@@ -8,7 +8,7 @@ import zipfile
 from io import BytesIO
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Any, Literal, Mapping, Protocol
+from typing import Any, Literal, Mapping, Protocol, Sequence
 
 from pydantic import Field, model_validator
 from openpyxl import load_workbook
@@ -44,6 +44,16 @@ _SINGLETON_SOURCE_IDS: dict[str, str] = {
 }
 _TEXT_KINDS = {"requirement_transcription", "metric_transcription"}
 _MAX_SOURCE_BYTES = 20 * 1024 * 1024
+MAX_SOURCE_BATCH_FILES = 20
+MAX_SOURCE_BATCH_BYTES = 100 * 1024 * 1024
+MAX_SOURCE_REGISTRATIONS_PER_FILE = 6
+MAX_SOURCE_BATCH_REGISTRATIONS = 64
+
+SourceCapability = Literal[
+    "TEXT_EXTRACTED",
+    "XLSX_TABULAR_EXTRACTED",
+    "ARCHIVED_ONLY",
+]
 
 _INSTALLED_SOURCE_TITLES: dict[str, str] = {
     "requirement_transcription": "需求与分析流程",
@@ -151,6 +161,89 @@ class StudioSourcePreviewV1(StrictModel):
     text_lines: tuple[SourcePreviewLineV1, ...] = ()
     sheets: tuple[SourcePreviewSheetV1, ...] = ()
     limitation: str | None = None
+
+
+class SourceIntakeRegistrationV1(StrictModel):
+    kind: SourceKind
+    title: str = Field(min_length=1, max_length=500)
+
+
+class SourceIntakeBatchItemV1(StrictModel):
+    client_file_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    original_name: str = Field(min_length=1, max_length=500)
+    declared_media_type: str = Field(min_length=1, max_length=255)
+    registrations: tuple[SourceIntakeRegistrationV1, ...] = Field(
+        min_length=1, max_length=MAX_SOURCE_REGISTRATIONS_PER_FILE
+    )
+
+
+class SourceIntakeBatchManifestV1(StrictModel):
+    contract: Literal["source-intake-batch/v1"] = "source-intake-batch/v1"
+    idempotency_key: str = Field(min_length=8, max_length=200)
+    items: tuple[SourceIntakeBatchItemV1, ...] = Field(
+        min_length=1, max_length=MAX_SOURCE_BATCH_FILES
+    )
+
+    @model_validator(mode="after")
+    def validate_inventory(self) -> SourceIntakeBatchManifestV1:
+        identities = [item.client_file_id for item in self.items]
+        if len(identities) != len(set(identities)):
+            raise ValueError("Batch client file IDs must be unique")
+        if sum(len(item.registrations) for item in self.items) > MAX_SOURCE_BATCH_REGISTRATIONS:
+            raise ValueError("Batch has too many logical registrations")
+        return self
+
+
+class SourcePhysicalFileReceiptV1(StrictModel):
+    client_file_id: str
+    original_name: str
+    content_checksum: Sha256
+    size_bytes: int = Field(ge=1, le=_MAX_SOURCE_BYTES)
+    declared_media_type: str
+    detected_media_type: str
+    parser_id: str | None = None
+    parser_version: str | None = None
+    capability: SourceCapability
+    reason_code: str
+    selected_ranges: tuple[str, ...] = ()
+    truncated: bool = False
+
+
+class SourceRegistrationReceiptV1(StrictModel):
+    client_file_id: str
+    source_version_id: str = Field(pattern=r"^source-version\.[0-9a-f]{32}$")
+    source_id: str
+    kind: SourceKind
+    capability: SourceCapability
+
+
+class SourceIntakeFailureV1(StrictModel):
+    client_file_id: str
+    reason_code: str
+    detail: str
+    retryable: bool
+
+
+class SourceIntakeBatchReceiptV1(StrictModel):
+    contract: Literal["source-intake-batch-receipt/v1"] = (
+        "source-intake-batch-receipt/v1"
+    )
+    batch_id: str = Field(pattern=r"^source-batch\.[0-9a-f]{32}$")
+    workspace_id: str
+    idempotency_key: str
+    request_digest: Sha256
+    physical_files: tuple[SourcePhysicalFileReceiptV1, ...]
+    registrations: tuple[SourceRegistrationReceiptV1, ...]
+    failures: tuple[SourceIntakeFailureV1, ...]
+    completed_at: datetime
+    subject_checksum: Sha256
+
+    @model_validator(mode="after")
+    def validate_receipt(self) -> SourceIntakeBatchReceiptV1:
+        unsigned = self.model_dump(mode="json", exclude={"subject_checksum"})
+        if sha256_value(unsigned) != self.subject_checksum:
+            raise ValueError("Source intake batch receipt checksum mismatch")
+        return self
 
 
 class ReferenceSourcePackFileV1(StrictModel):
@@ -303,6 +396,14 @@ class SourceLibraryStore(Protocol):
 
     def read_exact(self, version: StudioSourceVersionV1) -> bytes: ...
 
+    def get_batch_receipt(
+        self, workspace_id: str, idempotency_key: str
+    ) -> SourceIntakeBatchReceiptV1 | None: ...
+
+    def save_batch_receipt(
+        self, receipt: SourceIntakeBatchReceiptV1
+    ) -> SourceIntakeBatchReceiptV1: ...
+
 
 class FileSourceLibraryStore:
     """Narrow compatibility store for tests and offline authoring."""
@@ -323,6 +424,10 @@ class FileSourceLibraryStore:
 
     def _head_path(self, workspace_id: str) -> Path:
         return self._workspace(workspace_id) / "current.json"
+
+    def _batch_path(self, workspace_id: str, idempotency_key: str) -> Path:
+        key = sha256_value({"workspace_id": workspace_id, "idempotency_key": idempotency_key})
+        return self._workspace(workspace_id) / "batches" / f"{key}.json"
 
     def register(
         self,
@@ -420,6 +525,37 @@ class FileSourceLibraryStore:
             raise SourceLibraryError("Source version bytes failed exact read-back")
         return body
 
+    def get_batch_receipt(
+        self, workspace_id: str, idempotency_key: str
+    ) -> SourceIntakeBatchReceiptV1 | None:
+        path = self._batch_path(workspace_id, idempotency_key)
+        if not path.exists():
+            return None
+        try:
+            return SourceIntakeBatchReceiptV1.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError) as exc:
+            raise SourceLibraryError("Source intake batch receipt is invalid") from exc
+
+    def save_batch_receipt(
+        self, receipt: SourceIntakeBatchReceiptV1
+    ) -> SourceIntakeBatchReceiptV1:
+        existing = self.get_batch_receipt(
+            receipt.workspace_id, receipt.idempotency_key
+        )
+        if existing is not None:
+            if existing.request_digest != receipt.request_digest:
+                raise SourceLibraryConflict(
+                    "Idempotency key already names another source intake batch"
+                )
+            return existing
+        write_json(
+            self._batch_path(receipt.workspace_id, receipt.idempotency_key),
+            receipt.model_dump(mode="json"),
+        )
+        return receipt
+
 
 class StudioSourceVersionRow(Base):
     __tablename__ = "studio_source_version"
@@ -450,6 +586,21 @@ class StudioSourceHeadRow(Base):
     subject_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class StudioSourceBatchReceiptRow(Base):
+    __tablename__ = "studio_source_batch_receipt"
+
+    batch_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    request_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    subject_checksum: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    subject: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
 
@@ -490,7 +641,7 @@ class PostgresS3SourceLibraryStore:
         try:
             artifact = self.artifacts.publish_blob(
                 body,
-                namespace=f"studio/source/{workspace_id}/{kind}",
+                namespace=f"studio/source/{workspace_id}/physical",
                 media_type=media_type,
                 suffix="bin",
             )
@@ -606,6 +757,64 @@ class PostgresS3SourceLibraryStore:
         except ProductInfrastructureError as exc:
             raise SourceLibraryError("Durable source bytes failed exact read-back") from exc
 
+    def get_batch_receipt(
+        self, workspace_id: str, idempotency_key: str
+    ) -> SourceIntakeBatchReceiptV1 | None:
+        try:
+            with Session(self.engine) as session:
+                row = session.scalar(
+                    select(StudioSourceBatchReceiptRow).where(
+                        StudioSourceBatchReceiptRow.workspace_id == workspace_id,
+                        StudioSourceBatchReceiptRow.idempotency_key == idempotency_key,
+                    )
+                )
+            return (
+                SourceIntakeBatchReceiptV1.model_validate(row.subject)
+                if row is not None
+                else None
+            )
+        except (SQLAlchemyError, ValueError) as exc:
+            raise SourceLibraryError(
+                "Durable source intake batch receipt is unavailable"
+            ) from exc
+
+    def save_batch_receipt(
+        self, receipt: SourceIntakeBatchReceiptV1
+    ) -> SourceIntakeBatchReceiptV1:
+        try:
+            with Session(self.engine) as session, session.begin():
+                existing = session.scalar(
+                    select(StudioSourceBatchReceiptRow).where(
+                        StudioSourceBatchReceiptRow.workspace_id == receipt.workspace_id,
+                        StudioSourceBatchReceiptRow.idempotency_key == receipt.idempotency_key,
+                    )
+                )
+                if existing is not None:
+                    persisted = SourceIntakeBatchReceiptV1.model_validate(existing.subject)
+                    if persisted.request_digest != receipt.request_digest:
+                        raise SourceLibraryConflict(
+                            "Idempotency key already names another source intake batch"
+                        )
+                    return persisted
+                session.add(
+                    StudioSourceBatchReceiptRow(
+                        batch_id=receipt.batch_id,
+                        workspace_id=receipt.workspace_id,
+                        idempotency_key=receipt.idempotency_key,
+                        request_digest=receipt.request_digest,
+                        subject_checksum=receipt.subject_checksum,
+                        subject=receipt.model_dump(mode="json"),
+                        completed_at=receipt.completed_at,
+                    )
+                )
+            return receipt
+        except SourceLibraryError:
+            raise
+        except (IntegrityError, SQLAlchemyError, ValueError) as exc:
+            raise SourceLibraryError(
+                "Durable source intake batch receipt could not be committed"
+            ) from exc
+
 
 class StudioSourceLibraryService:
     def __init__(self, store: SourceLibraryStore) -> None:
@@ -654,9 +863,14 @@ class StudioSourceLibraryService:
             if not structured_xlsx and normalized_type not in {
                 "text/plain",
                 "text/markdown",
+                "text/csv",
+                "text/sql",
+                "application/json",
+                "application/yaml",
+                "application/x-yaml",
             }:
                 raise SourceLibraryError(
-                    "Transcribed sources must be UTF-8 text, Markdown or an XLSX template"
+                    "Transcribed sources must use an enabled UTF-8 text format or an XLSX template"
                 )
             if structured_xlsx:
                 self._xlsx_archive_is_bounded(body)
@@ -694,6 +908,221 @@ class StudioSourceLibraryService:
             media_type=normalized_type,
             body=body,
         )
+
+    def resolve_capability(
+        self,
+        *,
+        original_name: str,
+        declared_media_type: str,
+        body: bytes,
+    ) -> tuple[SourceCapability, str, str | None, str | None, str]:
+        """Resolve one parser capability from exact bytes and a narrow allowlist."""
+
+        normalized_name = Path(original_name.strip()).name
+        if normalized_name != original_name.strip() or not normalized_name:
+            raise SourceLibraryError("SOURCE_FILE_NAME_INVALID")
+        if not body:
+            raise SourceLibraryError("SOURCE_FILE_EMPTY")
+        if len(body) > _MAX_SOURCE_BYTES:
+            raise SourceLibraryError("SOURCE_FILE_TOO_LARGE")
+        suffix = Path(normalized_name).suffix.casefold()
+        media_type = declared_media_type.split(";", 1)[0].strip().lower()
+        xlsx_declared = suffix == ".xlsx" or media_type == (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        if xlsx_declared:
+            self._xlsx_archive_is_bounded(body)
+            return (
+                "XLSX_TABULAR_EXTRACTED",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "openpyxl-bounded",
+                "1",
+                "XLSX_TABULAR_CONTENT_AVAILABLE",
+            )
+        text_suffixes = {".md", ".txt", ".csv", ".json", ".yaml", ".yml", ".sql"}
+        text_media_types = {
+            "text/plain",
+            "text/markdown",
+            "text/csv",
+            "text/sql",
+            "application/json",
+            "application/yaml",
+            "application/x-yaml",
+        }
+        if suffix in text_suffixes or media_type in text_media_types:
+            try:
+                body.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise SourceLibraryError("SOURCE_TEXT_NOT_UTF8") from exc
+            detected = {
+                ".md": "text/markdown",
+                ".txt": "text/plain",
+                ".csv": "text/csv",
+                ".json": "application/json",
+                ".yaml": "application/yaml",
+                ".yml": "application/yaml",
+                ".sql": "text/sql",
+            }.get(suffix, media_type or "text/plain")
+            return (
+                "TEXT_EXTRACTED",
+                detected,
+                "utf8-lines",
+                "1",
+                "TEXT_CONTENT_AVAILABLE",
+            )
+        return (
+            "ARCHIVED_ONLY",
+            media_type or "application/octet-stream",
+            None,
+            None,
+            "NO_ENABLED_CONTENT_PARSER",
+        )
+
+    def register_batch(
+        self,
+        *,
+        workspace_id: str,
+        manifest: SourceIntakeBatchManifestV1,
+        bodies: Sequence[bytes],
+    ) -> SourceIntakeBatchReceiptV1:
+        if len(bodies) != len(manifest.items):
+            raise SourceLibraryError("Batch manifest and binary part count disagree")
+        if sum(len(body) for body in bodies) > MAX_SOURCE_BATCH_BYTES:
+            raise SourceLibraryError("Source intake batch exceeds the 100 MiB limit")
+        request_subject = {
+            "contract": manifest.contract,
+            "workspace_id": workspace_id,
+            "idempotency_key": manifest.idempotency_key,
+            "items": [
+                {
+                    **item.model_dump(mode="json"),
+                    "content_checksum": hashlib.sha256(body).hexdigest(),
+                    "size_bytes": len(body),
+                }
+                for item, body in zip(manifest.items, bodies, strict=True)
+            ],
+        }
+        request_digest = sha256_value(request_subject)
+        existing = self.store.get_batch_receipt(
+            workspace_id, manifest.idempotency_key
+        )
+        if existing is not None:
+            if existing.request_digest != request_digest:
+                raise SourceLibraryConflict(
+                    "Idempotency key already names another source intake batch"
+                )
+            return existing
+
+        physical_files: list[SourcePhysicalFileReceiptV1] = []
+        registrations: list[SourceRegistrationReceiptV1] = []
+        failures: list[SourceIntakeFailureV1] = []
+        for item, body in zip(manifest.items, bodies, strict=True):
+            try:
+                capability, detected, parser_id, parser_version, reason = (
+                    self.resolve_capability(
+                        original_name=item.original_name,
+                        declared_media_type=item.declared_media_type,
+                        body=body,
+                    )
+                )
+                if capability == "ARCHIVED_ONLY" and any(
+                    registration.kind in _TEXT_KINDS
+                    for registration in item.registrations
+                ):
+                    raise SourceLibraryError(
+                        "TRANSCRIPTION_REQUIRES_TEXT_OR_XLSX"
+                    )
+                file_versions: list[StudioSourceVersionV1] = []
+                for registration in item.registrations:
+                    file_versions.append(
+                        self.register(
+                            workspace_id=workspace_id,
+                            kind=registration.kind,
+                            title=registration.title,
+                            original_name=item.original_name,
+                            media_type=detected,
+                            body=body,
+                        )
+                    )
+                selected_ranges: tuple[str, ...] = ()
+                truncated = False
+                if file_versions and capability != "ARCHIVED_ONLY":
+                    preview = self.preview(
+                        file_versions[0].source_version_id, workspace_id
+                    )
+                    if preview.text_lines:
+                        selected_ranges = (
+                            f"lines:1-{preview.text_lines[-1].line_number}",
+                        )
+                        truncated = preview.limitation is not None
+                    elif preview.sheets:
+                        selected_ranges = tuple(
+                            f"{sheet.sheet_name}!{sheet.used_range}"
+                            for sheet in preview.sheets
+                        )
+                        truncated = any(sheet.truncated for sheet in preview.sheets)
+                physical_files.append(
+                    SourcePhysicalFileReceiptV1(
+                        client_file_id=item.client_file_id,
+                        original_name=item.original_name,
+                        content_checksum=hashlib.sha256(body).hexdigest(),
+                        size_bytes=len(body),
+                        declared_media_type=item.declared_media_type,
+                        detected_media_type=detected,
+                        parser_id=parser_id,
+                        parser_version=parser_version,
+                        capability=capability,
+                        reason_code=reason,
+                        selected_ranges=selected_ranges,
+                        truncated=truncated,
+                    )
+                )
+                registrations.extend(
+                    SourceRegistrationReceiptV1(
+                        client_file_id=item.client_file_id,
+                        source_version_id=version.source_version_id,
+                        source_id=version.source_id,
+                        kind=version.kind,
+                        capability=capability,
+                    )
+                    for version in file_versions
+                )
+            except SourceLibraryError as exc:
+                failures.append(
+                    SourceIntakeFailureV1(
+                        client_file_id=item.client_file_id,
+                        reason_code=str(exc),
+                        detail=str(exc).replace("_", " ").title(),
+                        retryable=True,
+                    )
+                )
+        now = datetime.now(timezone.utc)
+        unsigned: dict[str, Any] = {
+            "contract": "source-intake-batch-receipt/v1",
+            "batch_id": "source-batch."
+            + sha256_value(
+                {
+                    "workspace_id": workspace_id,
+                    "idempotency_key": manifest.idempotency_key,
+                }
+            )[:32],
+            "workspace_id": workspace_id,
+            "idempotency_key": manifest.idempotency_key,
+            "request_digest": request_digest,
+            "physical_files": [
+                item.model_dump(mode="json") for item in physical_files
+            ],
+            "registrations": [
+                item.model_dump(mode="json") for item in registrations
+            ],
+            "failures": [item.model_dump(mode="json") for item in failures],
+            "completed_at": now.isoformat().replace("+00:00", "Z"),
+        }
+        receipt = SourceIntakeBatchReceiptV1(
+            **unsigned,
+            subject_checksum=sha256_value(unsigned),
+        )
+        return self.store.save_batch_receipt(receipt)
 
     def install_reference_pack(
         self,

@@ -1,36 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link, useBlocker, useNavigate } from "react-router-dom";
 
 import type {
   ConstructionCandidate,
   ConstructionDisposition,
   ConstructionJobList,
+  ConstructionReviewDecision,
   ConstructionReviewDraft,
+  ConstructionReviewResult,
   ConstructionRunList,
   PackageDraftOperation,
   StudioSourceVersion,
 } from "./api";
+import { studioBuildResultHref, studioBuildReviewHref, studioPageHref } from "./StudioNavigation";
 
-function useUnsavedReviewGuard(dirty: boolean): void {
+function useUnsavedReviewGuard(dirty: boolean) {
+  const blocker = useBlocker(dirty);
   useEffect(() => {
     if (!dirty) return undefined;
     const beforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
-    const protectLink = (event: MouseEvent) => {
-      const target = event.target instanceof Element ? event.target.closest("a[href]") : null;
-      if (target && !window.confirm("复核进度尚未保存，确定离开？")) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
     window.addEventListener("beforeunload", beforeUnload);
-    document.addEventListener("click", protectLink, true);
     return () => {
       window.removeEventListener("beforeunload", beforeUnload);
-      document.removeEventListener("click", protectLink, true);
     };
   }, [dirty]);
+  return blocker;
+}
+
+function reviewDispositionDigest(dispositions: ConstructionDisposition[]): string {
+  return JSON.stringify([...dispositions].sort((left, right) => left.candidate_id.localeCompare(right.candidate_id)));
 }
 
 
@@ -75,6 +76,17 @@ const supportLabels: Record<ConstructionCandidate["support_class"], string> = {
   MISSING: "缺失",
 };
 
+const jobProgressLabels: Record<string, string> = {
+  JOB_QUEUED: "等待后台执行",
+  SETTLING_SOURCES: "正在核对材料版本与证据身份",
+  BUILDING_CANDIDATES: "正在提取并构建候选资产",
+  PERSISTING_RESULT: "正在保存不可变候选集合",
+  JOB_COMPLETED: "候选集合已保存，等待人工复核",
+  JOB_FAILED: "执行失败，请查看技术原因",
+  JOB_CANCELLED: "任务已取消",
+  JOB_STALE: "输入已变化，本次结果不可应用",
+};
+
 function shortId(value: string): string {
   return value.length > 22 ? `${value.slice(0, 12)}…${value.slice(-7)}` : value;
 }
@@ -90,6 +102,7 @@ export function ConstructionRunsView({
   runs,
   jobs,
   sources,
+  authoringLanguage = null,
   currentRevision,
   busy,
   error,
@@ -101,10 +114,11 @@ export function ConstructionRunsView({
   runs: ConstructionRunList | null;
   jobs: ConstructionJobList | null;
   sources: StudioSourceVersion[];
+  authoringLanguage?: "en" | "zh" | null;
   currentRevision: number;
   busy: boolean;
   error: string | null;
-  onStart: (sourceVersionIds: string[]) => void;
+  onStart: (sourceVersionIds: string[], authoringLanguage: "en" | "zh") => void;
   onCancel: (jobId: string) => void;
   onRetry: (jobId: string) => void;
   readOnly?: boolean;
@@ -112,10 +126,14 @@ export function ConstructionRunsView({
   const latest = runs?.runs[0]?.run ?? null;
   const latestJob = jobs?.jobs[0] ?? null;
   const activeJob = latestJob && ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(latestJob.status) ? latestJob : null;
+  const jobProgress = latestJob ? Math.min(100, Math.round((latestJob.completed_stages / latestJob.total_stages) * 100)) : 0;
   const runSyncPending = latestJob?.status === "SUCCEEDED"
     && Boolean(latestJob.result_run_id)
     && latest?.run_id !== latestJob.result_run_id;
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>(() => sources.map((source) => source.source_version_id));
+  const [selectedLanguage, setSelectedLanguage] = useState<"en" | "zh">(
+    authoringLanguage ?? "en",
+  );
   const sourceIdentity = sources.map((source) => source.source_version_id).join("|");
   useEffect(() => {
     setSelectedSourceIds(sources.map((source) => source.source_version_id));
@@ -148,7 +166,7 @@ export function ConstructionRunsView({
                 ? "案例编译档已匹配"
                 : "当前使用来源投影"}
           </span>
-          {!readOnly ? <button type="button" onClick={() => onStart(selectedSourceIds)} disabled={busy || Boolean(activeJob) || (sources.length > 0 && selectedSourceIds.length === 0)}>
+          {!readOnly ? <button type="button" onClick={() => onStart(selectedSourceIds, authoringLanguage ?? selectedLanguage)} disabled={busy || Boolean(activeJob) || (sources.length > 0 && selectedSourceIds.length === 0)}>
             {busy ? "正在处理…" : activeJob ? "构建任务运行中" : "开始自动构建"}
           </button> : null}
         </div>
@@ -159,11 +177,32 @@ export function ConstructionRunsView({
         {sources.length ? <div>{sources.map((source) => <label key={source.source_version_id}><input type="checkbox" checked={selectedSourceIds.includes(source.source_version_id)} disabled={readOnly || Boolean(activeJob)} onChange={(event) => setSelectedSourceIds((current) => event.target.checked ? [...current, source.source_version_id] : current.filter((id) => id !== source.source_version_id))} /><span><strong>{source.title}</strong><small>{source.kind} · {source.original_name}</small><code>{source.source_version_id}</code></span></label>)}</div> : <p className="construction-fixed-source-note">当前 Solution 尚无可选来源版本。{readOnly ? "复制参考方案后可登记材料并重新构建。" : "构建将读取工作区已登记材料；如需锁定特定版本，请先到“来源材料”登记。"}</p>}
       </section>
 
+      <section className="construction-language-policy" aria-labelledby="construction-language-title">
+        <div>
+          <span>ONTOLOGY LANGUAGE</span>
+          <h3 id="construction-language-title">Ontology 输出语言</h3>
+          <p>只控制名称、定义和业务说明。ID、SQL、字段名及原始证据保持不变。</p>
+        </div>
+        {authoringLanguage ? (
+          <div className="language-policy-locked">
+            <strong>{authoringLanguage === "en" ? "English" : "简体中文"}</strong>
+            <small>已写入当前 Solution，后续构建沿用</small>
+          </div>
+        ) : (
+          <label>
+            <span>首次构建请选择</span>
+            <select value={selectedLanguage} onChange={(event) => setSelectedLanguage(event.target.value as "en" | "zh")} disabled={busy || Boolean(activeJob)}>
+              <option value="en">English</option>
+              <option value="zh">简体中文</option>
+            </select>
+          </label>
+        )}
+      </section>
+
       {latestJob ? <section className={`construction-job-banner is-${latestJob.status.toLowerCase()}`} aria-live="polite">
-        <div><span>BUILD TASK</span><strong>{latestJob.status === "QUEUED" ? "已排队" : latestJob.status === "RUNNING" ? "正在后台构建" : latestJob.status === "COMMITTING" ? "正在提交候选集合" : latestJob.status === "CANCEL_REQUESTED" ? "正在取消" : latestJob.status === "SUCCEEDED" ? "构建完成" : latestJob.status === "STALE" ? "输入已变化，结果未应用" : latestJob.status === "CANCELLED" ? "已取消" : "构建失败"}</strong><code>{shortId(latestJob.job_id)} · {latestJob.selected_source_version_ids.length ? `${latestJob.selected_source_version_ids.length} 个来源版本` : "工作区来源"}</code></div>
-        <p>{activeJob ? "可以离开本页；任务会在后台继续运行。" : runSyncPending ? "任务已经完成，正在读取候选集合…" : latestJob.error_code ? `终态：${latestJob.error_code}` : "候选集合已保存，可进入复核。"}</p>
-        {!readOnly && activeJob && ["QUEUED", "RUNNING"].includes(activeJob.status) ? <button type="button" disabled={busy} onClick={() => onCancel(activeJob.job_id)}>取消任务</button> : null}
-        {!readOnly && latestJob && ["FAILED", "CANCELLED", "STALE"].includes(latestJob.status) ? <button type="button" disabled={busy || latestJob.base_revision !== currentRevision} onClick={() => onRetry(latestJob.job_id)}>重试同一输入</button> : null}
+        <div><span>构建任务</span><strong>{latestJob.status === "QUEUED" ? "已排队" : latestJob.status === "RUNNING" ? "正在后台构建" : latestJob.status === "COMMITTING" ? "正在保存候选集合" : latestJob.status === "CANCEL_REQUESTED" ? "正在取消" : latestJob.status === "SUCCEEDED" ? "执行已结束" : latestJob.status === "STALE" ? "输入已变化，结果未应用" : latestJob.status === "CANCELLED" ? "已取消" : "执行失败"}</strong><code>{shortId(latestJob.job_id)} · {latestJob.selected_source_version_ids.length ? `${latestJob.selected_source_version_ids.length} 个来源版本` : "工作区来源"}</code></div>
+        <div className="construction-job-progress"><span><i style={{ width: `${jobProgress}%` }} /></span><b>{jobProgress}%</b><small>{jobProgressLabels[latestJob.progress_message] ?? latestJob.progress_message}</small></div>
+        <div className="construction-job-actions"><Link to={`/ontology-studio/tasks/${encodeURIComponent(latestJob.job_id)}/`}>查看任务</Link>{latestJob.status === "SUCCEEDED" && latestJob.result_run_id ? <Link className="is-primary" to={studioBuildReviewHref(latestJob.solution_id, latestJob.result_run_id)}>进入人工复核</Link> : null}{!readOnly && activeJob && ["QUEUED", "RUNNING"].includes(activeJob.status) ? <button type="button" disabled={busy} onClick={() => onCancel(activeJob.job_id)}>取消任务</button> : null}{!readOnly && ["FAILED", "CANCELLED", "STALE"].includes(latestJob.status) ? <button type="button" disabled={busy || latestJob.base_revision !== currentRevision} onClick={() => onRetry(latestJob.job_id)}>重试同一输入</button> : null}</div>
       </section> : null}
 
       {latest ? (
@@ -248,9 +287,67 @@ export function ConstructionRunsView({
 
 type ReviewAction = "UNREVIEWED" | "ACCEPT" | "EDIT" | "REJECT" | "DEFER";
 
+function ConstructionReviewResultView({
+  decision,
+  solutionId,
+}: {
+  decision: ConstructionReviewDecision;
+  solutionId: string;
+}) {
+  const appliedCount = decision.applied.length;
+  return (
+    <section className="review-result" aria-labelledby="review-result-title">
+      <header>
+        <span>复核应用结果</span>
+        <h2 id="review-result-title">
+          {decision.status === "REVIEWED_NO_CHANGE" ? "本轮已完成，Draft 无变更" : `已生成 Draft r${decision.resulting_revision}`}
+        </h2>
+        <p>系统已按人工处置应用类型化变更并完成服务端确认；发布和运行激活仍是后续独立步骤。</p>
+      </header>
+      <div className="review-result-summary">
+        <div><span>已应用</span><strong>{appliedCount}</strong><small>已写入并确认的语义资产</small></div>
+        <div><span>暂缓</span><strong>{decision.deferred_candidate_ids.length}</strong><small>保留在后续补充队列</small></div>
+        <div><span>拒绝</span><strong>{decision.rejected_candidate_ids.length}</strong><small>未写入当前 Draft</small></div>
+        <div><span>新修订</span><strong>r{decision.resulting_revision}</strong><small>{shortId(decision.resulting_draft_checksum)}</small></div>
+      </div>
+      {decision.server_blockers.length ? (
+        <div className="review-result-blockers" role="status">
+          <strong>仍需处理的发布阻断项</strong>
+          {decision.server_blockers.map((item) => <code key={item}>{item}</code>)}
+        </div>
+      ) : null}
+      {decision.applied.length ? (
+        <section className="review-result-assets">
+          <header><h3>本轮应用的资产</h3><span>{decision.applied.length} 项</span></header>
+          <div className="catalog-table-head"><span>资产</span><span>变化</span><span>确认</span><span>最终摘要</span></div>
+          {decision.applied.map((asset) => (
+            <article key={asset.candidate_id}>
+              <div><strong>{asset.object_id}</strong><small>{asset.collection}</small></div>
+              <span>{asset.change_type === "CREATE" ? "新增" : asset.change_type === "UPDATE" ? "更新" : asset.change_type === "NO_CHANGE" ? "无字段变化" : "已应用"}</span>
+              <b>{asset.confirmation_status === "CONFIRMED" ? "已确认" : "精确登记"}</b>
+              <code>{shortId(asset.final_confirmed_asset_digest)}</code>
+            </article>
+          ))}
+        </section>
+      ) : null}
+      <nav className="review-result-destinations" aria-label="检查复核结果">
+        <Link to={studioPageHref("semantic", solutionId, "model")}>查看业务模型</Link>
+        <Link to={studioPageHref("semantic", solutionId, "metrics")}>查看指标与规则</Link>
+        <Link to={studioPageHref("data", solutionId, "mappings")}>查看映射与关联</Link>
+        <Link to={studioPageHref("quality", solutionId, "validation")}>验证新 Draft</Link>
+      </nav>
+      <footer><span>Decision</span><code>{decision.decision_id}</code><span>Checksum</span><code>{shortId(decision.decision_checksum)}</code></footer>
+    </section>
+  );
+}
+
 export function ConstructionReviewCenter({
   runs,
   reviewDraft,
+  decision,
+  requestedRunId,
+  requestedDecisionId,
+  solutionId,
   currentRevision,
   busy,
   error,
@@ -260,15 +357,28 @@ export function ConstructionReviewCenter({
 }: {
   runs: ConstructionRunList | null;
   reviewDraft: ConstructionReviewDraft | null;
+  decision?: ConstructionReviewDecision | null;
+  requestedRunId?: string | null;
+  requestedDecisionId?: string | null;
+  solutionId: string;
   currentRevision: number;
   busy: boolean;
   error: string | null;
   onSave: (runId: string, dispositions: ConstructionDisposition[]) => Promise<ConstructionReviewDraft>;
-  onReview: (runId: string, dispositions: ConstructionDisposition[], reviewBatchChecksum: string | null) => void;
+  onReview: (runId: string, dispositions: ConstructionDisposition[], reviewBatchChecksum: string | null) => Promise<ConstructionReviewResult>;
   readOnly?: boolean;
 }) {
-  const activeRecord = runs?.runs.find((item) => item.decision === null) ?? runs?.runs[0] ?? null;
+  const navigate = useNavigate();
+  const activeRecord = requestedRunId
+    ? runs?.runs.find((item) => item.run.run_id === requestedRunId) ?? null
+    : runs?.runs.find((item) => item.decision === null) ?? runs?.runs[0] ?? null;
   const run = activeRecord?.run ?? null;
+  const resolvedDecision = decision ?? activeRecord?.decision ?? null;
+  const [savedDraft, setSavedDraft] = useState<ConstructionReviewDraft | null>(reviewDraft);
+  const [appliedResult, setAppliedResult] = useState<ConstructionReviewResult | null>(null);
+  const [workflowPhase, setWorkflowPhase] = useState<"EDITING" | "SAVING" | "SAVED" | "APPLYING" | "APPLIED">(
+    resolvedDecision ? "APPLIED" : reviewDraft ? "SAVED" : "EDITING",
+  );
   const [selectedId, setSelectedId] = useState<string | null>(run?.candidates[0]?.candidate_id ?? null);
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [riskFilter, setRiskFilter] = useState<string>("ALL");
@@ -297,6 +407,9 @@ export function ConstructionReviewCenter({
     setRiskFilter("ALL");
     setDecisionFilter("ALL");
     setPage(1);
+    setAppliedResult(null);
+    setSavedDraft(reviewDraft?.run_id === run?.run_id ? reviewDraft : null);
+    setWorkflowPhase(resolvedDecision ? "APPLIED" : reviewDraft?.run_id === run?.run_id ? "SAVED" : "EDITING");
   }, [run?.run_id]);
 
   useEffect(() => {
@@ -305,7 +418,13 @@ export function ConstructionReviewCenter({
     setEdits(Object.fromEntries(reviewDraft.dispositions.flatMap((item) => item.edited_operation ? [[item.candidate_id, item.edited_operation] as const] : [])));
     setEditTexts(Object.fromEntries(reviewDraft.dispositions.flatMap((item) => item.edited_operation ? [[item.candidate_id, JSON.stringify(item.edited_operation, null, 2)] as const] : [])));
     setEditErrors({});
+    setSavedDraft(reviewDraft);
+    setWorkflowPhase(resolvedDecision ? "APPLIED" : "SAVED");
   }, [reviewDraft?.batch_checksum, run?.run_id]);
+
+  useEffect(() => {
+    if (resolvedDecision) setWorkflowPhase("APPLIED");
+  }, [resolvedDecision?.decision_id]);
 
   const filtered = (run?.candidates ?? []).filter((item) => {
     const action = actions[item.candidate_id] ?? "UNREVIEWED";
@@ -353,6 +472,7 @@ export function ConstructionReviewCenter({
       });
     }
     setActions((current) => ({ ...current, [candidate.candidate_id]: action }));
+    setWorkflowPhase("EDITING");
   }
 
   function fillConservativeRecommendations() {
@@ -365,9 +485,11 @@ export function ConstructionReviewCenter({
         ? "ACCEPT"
         : "DEFER",
     ])) }));
+    setWorkflowPhase("EDITING");
   }
 
   function updateEditedOperation(candidate: ConstructionCandidate, text: string) {
+    setWorkflowPhase("EDITING");
     setEditTexts((current) => ({ ...current, [candidate.candidate_id]: text }));
     try {
       const value = JSON.parse(text) as PackageDraftOperation;
@@ -403,15 +525,37 @@ export function ConstructionReviewCenter({
   }
 
   const currentDispositions = dispositionsForCurrentState(false);
-  const persistedDigest = JSON.stringify(reviewDraft?.dispositions ?? []);
-  const currentDigest = JSON.stringify(currentDispositions);
+  const persistedDigest = reviewDispositionDigest(savedDraft?.dispositions ?? []);
+  const currentDigest = reviewDispositionDigest(currentDispositions);
   const progressDirty = currentDigest !== persistedDigest;
-  useUnsavedReviewGuard(progressDirty);
+  const navigationBlocker = useUnsavedReviewGuard(progressDirty && !resolvedDecision && !appliedResult);
 
-  function submit() {
-    if (!run || !allDecided || !reviewDraft || progressDirty || hasEditErrors) return;
-    onReview(run.run_id, dispositionsForCurrentState(true), reviewDraft.batch_checksum);
+  async function saveProgress() {
+    if (!run || !progressDirty || !currentDispositions.length || hasEditErrors) return;
+    setWorkflowPhase("SAVING");
+    try {
+      const saved = await onSave(run.run_id, currentDispositions);
+      setSavedDraft(saved);
+      setWorkflowPhase("SAVED");
+    } catch {
+      setWorkflowPhase("EDITING");
+    }
   }
+
+  async function submit() {
+    if (!run || !allDecided || !savedDraft || progressDirty || hasEditErrors) return;
+    setWorkflowPhase("APPLYING");
+    try {
+      const result = await onReview(run.run_id, dispositionsForCurrentState(true), savedDraft.batch_checksum);
+      setAppliedResult(result);
+      setWorkflowPhase("APPLIED");
+      navigate(studioBuildResultHref(solutionId, run.run_id, result.decision.decision_id), { replace: true });
+    } catch {
+      setWorkflowPhase("SAVED");
+    }
+  }
+
+  const finalDecision = appliedResult?.decision ?? resolvedDecision;
 
   if (runs === null) {
     return error ? (
@@ -422,7 +566,18 @@ export function ConstructionReviewCenter({
   }
 
   if (!run) {
+    if (requestedRunId) {
+      return <section className="construction-empty is-error" role="alert"><span>构建记录不存在</span><h3>无法打开指定复核任务</h3><p>该链接指向的构建运行不属于当前 Solution，或记录已不可用。</p></section>;
+    }
     return <section className="construction-empty"><span>REVIEW CENTER</span><h3>没有待复核的候选</h3><p>先在“输入与证据 → 构建运行”启动一次自动构建。</p></section>;
+  }
+
+
+  if (finalDecision) {
+    if (requestedDecisionId && finalDecision.decision_id !== requestedDecisionId) {
+      return <section className="construction-empty is-error" role="alert"><span>复核结果不匹配</span><h3>无法确认指定决策</h3><p>结果链接与当前构建记录不一致。</p></section>;
+    }
+    return <ConstructionReviewResultView decision={finalDecision} solutionId={solutionId} />;
   }
 
   return (
@@ -504,9 +659,18 @@ export function ConstructionReviewCenter({
         </aside>
       </div>
       <footer className="review-commit-bar">
-        <div><strong>{hasEditErrors ? "存在未通过结构校验的人工修改" : allDecided ? progressDirty ? "全部已处理；请先保存复核进度" : "所有候选均已保存 disposition" : `还有 ${run.candidates.length - decidedCount} 项未决定`}</strong><p>{reviewDraft ? `服务端 Review r${reviewDraft.review_revision} · ${shortId(reviewDraft.batch_checksum)}` : "尚未形成服务端复核批次"}；最终提交会再次核对候选、批次和 Draft。</p></div>
-        {!readOnly ? <div className="review-commit-actions"><button type="button" disabled={!progressDirty || !currentDispositions.length || hasEditErrors || stale || busy || Boolean(activeRecord?.decision)} onClick={() => { void onSave(run.run_id, currentDispositions); }}>{busy ? "正在保存…" : "保存复核进度"}</button><button type="button" disabled={!allDecided || progressDirty || hasEditErrors || !reviewDraft || stale || busy || Boolean(activeRecord?.decision)} onClick={submit}>{busy ? "正在提交…" : activeRecord?.decision ? "本轮已完成" : "完成本轮复核并应用"}</button></div> : null}
+        <div><strong>{hasEditErrors ? "存在未通过结构校验的人工修改" : allDecided ? progressDirty ? "全部已处理；请先保存复核进度" : "所有候选均已保存复核动作" : `还有 ${run.candidates.length - decidedCount} 项未决定`}</strong><p>{savedDraft ? `服务端复核 r${savedDraft.review_revision} · ${shortId(savedDraft.batch_checksum)}` : "尚未形成服务端复核批次"}；最终提交会再次核对候选、批次和 Draft。</p></div>
+        {!readOnly ? <div className="review-commit-actions"><button type="button" disabled={!progressDirty || !currentDispositions.length || hasEditErrors || stale || busy} onClick={() => { void saveProgress(); }}>{workflowPhase === "SAVING" ? "正在保存…" : "保存复核进度"}</button><button type="button" disabled={!allDecided || progressDirty || hasEditErrors || !savedDraft || stale || busy} onClick={() => { void submit(); }}>{workflowPhase === "APPLYING" ? "正在应用…" : "完成本轮复核并应用"}</button></div> : null}
       </footer>
+      {navigationBlocker.state === "blocked" ? (
+        <div className="eix-modal-backdrop" role="presentation">
+          <section className="eix-modal review-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="review-leave-title">
+            <header><span>未保存的复核进度</span><h3 id="review-leave-title">离开前是否保留当前修改？</h3></header>
+            <p>当前页面包含尚未保存的人工处置。直接离开会丢失这些修改，但不会影响已保存的服务端复核批次。</p>
+            <footer><button type="button" onClick={() => navigationBlocker.reset()}>继续复核</button><button className="is-danger" type="button" onClick={() => navigationBlocker.proceed()}>放弃修改并离开</button></footer>
+          </section>
+        </div>
+      ) : null}
       {error ? <p className="operator-error" role="alert">{error}</p> : null}
     </section>
   );

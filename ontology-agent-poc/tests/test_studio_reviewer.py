@@ -19,8 +19,32 @@ from ontology_agent.studio.reviewer import (
     ReviewerOutputV1,
     ReviewerRequestV1,
     ReviewerResponseV1,
+    deterministic_candidate_findings,
 )
+from ontology_agent.studio.package_authoring import PackageDraftOperation
 from ontology_agent.studio.skill_packages import load_skill_package
+
+
+def _typed_candidate(
+    suffix: str, candidate_type: str, operation: PackageDraftOperation
+) -> ConstructionCandidateV1:
+    return ConstructionCandidateV1(
+        candidate_id="candidate." + suffix * 32,
+        occurrence_key=suffix * 64,
+        revision_digest=("f" if suffix != "f" else "e") * 64,
+        candidate_type=candidate_type,
+        label=operation.object_id,
+        definition="Typed review candidate.",
+        support_class="DIRECT_EXACT",
+        risk_class="HIGH",
+        compile_eligible=True,
+        canonical_target=operation.object_id,
+        proposal={},
+        proposed_operation=operation,
+        draft_diff=CandidateDraftDiffV1(
+            change_type="CREATE", after=operation.payload
+        ),
+    )
 
 
 def _intake() -> dict[str, object]:
@@ -142,3 +166,212 @@ def test_reviewer_rejects_a_finding_for_an_unknown_candidate(
             candidates=(_candidate(),),
             evidence_bundle=bundle,
         )
+
+
+def test_deterministic_review_blocks_binding_outside_candidate_schema(
+    package: OntologyPackage,
+) -> None:
+    source_id = package.sources[0].id
+    owner_id = package.actors[0].id
+    logical_target = package.properties[0].id
+    data_source_operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "data_sources",
+            "object_id": "ds.review_test",
+            "payload": {
+                "id": "ds.review_test",
+                "status": "proposed",
+                "name": {"en": "Review test source"},
+                "definition": "A source used to test binding closure.",
+                "owner": owner_id,
+                "sources": [source_id],
+                "tables": [
+                    {
+                        "name": "events",
+                        "grain": "one event",
+                        "primary_key": ["event_id"],
+                        "fields": [
+                            {
+                                "name": "event_id",
+                                "data_type": "string",
+                                "nullable": False,
+                                "description": "Event identifier.",
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+    binding_operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "bindings",
+            "object_id": "bind.review_test.missing_column",
+            "payload": {
+                "id": "bind.review_test.missing_column",
+                "status": "proposed",
+                "name": {"en": "Missing column binding"},
+                "definition": "A binding to a column absent from the schema.",
+                "owner": owner_id,
+                "sources": [source_id],
+                "logical_target": logical_target,
+                "source": "ds.review_test",
+                "table": "events",
+                "column": "missing_column",
+                "data_type": "string",
+            },
+        }
+    )
+
+    binding_candidate = _typed_candidate("b", "MAPPING", binding_operation)
+    findings = deterministic_candidate_findings(
+        (
+            _typed_candidate("a", "DATA_SOURCE", data_source_operation),
+            binding_candidate,
+        ),
+        package=package,
+        evidence_bundle=None,
+    )
+
+    binding_findings = [
+        item
+        for item in findings
+        if binding_candidate.candidate_id in item.candidate_ids
+    ]
+    assert any(
+        item.finding_type == "BROKEN_REFERENCE"
+        and item.blocks_release
+        and "unknown physical column" in item.detail
+        for item in binding_findings
+    )
+
+
+def test_deterministic_review_blocks_invalid_metric_references_and_query_contract(
+    package: OntologyPackage,
+) -> None:
+    source_id = package.sources[0].id
+    owner_id = package.actors[0].id
+    metric_operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "metrics",
+            "object_id": "metric.review_test",
+            "payload": {
+                "id": "metric.review_test",
+                "status": "proposed",
+                "name": {"en": "Invalid review metric"},
+                "definition": "A derived metric with unresolved references.",
+                "owner": owner_id,
+                "sources": [source_id],
+                "metric_type": "derived",
+                "base_entity": "entity.missing",
+                "result_grain": ["dimension.missing"],
+                "value_type": "decimal",
+                "unit": "ratio",
+                "aggregation_semantics": "derived_non_additive",
+                "formula": {"op": "field_ref", "ref": "property.missing"},
+                "query": {"base_source": "ds.unexpected"},
+            },
+        }
+    )
+    candidate = _typed_candidate("c", "METRIC", metric_operation)
+
+    findings = deterministic_candidate_findings(
+        (candidate,), package=package, evidence_bundle=None
+    )
+
+    candidate_findings = [
+        item for item in findings if candidate.candidate_id in item.candidate_ids
+    ]
+    assert any(
+        item.finding_type == "BROKEN_REFERENCE"
+        and item.blocks_release
+        and "property.missing" in item.detail
+        for item in candidate_findings
+    )
+    assert any(
+        item.finding_type == "INCONSISTENT_CONTRACT"
+        and item.blocks_release
+        and "derived metric" in item.detail
+        for item in candidate_findings
+    )
+
+
+def test_deterministic_review_blocks_join_outside_candidate_schemas(
+    package: OntologyPackage,
+) -> None:
+    source_id = package.sources[0].id
+    owner_id = package.actors[0].id
+    data_source_operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "data_sources",
+            "object_id": "ds.join_review",
+            "payload": {
+                "id": "ds.join_review",
+                "status": "proposed",
+                "name": {"en": "Join review source"},
+                "definition": "A source used to test join closure.",
+                "owner": owner_id,
+                "sources": [source_id],
+                "tables": [
+                    {
+                        "name": "left_events",
+                        "grain": "one left event",
+                        "primary_key": ["event_id"],
+                        "fields": [
+                            {
+                                "name": "event_id",
+                                "data_type": "string",
+                                "nullable": False,
+                                "description": "Event identifier.",
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+    join_operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "joins",
+            "object_id": "join.review_test",
+            "payload": {
+                "id": "join.review_test",
+                "status": "proposed",
+                "name": {"en": "Invalid review join"},
+                "definition": "A join whose right relation is absent.",
+                "owner": owner_id,
+                "sources": [source_id],
+                "left_source": "ds.join_review",
+                "left_table": "left_events",
+                "right_source": "ds.join_review",
+                "right_table": "missing_table",
+                "keys": [
+                    {"left_column": "event_id", "right_column": "event_id"}
+                ],
+                "expected_cardinality": "N:1",
+            },
+        }
+    )
+    join_candidate = _typed_candidate("d", "LINK", join_operation)
+
+    findings = deterministic_candidate_findings(
+        (
+            _typed_candidate("e", "DATA_SOURCE", data_source_operation),
+            join_candidate,
+        ),
+        package=package,
+        evidence_bundle=None,
+    )
+
+    assert any(
+        item.finding_type == "BROKEN_REFERENCE"
+        and item.blocks_release
+        and "missing_table" in item.detail
+        for item in findings
+        if join_candidate.candidate_id in item.candidate_ids
+    )

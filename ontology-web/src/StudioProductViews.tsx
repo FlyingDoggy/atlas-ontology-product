@@ -21,6 +21,8 @@ import type {
   PackageDraftOperation,
   StudioAuthoringProjection,
   StudioSourceKind,
+  SourceIntakeBatchItemInput,
+  SourceIntakeBatchReceipt,
   StudioSourceLibrary,
   StudioSourcePreview,
   StudioWorkbench,
@@ -618,6 +620,156 @@ const sourceKindLabels: Record<StudioSourceKind, string> = {
   other: "其他材料",
 };
 
+type BatchFileDraft = {
+  clientFileId: string;
+  file: File;
+  title: string;
+  kinds: StudioSourceKind[];
+};
+
+function suggestedSourceKinds(file: File): StudioSourceKind[] {
+  const name = file.name.toLocaleLowerCase();
+  if (name.endsWith(".sql")) return ["sql"];
+  if (/metric|indicator|kpi|指标|口径/.test(name)) return ["metric_transcription"];
+  if (/requirement|需求|process|流程/.test(name)) return ["requirement_transcription"];
+  if (/dictionary|字典|sample|样例/.test(name)) return ["data_dictionary"];
+  if (/model|schema|模型/.test(name)) return ["data_model"];
+  return ["other"];
+}
+
+function anticipatedCapability(file: File): { label: string; className: string } {
+  const suffix = file.name.split(".").pop()?.toLocaleLowerCase() ?? "";
+  if (suffix === "xlsx") return { label: "表格内容可提取", className: "is-ready" };
+  if (["md", "txt", "csv", "json", "yaml", "yml", "sql"].includes(suffix)) {
+    return { label: "文本内容可提取", className: "is-ready" };
+  }
+  return { label: "仅存档，不参与自动构建", className: "is-archive" };
+}
+
+function BatchSourceIntakeDrawer({
+  open,
+  busy,
+  error,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  busy: boolean;
+  error: string | null;
+  onClose: () => void;
+  onSubmit: (items: SourceIntakeBatchItemInput[], idempotencyKey: string) => Promise<SourceIntakeBatchReceipt>;
+}) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [drafts, setDrafts] = useState<BatchFileDraft[]>([]);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<SourceIntakeBatchReceipt | null>(null);
+  const [confirmClosing, setConfirmClosing] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => `browser-${crypto.randomUUID()}`);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const drawerRef = useDialogFocus<HTMLElement>(open, requestClose, returnFocusRef);
+  const dirty = drafts.length > 0 && receipt === null;
+
+  useEffect(() => {
+    if (!open) return;
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }, [open]);
+
+  function reset() {
+    setStep(1);
+    setDrafts([]);
+    setReceipt(null);
+    setLocalError(null);
+    setConfirmClosing(false);
+    setIdempotencyKey(`browser-${crypto.randomUUID()}`);
+  }
+
+  function closeNow() {
+    reset();
+    onClose();
+  }
+
+  function requestClose() {
+    if (dirty) {
+      setConfirmClosing(true);
+      return;
+    }
+    closeNow();
+  }
+
+  function selectFiles(files: FileList | null) {
+    if (!files) return;
+    const incoming = Array.from(files);
+    const combined = [...drafts, ...incoming.map((file, index) => ({
+      clientFileId: `file-${drafts.length + index + 1}-${crypto.randomUUID()}`,
+      file,
+      title: file.name.replace(/\.[^.]+$/, ""),
+      kinds: suggestedSourceKinds(file),
+    }))];
+    if (combined.length > 20) {
+      setLocalError("每批最多选择 20 个文件。");
+      return;
+    }
+    if (combined.some((item) => item.file.size === 0 || item.file.size > 20 * 1024 * 1024)) {
+      setLocalError("文件不能为空，且每个文件不能超过 20 MB。");
+      return;
+    }
+    if (combined.reduce((sum, item) => sum + item.file.size, 0) > 100 * 1024 * 1024) {
+      setLocalError("单批文件总量不能超过 100 MB。");
+      return;
+    }
+    setDrafts(combined);
+    setLocalError(null);
+  }
+
+  function toggleKind(clientFileId: string, kind: StudioSourceKind) {
+    setDrafts((current) => current.map((item) => {
+      if (item.clientFileId !== clientFileId) return item;
+      const kinds = item.kinds.includes(kind)
+        ? item.kinds.filter((value) => value !== kind)
+        : [...item.kinds, kind];
+      return { ...item, kinds };
+    }));
+  }
+
+  async function registerBatch() {
+    if (!drafts.length || drafts.some((item) => !item.title.trim() || !item.kinds.length)) {
+      setLocalError("每个文件都需要标题和至少一个用途。");
+      return;
+    }
+    setLocalError(null);
+    const result = await onSubmit(drafts.map((item) => ({
+      clientFileId: item.clientFileId,
+      file: item.file,
+      registrations: item.kinds.map((kind) => ({
+        kind,
+        title: item.kinds.length > 1
+          ? `${item.title.trim()} · ${sourceKindLabels[kind]}`
+          : item.title.trim(),
+      })),
+    })), idempotencyKey);
+    setReceipt(result);
+    setStep(3);
+  }
+
+  if (!open) return null;
+  return <div className="configuration-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) requestClose(); }}>
+    <aside ref={drawerRef} tabIndex={-1} className="configuration-drawer source-register-drawer source-batch-drawer" role="dialog" aria-modal="true" aria-labelledby="source-batch-title">
+      <header><div><span>SOURCE INTAKE</span><h2 id="source-batch-title">登记来源材料</h2><p>一次选择多份文件，确认用途后统一登记。文件内容不会在这里被改写。</p></div><button type="button" aria-label="关闭材料登记" onClick={requestClose}>×</button></header>
+      <ol className="source-intake-steps" aria-label="材料登记步骤"><li className={step === 1 ? "is-active" : step > 1 ? "is-complete" : ""}><b>1</b><span>选择文件</span></li><li className={step === 2 ? "is-active" : step > 2 ? "is-complete" : ""}><b>2</b><span>确认用途</span></li><li className={step === 3 ? "is-active" : ""}><b>3</b><span>登记结果</span></li></ol>
+      {step === 1 ? <section className="source-batch-step">
+        <div className="source-format-guidance"><h3>支持范围</h3><ul><li><strong>可用于自动构建：</strong>Markdown、TXT、CSV、JSON、YAML、SQL、XLSX</li><li><strong>仅存档：</strong>PDF、DOCX、图片及其他格式；本轮不会声称已读取其内容</li><li><strong>容量：</strong>最多 20 个文件，20 MB/文件，100 MB/批次</li></ul></div>
+        <label className="source-batch-dropzone"><input type="file" multiple onChange={(event) => { selectFiles(event.target.files); event.currentTarget.value = ""; }} /><strong>选择或拖入文件</strong><span>可以一次多选；下一步再统一确认用途</span></label>
+        {drafts.length ? <div className="source-batch-file-list">{drafts.map((item) => { const capability = anticipatedCapability(item.file); return <article key={item.clientFileId}><div><strong>{item.file.name}</strong><span>{(item.file.size / 1024).toFixed(1)} KB</span></div><em className={capability.className}>{capability.label}</em><button type="button" onClick={() => setDrafts((current) => current.filter((value) => value.clientFileId !== item.clientFileId))}>移除</button></article>; })}</div> : null}
+      </section> : null}
+      {step === 2 ? <section className="source-batch-step"><div className="source-batch-purpose-head"><div><h3>确认每份文件的用途</h3><p>系统按文件名给出建议。只有不准确的项需要调整；同一文件可以承担多个用途。</p></div><span>{drafts.length} 个物理文件</span></div><div className="source-purpose-list">{drafts.map((item) => { const capability = anticipatedCapability(item.file); return <article key={item.clientFileId}><header><div><strong>{item.file.name}</strong><span className={capability.className}>{capability.label}</span></div><input aria-label={`${item.file.name} 标题`} value={item.title} onChange={(event) => setDrafts((current) => current.map((value) => value.clientFileId === item.clientFileId ? { ...value, title: event.target.value } : value))} /></header><fieldset><legend>用途</legend>{Object.entries(sourceKindLabels).map(([value, label]) => <label key={value} className={item.kinds.includes(value as StudioSourceKind) ? "is-selected" : ""}><input type="checkbox" checked={item.kinds.includes(value as StudioSourceKind)} onChange={() => toggleKind(item.clientFileId, value as StudioSourceKind)} />{label}</label>)}</fieldset></article>; })}</div></section> : null}
+      {step === 3 && receipt ? <section className="source-batch-step source-batch-result"><header><div><h3>材料登记完成</h3><p>{receipt.physical_files.length} 个文件已登记，生成 {receipt.registrations.length} 个逻辑来源版本。</p></div><strong className={receipt.failures.length ? "has-failures" : "is-success"}>{receipt.failures.length ? `${receipt.failures.length} 个文件需要处理` : "全部成功"}</strong></header><div>{drafts.map((item) => { const physical = receipt.physical_files.find((value) => value.client_file_id === item.clientFileId); const failure = receipt.failures.find((value) => value.client_file_id === item.clientFileId); const count = receipt.registrations.filter((value) => value.client_file_id === item.clientFileId).length; return <article key={item.clientFileId}><div><strong>{item.file.name}</strong><span>{physical ? `${count} 个来源版本` : failure?.detail}</span></div><em className={physical?.capability === "ARCHIVED_ONLY" ? "is-archive" : failure ? "has-failures" : "is-ready"}>{physical?.capability === "TEXT_EXTRACTED" ? "文本已提取" : physical?.capability === "XLSX_TABULAR_EXTRACTED" ? "表格已提取" : physical ? "仅存档" : "登记失败"}</em></article>; })}</div></section> : null}
+      {localError || error ? <p className="source-upload-error" role="alert">{localError ?? error}</p> : null}
+      <footer className="source-batch-actions"><span>{step === 1 ? `已选择 ${drafts.length} 个文件` : step === 2 ? `${drafts.reduce((sum, item) => sum + item.kinds.length, 0)} 个逻辑用途` : `批次 ${receipt?.batch_id.slice(-8) ?? ""}`}</span>{step === 1 ? <><button type="button" onClick={requestClose}>取消</button><button type="button" className="is-primary" disabled={!drafts.length} onClick={() => setStep(2)}>下一步：确认用途</button></> : step === 2 ? <><button type="button" onClick={() => setStep(1)}>返回</button><button type="button" className="is-primary" disabled={busy || drafts.some((item) => !item.kinds.length || !item.title.trim())} onClick={() => void registerBatch()}>{busy ? "正在登记…" : "登记全部材料"}</button></> : <button type="button" className="is-primary" onClick={closeNow}>完成</button>}</footer>
+      {confirmClosing ? <div className="eix-inline-confirm" role="alertdialog" aria-modal="true" aria-labelledby="discard-source-title"><div><h3 id="discard-source-title">放弃本次材料登记？</h3><p>已选择的文件和用途尚未登记，关闭后需要重新选择。</p><footer><button type="button" onClick={() => setConfirmClosing(false)}>继续编辑</button><button type="button" className="is-danger" onClick={closeNow}>放弃并关闭</button></footer></div></div> : null}
+    </aside>
+  </div>;
+}
+
 export function SourceLibraryView({
   ontologyPackage,
   intake,
@@ -625,6 +777,7 @@ export function SourceLibraryView({
   busy = false,
   error = null,
   onUpload,
+  onUploadBatch,
   onPreview,
   onInstallReferencePack,
   onImportInstalledSources,
@@ -636,6 +789,7 @@ export function SourceLibraryView({
   busy?: boolean;
   error?: string | null;
   onUpload?: (input: SourceUploadInput) => Promise<void> | void;
+  onUploadBatch?: (items: SourceIntakeBatchItemInput[], idempotencyKey: string) => Promise<SourceIntakeBatchReceipt>;
   onPreview?: (sourceVersionId: string) => Promise<StudioSourcePreview>;
   onInstallReferencePack?: () => Promise<void> | void;
   onImportInstalledSources?: () => Promise<void> | void;
@@ -683,7 +837,7 @@ export function SourceLibraryView({
     || Boolean(text.trim())
   );
   useDirtyNavigationGuard(uploadDirty);
-  const registerDrawerRef = useDialogFocus<HTMLElement>(showForm, closeSourceForm, registerReturnFocusRef);
+  const registerDrawerRef = useDialogFocus<HTMLElement>(showForm && !onUploadBatch, closeSourceForm, registerReturnFocusRef);
   const previewDrawerRef = useDialogFocus<HTMLElement>(Boolean(previewSourceVersionId), closePreview, previewReturnFocusRef);
 
   function resetSourceForm() {
@@ -763,7 +917,7 @@ export function SourceLibraryView({
       <div><span>SOURCE LIBRARY</span><h2>来源材料与证据版本</h2><p>每次登记都会形成不可变的 exact version。当前版本用于构建，历史版本继续保留证据身份。</p></div>
       <div className="object-page-heading-side">
         <div className="object-page-counts"><strong>{current.length ? `${current.length} 个当前来源` : `${fallbackCount} 份安装材料`}</strong><span>{library?.versions.length ?? 0} 个可追溯版本</span></div>
-        {!readOnly ? <div className="object-page-actions"><button type="button" className="is-primary" onClick={(event) => toggleSourceForm(event.currentTarget)}>登记材料版本</button></div> : null}
+        {!readOnly ? <div className="object-page-actions"><button type="button" className="is-primary" onClick={(event) => toggleSourceForm(event.currentTarget)}>{onUploadBatch ? "登记来源材料" : "登记材料版本"}</button></div> : null}
       </div>
     </header>
     <div className="page-authority-note"><strong>材料本身不可原地修改。</strong><span>要纠正或更新内容，请为同一逻辑来源登记新版本；系统会保留旧版本和校验摘要。</span></div>
@@ -771,7 +925,8 @@ export function SourceLibraryView({
     {referencePack ? <section className={`reference-source-pack${packInstalled ? " is-installed" : ""}`}><div><span>REFERENCE INPUT</span><h3>{scenarioName}参考材料包</h3><p>{readOnly ? "参考方案保留已登记材料及其精确身份。复制方案后可载入材料并重新构建。" : "将包内材料登记为可追溯的来源版本，供构建任务选择。"}</p></div><dl><div><dt>原始文件</dt><dd>{packFileCount} 份</dd></div><div><dt>逻辑来源</dt><dd>{packSourceIds.length} 个</dd></div><div><dt>状态</dt><dd>{packInstalled ? "已载入" : "尚未载入"}</dd></div></dl>{!readOnly ? <button type="button" disabled={busy || packInstalled || !onInstallReferencePack} onClick={() => onInstallReferencePack?.()}>{packInstalled ? "参考材料已载入" : "载入参考材料包"}</button> : null}</section> : null}
     {current.length ? <div className="source-library-table"><div className="source-library-head"><span>当前来源</span><span>类型</span><span>处理状态</span><span>版本</span></div>{current.map((source) => <button key={source.source_version_id} type="button" className="source-library-row" aria-label={`查看 ${source.title} 详情`} disabled={!onPreview || (previewBusy && previewSourceVersionId === source.source_version_id)} onClick={(event) => openPreview(source.source_version_id, event.currentTarget)}><span className="source-library-primary"><strong>{source.title}</strong><small>{source.original_name} · {(source.size_bytes / 1024).toFixed(1)} KB</small></span><span className="source-library-type">{sourceKindLabels[source.kind]}</span><em>{source.processing_mode === "TRANSCRIBED" ? "文本已解析" : source.processing_mode === "STRUCTURED_TRANSCRIPTION" ? "结构已解析" : "已登记，待解析"}</em><span className="source-library-version"><code title={source.content_checksum}>{source.content_checksum.slice(0, 12)}</code><b aria-hidden="true">→</b></span></button>)}</div> : <div className="source-library-table"><div className="source-library-head"><span>安装材料</span><span>类型</span><span>处理状态</span><span>版本身份</span></div>{assets.length ? assets.map((asset, index) => { const id = String(asset.asset_id ?? asset.file_id ?? `source-${index + 1}`); return <article key={id}><div><strong>{String(asset.title ?? asset.name ?? asset.locator ?? id)}</strong><small>{String(asset.locator ?? asset.original_name ?? id)}</small></div><span>{String(asset.kind ?? asset.media_type ?? "document")}</span><em>{String(asset.processing_mode ?? asset.status ?? "REGISTERED")}</em><code>{String(asset.checksum ?? asset.sha256 ?? "pending").slice(0, 12)}</code></article>; }) : ontologyPackage.sources.map((source) => <article key={source.id}><div><strong>{source.title}</strong><small>{source.locator}</small></div><span>{source.source_type}</span><em>REGISTERED</em><code>{source.id}</code></article>)}</div>}
     {library?.versions.length ? <section className="source-version-section"><header><div><span>VERSION HISTORY</span><h3>历史版本</h3></div><strong>{library.versions.length} 个版本</strong></header><div>{library.versions.map((source) => <article key={source.source_version_id}><div><strong>{source.title}</strong><small>{new Date(source.registered_at).toLocaleString("zh-CN")} · {source.original_name}</small></div><span>{sourceKindLabels[source.kind]}</span><code>{source.content_checksum.slice(0, 16)}</code><em>{source.is_current ? "当前" : "历史"}</em>{onPreview ? <button type="button" onClick={(event) => openPreview(source.source_version_id, event.currentTarget)}>查看</button> : null}</article>)}</div></section> : null}
-    {!readOnly && showForm ? <div className="configuration-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSourceForm(); }}><aside ref={registerDrawerRef} tabIndex={-1} className="configuration-drawer source-register-drawer" role="dialog" aria-modal="true" aria-labelledby="source-register-title"><header><div><span>REGISTER EXACT SOURCE</span><h2 id="source-register-title">登记材料版本</h2><p>登记新材料，或为同一逻辑来源创建替代版本。旧版本不会被覆盖。</p></div><button type="button" aria-label="关闭材料登记" onClick={closeSourceForm}>×</button></header><form className="source-upload-panel" onSubmit={submit}><div className="source-upload-grid"><label>材料类型<select value={kind} onChange={(event) => changeSourceKind(event.target.value as StudioSourceKind)}>{Object.entries(sourceKindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>材料标题<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label className="source-file-field">选择文件<input type="file" accept={transcribed ? ".md,.txt,.xlsx,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : undefined} onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label></div>{transcribed ? <label className="source-text-field">或者直接粘贴转写内容<textarea value={text} disabled={Boolean(file)} onChange={(event) => setText(event.target.value)} placeholder="可粘贴 O-xx / M-xx Markdown 表格，或直接上传标准 Excel template。" /></label> : null}{localError || error ? <p className="source-upload-error" role="alert">{localError ?? error}</p> : null}<footer className="source-upload-actions"><span>{file ? `${file.name} · ${Math.ceil(file.size / 1024)} KB` : "尚未选择文件"}</span><button type="button" onClick={closeSourceForm}>取消</button><button type="submit" className="is-primary" disabled={busy || !title.trim() || (!file && !text.trim())}>{busy ? "登记中…" : "登记新版本"}</button></footer></form></aside></div> : null}
+    {!readOnly && onUploadBatch ? <BatchSourceIntakeDrawer open={showForm} busy={busy} error={error} onClose={() => setShowForm(false)} onSubmit={onUploadBatch} /> : null}
+    {!readOnly && !onUploadBatch && showForm ? <div className="configuration-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSourceForm(); }}><aside ref={registerDrawerRef} tabIndex={-1} className="configuration-drawer source-register-drawer" role="dialog" aria-modal="true" aria-labelledby="source-register-title"><header><div><span>REGISTER EXACT SOURCE</span><h2 id="source-register-title">登记材料版本</h2><p>登记新材料，或为同一逻辑来源创建替代版本。旧版本不会被覆盖。</p></div><button type="button" aria-label="关闭材料登记" onClick={closeSourceForm}>×</button></header><form className="source-upload-panel" onSubmit={submit}><div className="source-upload-grid"><label>材料类型<select value={kind} onChange={(event) => changeSourceKind(event.target.value as StudioSourceKind)}>{Object.entries(sourceKindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>材料标题<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label className="source-file-field">选择文件<input type="file" accept={transcribed ? ".md,.txt,.xlsx,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : undefined} onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label></div>{transcribed ? <label className="source-text-field">或者直接粘贴转写内容<textarea value={text} disabled={Boolean(file)} onChange={(event) => setText(event.target.value)} placeholder="可粘贴 O-xx / M-xx Markdown 表格，或直接上传标准 Excel template。" /></label> : null}{localError || error ? <p className="source-upload-error" role="alert">{localError ?? error}</p> : null}<footer className="source-upload-actions"><span>{file ? `${file.name} · ${Math.ceil(file.size / 1024)} KB` : "尚未选择文件"}</span><button type="button" onClick={closeSourceForm}>取消</button><button type="submit" className="is-primary" disabled={busy || !title.trim() || (!file && !text.trim())}>{busy ? "登记中…" : "登记新版本"}</button></footer></form></aside></div> : null}
     {previewSourceVersionId ? <div className="configuration-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePreview(); }}><aside ref={previewDrawerRef} tabIndex={-1} className="configuration-drawer source-preview-drawer" role="dialog" aria-modal="true" aria-labelledby="source-preview-title"><header><div><span>EXACT SOURCE DETAIL</span><h2 id="source-preview-title">{previewSource?.title ?? "材料版本详情"}</h2><p>{previewSource ? `${previewSource.original_name} · ${sourceKindLabels[previewSource.kind]}` : "正在读取材料版本"}</p></div><button type="button" aria-label="关闭材料详情" onClick={closePreview}>×</button></header>{previewSource ? <dl className="source-version-metadata"><div><dt>版本身份</dt><dd>{previewSource.source_version_id}</dd></div><div><dt>登记时间</dt><dd>{new Date(previewSource.registered_at).toLocaleString("zh-CN")}</dd></div><div><dt>处理状态</dt><dd>{previewSource.processing_mode}</dd></div><div><dt>SHA-256</dt><dd>{previewSource.content_checksum}</dd></div></dl> : null}<section className="source-preview-content">{previewBusy ? <div className="drawer-loading"><strong>正在读取材料内容…</strong><span>校验 exact version 与预览结果</span></div> : null}{previewError ? <p className="source-upload-error" role="alert">{previewError}</p> : null}{preview?.limitation ? <p className="source-preview-limitation">{preview.limitation}</p> : null}{preview?.text_lines.length ? <div className="source-text-preview">{preview.text_lines.map((line) => <div key={line.line_number}><span>{line.line_number}</span><code>{line.text || " "}</code></div>)}</div> : null}{preview?.sheets.map((sheet) => <section key={sheet.sheet_name}><header><strong>{sheet.sheet_name}</strong><code>{sheet.used_range}{sheet.truncated ? " · preview truncated" : ""}</code></header><div className="source-sheet-preview"><div><b>Cell</b><b>Value</b><b>Raw formula</b></div>{sheet.cells.map((cell) => <article key={cell.cell}><code>{cell.cell}</code><span>{String(cell.display_value ?? "")}</span><code>{cell.raw_formula ?? "—"}</code></article>)}</div></section>)}</section></aside></div> : null}
   </section>;
 }

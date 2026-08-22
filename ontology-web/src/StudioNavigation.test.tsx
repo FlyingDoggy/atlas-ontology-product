@@ -5,6 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import {
   StudioNavigation,
   StudioSubnavigation,
+  studioBuildResultHref,
+  studioBuildReviewHref,
+  studioBuildRouteFromPath,
   studioPageFromPath,
   studioPageHref,
   studioSubpageFromPath,
@@ -34,6 +37,18 @@ describe("StudioNavigation", () => {
       .toBe("/ontology-studio/solutions/ontology.exchange_analytics.cash_trading/quality/validation/");
     expect(studioPageHref("quality", "ontology.exchange_analytics.adt", "validation"))
       .toBe("/ontology-studio/solutions/ontology.exchange_analytics.adt/quality/validation/");
+  });
+
+  it("uses stable deep links for one exact build review and result", () => {
+    const runId = `construction-run.${"a".repeat(32)}`;
+    const decisionId = `construction-decision.${"b".repeat(32)}`;
+    const reviewHref = studioBuildReviewHref("ontology.exchange_analytics.cash_trading", runId);
+    const resultHref = studioBuildResultHref("ontology.exchange_analytics.cash_trading", runId, decisionId);
+
+    expect(studioPageFromPath(reviewHref)).toBe("construction");
+    expect(studioSubpageFromPath(reviewHref, "construction")).toBe("review");
+    expect(studioBuildRouteFromPath(reviewHref)).toEqual({ runId, decisionId: null });
+    expect(studioBuildRouteFromPath(resultHref)).toEqual({ runId, decisionId });
   });
 
   it("renders a hierarchical application navigation without PoC branding", () => {

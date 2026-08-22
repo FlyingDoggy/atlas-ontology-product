@@ -12,6 +12,7 @@ from ontology_agent.studio.solutions import (
     _write_blank_solution_files,
 )
 from ontology_agent.studio.workspace import WorkspaceConflictError, WorkspaceStateError
+from ontology_agent.validation import validate_semantic_package
 
 
 @pytest.fixture()
@@ -52,6 +53,13 @@ def test_generic_workspace_starts_without_domain_assets(
     assert package.scenario.definition == workspace.solution_intent
     assert package.entities == ()
     assert package.metrics == ()
+    assert [item.id for item in package.actors] == ["actor.domain_owner"]
+    owner_check = next(
+        item
+        for item in validate_semantic_package(package).checks
+        if item.check_id == "OWNER_REFERENCES"
+    )
+    assert owner_check.status == "PASS"
     assert service.get_intake("workspace.custom.blank_case").assets == ()
     assert [item.revision for item in service.list_revisions("workspace.custom.blank_case")] == [1]
 

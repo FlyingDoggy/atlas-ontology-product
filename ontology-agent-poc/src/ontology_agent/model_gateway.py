@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
@@ -59,6 +60,100 @@ from .solution_llm import (
     load_solution_llm_profile,
     load_solution_question_family,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+def _canonicalize_formula_node(raw: Any) -> Any:
+    """Canonicalize the provider's harmless unary-operator shorthand.
+
+    Qwen occasionally emits ``{"op": "sum", "ref": "property.x"}`` even
+    though the governed FormulaNode contract represents the same expression as
+    ``{"op": "sum", "args": [{"op": "field_ref", "ref": "property.x"}]}``.
+    The adapter also removes a one-child ``add`` or ``multiply`` envelope; both
+    operators have an unambiguous identity for one operand. It deliberately
+    leaves unknown operators, missing references, multi-argument unary operators,
+    and one-child ``subtract``/``divide`` untouched so Pydantic still rejects
+    semantic or ambiguous structural errors.
+    """
+    if not isinstance(raw, dict):
+        return raw
+    normalized = dict(raw)
+    args = normalized.get("args")
+    if isinstance(args, list):
+        normalized["args"] = [_canonicalize_formula_node(item) for item in args]
+    elif isinstance(args, dict):
+        normalized["args"] = [_canonicalize_formula_node(args)]
+
+    op = normalized.get("op")
+    if op in {"sum", "count_distinct"}:
+        current_args = normalized.get("args")
+        ref = normalized.get("ref")
+        if current_args in (None, []) and isinstance(ref, str) and ref:
+            ref_op = "metric_ref" if ref.startswith("metric.") else "field_ref"
+            normalized["args"] = [{"op": ref_op, "ref": ref}]
+            normalized.pop("ref", None)
+        elif isinstance(current_args, list) and len(current_args) == 1:
+            normalized.pop("ref", None)
+    elif op in {"field_ref", "metric_ref"}:
+        current_args = normalized.get("args")
+        ref = normalized.get("ref")
+        if (ref is None or ref == "") and isinstance(current_args, list) and len(
+            current_args
+        ) == 1:
+            # A reference node cannot itself contain an expression. When the
+            # provider emits an empty reference as a one-child wrapper, the
+            # child is the only well-defined AST and can be unwrapped without
+            # inventing an operator or operand.
+            return current_args[0]
+    elif op == "literal":
+        current_args = normalized.get("args")
+        if normalized.get("value") is None and isinstance(
+            current_args, list
+        ) and len(current_args) == 1:
+            # A literal without a value is not a literal. When it only wraps one
+            # valid child expression, the child is the complete unambiguous AST.
+            return current_args[0]
+    elif op in {"add", "multiply"}:
+        current_args = normalized.get("args")
+        if isinstance(current_args, list) and len(current_args) == 1:
+            # Addition and multiplication of one operand are mathematically the
+            # operand itself. This is a syntax-only normalization, not a repair
+            # of missing business logic.
+            return current_args[0]
+    return normalized
+
+
+def _canonicalize_builder_formulae(raw_output: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy with only metric formula payloads put in canonical AST form."""
+    normalized = dict(raw_output)
+    proposals = normalized.get("proposals")
+    if not isinstance(proposals, list):
+        return normalized
+    normalized_proposals: list[Any] = []
+    for raw_proposal in proposals:
+        if not isinstance(raw_proposal, dict):
+            normalized_proposals.append(raw_proposal)
+            continue
+        proposal = dict(raw_proposal)
+        raw_operation = proposal.get("operation")
+        if isinstance(raw_operation, dict):
+            operation = dict(raw_operation)
+            raw_payload = operation.get("payload")
+            if operation.get("collection") == "metrics" and isinstance(
+                raw_payload, dict
+            ):
+                payload = dict(raw_payload)
+                if "formula" in payload:
+                    payload["formula"] = _canonicalize_formula_node(
+                        payload["formula"]
+                    )
+                operation["payload"] = payload
+            proposal["operation"] = operation
+        normalized_proposals.append(proposal)
+    normalized["proposals"] = normalized_proposals
+    return normalized
 
 
 app = FastAPI(
@@ -126,13 +221,22 @@ def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
         "const": request.request_digest,
         "type": "string",
     }
+    schema["properties"]["proposals"]["maxItems"] = request.max_proposals
     reference_rules = "\n\n".join(skill.reference_texts.values())
     system_prompt = (
         skill.instructions
         + "\n\n"
         + reference_rules
         + "\n\nThe request contains the only allowed evidence and exact typed asset schemas. "
-        "Return one closed phase result."
+        "Return one closed phase result. "
+        + (
+            "All human-readable ontology names, definitions, descriptions, rationales, "
+            f"assumptions and clarification questions MUST use {request.authoring_language}. "
+            "Preserve IDs, SQL, formulae, physical table/field names, enum codes, filenames "
+            "and exact evidence excerpts byte-for-byte. Do not manufacture a second translation."
+            if request.authoring_language is not None
+            else ""
+        )
     )
     provider_body: dict[str, Any] = {
         "model": requested_model,
@@ -175,6 +279,7 @@ def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
         raw_output = json.loads(content)
         if not isinstance(raw_output, dict):
             raise ValueError("Builder output must be a JSON object")
+        raw_output = _canonicalize_builder_formulae(raw_output)
         # Request identity and loop closure are control-plane facts. The model
         # proposes domain content; it does not get authority to declare which
         # request it answered or whether the bounded phase is complete.
@@ -190,6 +295,10 @@ def ontology_build(request: BuilderPhaseRequestV1) -> BuilderPhaseResponseV1:
         if len(output.proposals) > request.max_proposals:
             raise ValueError("Builder output escaped its exact request")
     except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
+        logger.exception(
+            "Ontology Builder provider request failed",
+            extra={"failure_type": type(exc).__name__},
+        )
         raise HTTPException(status_code=502, detail="Ontology Builder provider request failed") from exc
     return BuilderPhaseResponseV1(
         requested_model=requested_model,
@@ -245,7 +354,13 @@ def ontology_review(request: ReviewerRequestV1) -> ReviewerResponseV1:
         + reference_rules
         + "\n\nThis is a fresh review context. Candidate projections intentionally omit "
         "Builder rationale and private reasoning. Return findings only; never return "
-        "approval, disposition, Draft operations, publication or activation actions."
+        "approval, disposition, Draft operations, publication or activation actions. "
+        + (
+            f"Review human-readable ontology content against authoring language {request.authoring_language}; "
+            "do not request translation of identifiers, SQL, formulae, physical fields or exact evidence."
+            if request.authoring_language is not None
+            else ""
+        )
     )
     provider_body: dict[str, Any] = {
         "model": requested_model,
@@ -301,6 +416,10 @@ def ontology_review(request: ReviewerRequestV1) -> ReviewerResponseV1:
         ):
             raise ValueError("Reviewer output escaped its exact request")
     except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
+        logger.exception(
+            "Ontology Reviewer provider request failed",
+            extra={"failure_type": type(exc).__name__},
+        )
         raise HTTPException(status_code=502, detail="Ontology Reviewer provider request failed") from exc
     return ReviewerResponseV1(
         requested_model=requested_model,

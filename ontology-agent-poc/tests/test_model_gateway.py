@@ -134,6 +134,217 @@ def test_ontology_builder_gateway_executes_one_closed_versioned_skill_phase(
     assert "test-only-builder-secret" not in serialized
     assert provider_body["model"] == "qwen3.8-max"
     assert provider_body["enable_thinking"] is False
+    assert f'"maxItems":{request.max_proposals}' in provider_body["messages"][1][
+        "content"
+    ]
+
+
+def test_ontology_builder_gateway_canonicalizes_unary_formula_shorthand(
+    monkeypatch: pytest.MonkeyPatch,
+    package: OntologyPackage,
+) -> None:
+    text = "Each request has a unique request identifier."
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.request",
+                "kind": "metric_transcription",
+                "checksum": hashlib.sha256(text.encode()).hexdigest(),
+                "content_text": text,
+            }
+        ]
+    }
+    skill = load_skill_package("ontology-build", "1.2.0")
+    bundle = normalize_evidence(intake, workspace_id="workspace.generic")
+    request = _phase_request(
+        run_id="construction-run." + "b" * 32,
+        workspace_id="workspace.generic",
+        phase="ANALYTICS",
+        skill=skill,
+        bundle=bundle,
+        package=package,
+        prior_operations=(),
+    )
+    fragment_id = request.evidence_fragments[0].fragment_id
+
+    def fake_transport(
+        url: str, headers: dict[str, str], body: dict[str, object], timeout: float
+    ) -> dict[str, object]:
+        return {
+            "id": "provider-request.builder-formula",
+            "model": "qwen3.8-max",
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "proposals": [
+                                    {
+                                        "contract": "builder-proposal/v1",
+                                        "proposal_id": "proposal.request_count",
+                                        "operation": {
+                                            "action": "UPSERT",
+                                            "collection": "metrics",
+                                            "object_id": "metric.request_count",
+                                            "payload": {
+                                                "id": "metric.request_count",
+                                                "version": "1.0.0",
+                                                "status": "proposed",
+                                                "name": {"en": "Request count"},
+                                                "definition": "Count of requests.",
+                                                "owner": "Business Owner",
+                                                "sources": ["source.request"],
+                                                "decisions": [],
+                                                "tags": [],
+                                                "metric_type": "base",
+                                                "base_entity": "entity.request",
+                                                "result_grain": [],
+                                                "value_type": "integer",
+                                                "unit": "request",
+                                                "aggregation_semantics": "additive",
+                                                "formula": {
+                                                    "op": "count_distinct",
+                                                    "ref": "property.request.id",
+                                                },
+                                                "allowed_dimensions": [],
+                                                "null_policy": "fail_validation",
+                                                "zero_denominator_policy": "refuse",
+                                            },
+                                        },
+                                        "evidence_fragment_ids": [fragment_id],
+                                        "rationale": "The metric is explicitly defined.",
+                                        "assumptions": [],
+                                        "confidence": 0.9,
+                                    }
+                                ],
+                                "gaps": [],
+                            }
+                        )
+                    }
+                }
+            ],
+        }
+
+    monkeypatch.setattr(gateway_module, "_provider_transport", fake_transport)
+    monkeypatch.setenv("ONTOLOGY_BUILDER_LLM_ENABLED", "true")
+    monkeypatch.setenv("ONTOLOGY_QWEN_API_KEY", "test-only-builder-secret")
+    monkeypatch.setenv("ONTOLOGY_QWEN_BASE_URL", "https://provider.example/v1")
+
+    response = client.post(
+        "/model/v1/ontology-build", json=request.model_dump(mode="json")
+    )
+
+    assert response.status_code == 200
+    formula = response.json()["output"]["proposals"][0]["operation"]["payload"][
+        "formula"
+    ]
+    assert formula["op"] == "count_distinct"
+    assert formula["args"] == [
+        {"op": "field_ref", "ref": "property.request.id"}
+    ]
+
+
+def test_builder_formula_canonicalizer_does_not_repair_wrong_arity() -> None:
+    raw = {
+        "proposals": [
+            {
+                "operation": {
+                    "collection": "metrics",
+                    "payload": {
+                        "formula": {
+                            "op": "sum",
+                            "args": [
+                                {"op": "field_ref", "ref": "property.a"},
+                                {"op": "field_ref", "ref": "property.b"},
+                            ],
+                        }
+                    },
+                }
+            }
+        ]
+    }
+
+    normalized = gateway_module._canonicalize_builder_formulae(raw)
+
+    assert len(
+        normalized["proposals"][0]["operation"]["payload"]["formula"]["args"]
+    ) == 2
+
+
+def test_builder_formula_canonicalizer_unwraps_empty_reference_envelope() -> None:
+    normalized = gateway_module._canonicalize_formula_node(
+        {
+            "op": "field_ref",
+            "args": [
+                {
+                    "op": "sum",
+                    "ref": "property.trade.amount",
+                }
+            ],
+        }
+    )
+
+    assert normalized == {
+        "op": "sum",
+        "args": [
+            {"op": "field_ref", "ref": "property.trade.amount"}
+        ],
+    }
+
+
+def test_builder_formula_canonicalizer_unwraps_one_operand_add_envelope() -> None:
+    normalized = gateway_module._canonicalize_formula_node(
+        {
+            "op": "add",
+            "args": [
+                {
+                    "op": "multiply",
+                    "args": [
+                        {"op": "field_ref", "ref": "property.trade.amount"},
+                        {"op": "literal", "value": 100},
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert normalized == {
+        "op": "multiply",
+        "args": [
+            {"op": "field_ref", "ref": "property.trade.amount"},
+            {"op": "literal", "value": 100},
+        ],
+    }
+
+
+def test_builder_formula_canonicalizer_keeps_ambiguous_one_operand_subtract() -> None:
+    normalized = gateway_module._canonicalize_formula_node(
+        {
+            "op": "subtract",
+            "args": [{"op": "field_ref", "ref": "property.trade.amount"}],
+        }
+    )
+
+    assert normalized == {
+        "op": "subtract",
+        "args": [{"op": "field_ref", "ref": "property.trade.amount"}],
+    }
+
+
+def test_builder_formula_canonicalizer_unwraps_valueless_literal_envelope() -> None:
+    normalized = gateway_module._canonicalize_formula_node(
+        {
+            "op": "literal",
+            "args": [
+                {"op": "field_ref", "ref": "property.trade.latency_ms"}
+            ],
+        }
+    )
+
+    assert normalized == {
+        "op": "field_ref",
+        "ref": "property.trade.latency_ms",
+    }
 
 
 def test_ontology_reviewer_gateway_uses_a_fresh_findings_only_context(

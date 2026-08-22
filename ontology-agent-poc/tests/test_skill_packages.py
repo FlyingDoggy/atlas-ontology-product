@@ -63,3 +63,16 @@ def test_build_skill_1_1_governs_sql_contract_candidates() -> None:
         "references/modeling-rules.md"
     ]
     assert package.manifest.direct_draft_write is False
+
+
+def test_build_skill_1_2_closes_phase_coverage_without_domain_customization() -> None:
+    package = load_skill_package("ontology-build", "1.2.0")
+
+    assert package.manifest.version == "1.2.0"
+    assert package.output_schema["properties"]["proposals"]["maxItems"] == 24
+    assert "For every formal metric definition" in package.instructions
+    corpus = package.instructions.casefold() + "\n" + "\n".join(
+        package.reference_texts.values()
+    ).casefold()
+    assert "adt" not in corpus
+    assert "cash trading" not in corpus

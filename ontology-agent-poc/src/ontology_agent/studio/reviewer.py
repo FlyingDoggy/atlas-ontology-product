@@ -9,7 +9,17 @@ from pydantic import Field, model_validator
 
 from ..contracts import Sha256
 from ..io import sha256_value
-from ..models import OntologyPackage, StrictModel
+from ..language_policy import operation_language_violations
+from ..models import (
+    AuthoringLanguage,
+    DataSource,
+    FormulaNode,
+    JoinContract,
+    Metric,
+    OntologyPackage,
+    PhysicalBinding,
+    StrictModel,
+)
 from .evidence import EvidenceBundleV1, EvidenceFragmentV1
 from .package_authoring import PackageDraftOperation
 from .skill_packages import LoadedSkillPackageV1
@@ -89,6 +99,8 @@ class ReviewerRequestV1(StrictModel):
     skill_checksum: Sha256
     source_set_digest: Sha256
     base_draft_checksum: Sha256
+    authoring_language: AuthoringLanguage | None = None
+    language_policy_digest: Sha256 | None = None
     evidence_fragments: tuple[EvidenceFragmentV1, ...] = Field(max_length=256)
     candidates: tuple[ReviewerCandidateProjectionV1, ...] = Field(
         min_length=1, max_length=512
@@ -220,6 +232,13 @@ def _finding_id(kind: str, candidate_ids: tuple[str, ...], detail: str) -> str:
     return f"finding.deterministic.{digest[:24]}"
 
 
+def _formula_refs(node: FormulaNode, operation: str) -> set[str]:
+    refs = {node.ref} if node.op == operation and node.ref is not None else set()
+    for child in node.args:
+        refs.update(_formula_refs(child, operation))
+    return refs
+
+
 def deterministic_candidate_findings(
     candidates: tuple[Any, ...],
     *,
@@ -235,6 +254,37 @@ def deterministic_candidate_findings(
         if item.candidate_type == "SOURCE" and item.proposed_operation is not None
     )
     known_decisions = {item.id for item in package.decisions}
+    known_entities = {item.id for item in package.entities}
+    known_properties = {item.id for item in package.properties}
+    known_dimensions = {item.id for item in package.dimensions}
+    known_rules = {item.id for item in package.rules}
+    known_metrics = {item.id for item in package.metrics}
+    known_joins = {item.id for item in package.joins}
+    data_sources = {item.id: item for item in package.data_sources}
+    for candidate in candidates:
+        operation = candidate.proposed_operation
+        if operation is None or operation.action != "UPSERT":
+            continue
+        if operation.collection == "properties":
+            known_properties.add(operation.object_id)
+        elif operation.collection == "entities":
+            known_entities.add(operation.object_id)
+        elif operation.collection == "dimensions":
+            known_dimensions.add(operation.object_id)
+        elif operation.collection == "rules":
+            known_rules.add(operation.object_id)
+        elif operation.collection == "metrics":
+            known_metrics.add(operation.object_id)
+        elif operation.collection == "joins":
+            known_joins.add(operation.object_id)
+        elif operation.collection == "data_sources":
+            data_source = DataSource.model_validate(operation.payload)
+            data_sources[data_source.id] = data_source
+    physical_fields = {
+        (source.id, table.name): {field.name: field.data_type for field in table.fields}
+        for source in data_sources.values()
+        for table in source.tables
+    }
     findings: list[ReviewerFindingV1] = []
     by_target: dict[tuple[str, str], list[Any]] = defaultdict(list)
     for candidate in candidates:
@@ -295,6 +345,32 @@ def deterministic_candidate_findings(
         if operation is None:
             continue
         payload = operation.payload or {}
+        if package.authoring_policy is not None:
+            language_issues = operation_language_violations(
+                payload, package.authoring_policy
+            )
+            if language_issues:
+                detail = "; ".join(language_issues[:8])
+                findings.append(
+                    ReviewerFindingV1(
+                        finding_id=_finding_id(
+                            "INCONSISTENT_CONTRACT",
+                            (candidate.candidate_id,),
+                            detail,
+                        ),
+                        finding_type="INCONSISTENT_CONTRACT",
+                        severity="ERROR",
+                        summary="Candidate violates the Solution language policy",
+                        detail=detail,
+                        candidate_ids=(candidate.candidate_id,),
+                        evidence_fragment_ids=(),
+                        blocks_release=True,
+                        recommendation=(
+                            "Edit the human-readable fields to the Solution authoring "
+                            "language. Keep identifiers and exact evidence unchanged."
+                        ),
+                    )
+                )
         if candidate.canonical_target != operation.object_id:
             detail = "Candidate canonical target differs from its typed operation target."
             findings.append(
@@ -336,6 +412,194 @@ def deterministic_candidate_findings(
                     recommendation="先登记缺失来源或决策，再重新生成候选。",
                 )
             )
+        if operation.collection == "bindings":
+            binding = PhysicalBinding.model_validate(payload)
+            fields = physical_fields.get((binding.source, binding.table))
+            defects: list[str] = []
+            if fields is None:
+                defects.append(
+                    f"unknown physical relation {binding.source}/{binding.table}"
+                )
+            elif binding.column not in fields:
+                defects.append(f"unknown physical column {binding.column}")
+            elif fields[binding.column] != binding.data_type:
+                defects.append(
+                    f"physical type {fields[binding.column]} does not match "
+                    f"binding type {binding.data_type}"
+                )
+            if binding.logical_target not in known_properties:
+                defects.append(
+                    f"unknown logical property {binding.logical_target}"
+                )
+            if defects:
+                detail = "; ".join(defects) + "."
+                findings.append(
+                    ReviewerFindingV1(
+                        finding_id=_finding_id(
+                            "BROKEN_REFERENCE", (candidate.candidate_id,), detail
+                        ),
+                        finding_type="BROKEN_REFERENCE",
+                        severity="ERROR",
+                        summary="Physical binding does not close against the candidate schema",
+                        detail=detail,
+                        candidate_ids=(candidate.candidate_id,),
+                        evidence_fragment_ids=(),
+                        blocks_release=True,
+                        recommendation=(
+                            "Align the binding's source, table, column, logical target "
+                            "and data type with accepted Data Source and Property candidates."
+                        ),
+                    )
+                )
+        elif operation.collection == "metrics":
+            metric = Metric.model_validate(payload)
+            missing: set[str] = set()
+            if metric.base_entity not in known_entities:
+                missing.add(metric.base_entity)
+            missing.update(
+                item for item in metric.result_grain if item not in known_dimensions
+            )
+            missing.update(
+                item for item in metric.allowed_dimensions if item not in known_dimensions
+            )
+            missing.update(
+                item for item in metric.query.filters if item not in known_rules
+            )
+            missing.update(
+                item for item in metric.query.required_joins if item not in known_joins
+            )
+            missing.update(
+                item
+                for item in _formula_refs(metric.formula, "metric_ref")
+                if item not in known_metrics
+            )
+            missing.update(
+                item
+                for item in _formula_refs(metric.formula, "field_ref")
+                if item not in known_properties
+            )
+            if metric.metric_type == "base":
+                missing.update(
+                    str(item)
+                    for item in (
+                        metric.query.measure_property,
+                        metric.query.period_property,
+                        metric.query.date_property,
+                        metric.query.population_property,
+                    )
+                    if item not in known_properties
+                )
+                if metric.query.base_source not in data_sources:
+                    missing.add(str(metric.query.base_source))
+            if missing:
+                detail = "Unknown metric references: " + ", ".join(sorted(missing)) + "."
+                findings.append(
+                    ReviewerFindingV1(
+                        finding_id=_finding_id(
+                            "BROKEN_REFERENCE", (candidate.candidate_id,), detail
+                        ),
+                        finding_type="BROKEN_REFERENCE",
+                        severity="ERROR",
+                        summary="Metric does not close against the candidate model",
+                        detail=detail,
+                        candidate_ids=(candidate.candidate_id,),
+                        evidence_fragment_ids=(),
+                        blocks_release=True,
+                        recommendation=(
+                            "Add or accept the referenced objects, properties, dimensions, "
+                            "rules, joins and data sources, or edit the metric contract."
+                        ),
+                    )
+                )
+            physical_query_values = (
+                metric.query.base_source,
+                metric.query.measure_property,
+                metric.query.period_property,
+                metric.query.date_property,
+                metric.query.population_property,
+                metric.query.required_joins,
+                metric.query.filters,
+            )
+            query_defects: list[str] = []
+            if metric.metric_type == "base":
+                if metric.query.measure_property not in _formula_refs(
+                    metric.formula, "field_ref"
+                ):
+                    query_defects.append("query measure is not referenced by formula")
+                if not metric.query.period_property:
+                    query_defects.append("period property is missing")
+            elif any(physical_query_values):
+                query_defects.append(
+                    "derived metric unexpectedly contains a physical query contract"
+                )
+            if query_defects:
+                detail = "; ".join(query_defects) + "."
+                findings.append(
+                    ReviewerFindingV1(
+                        finding_id=_finding_id(
+                            "INCONSISTENT_CONTRACT",
+                            (candidate.candidate_id,),
+                            detail,
+                        ),
+                        finding_type="INCONSISTENT_CONTRACT",
+                        severity="ERROR",
+                        summary="Metric formula and query responsibilities conflict",
+                        detail=detail,
+                        candidate_ids=(candidate.candidate_id,),
+                        evidence_fragment_ids=(),
+                        blocks_release=True,
+                        recommendation=(
+                            "Keep physical query fields on base metrics only and keep "
+                            "derived metrics dependent on governed metric or field formulas."
+                        ),
+                    )
+                )
+        elif operation.collection == "joins":
+            join = JoinContract.model_validate(payload)
+            missing: list[str] = []
+            mismatches: list[str] = []
+            for key in join.keys:
+                left_fields = physical_fields.get((join.left_source, join.left_table))
+                right_fields = physical_fields.get((join.right_source, join.right_table))
+                left_type = left_fields.get(key.left_column) if left_fields else None
+                right_type = right_fields.get(key.right_column) if right_fields else None
+                if left_type is None:
+                    missing.append(
+                        f"{join.left_source}.{join.left_table}.{key.left_column}"
+                    )
+                if right_type is None:
+                    missing.append(
+                        f"{join.right_source}.{join.right_table}.{key.right_column}"
+                    )
+                if left_type is not None and right_type is not None and left_type != right_type:
+                    mismatches.append(
+                        f"{key.left_column}:{left_type} != {key.right_column}:{right_type}"
+                    )
+            if missing or mismatches:
+                parts = []
+                if missing:
+                    parts.append("unknown join fields: " + ", ".join(sorted(set(missing))))
+                if mismatches:
+                    parts.append("join type mismatches: " + ", ".join(sorted(set(mismatches))))
+                detail = "; ".join(parts) + "."
+                findings.append(
+                    ReviewerFindingV1(
+                        finding_id=_finding_id(
+                            "BROKEN_REFERENCE", (candidate.candidate_id,), detail
+                        ),
+                        finding_type="BROKEN_REFERENCE",
+                        severity="ERROR",
+                        summary="Join does not close against the candidate schemas",
+                        detail=detail,
+                        candidate_ids=(candidate.candidate_id,),
+                        evidence_fragment_ids=(),
+                        blocks_release=True,
+                        recommendation=(
+                            "Align both join relations, key columns and physical types "
+                            "with accepted Data Source candidates."
+                        ),
+                    )
+                )
 
     for target, values in sorted(by_target.items()):
         if len(values) < 2:
@@ -406,6 +670,16 @@ def reviewer_request(
         "skill_checksum": skill.package_checksum,
         "source_set_digest": evidence_bundle.source_set_digest,
         "base_draft_checksum": base_draft_checksum,
+        "authoring_language": (
+            package.authoring_policy.authoring_language
+            if package.authoring_policy is not None
+            else None
+        ),
+        "language_policy_digest": (
+            package.authoring_policy.policy_digest
+            if package.authoring_policy is not None
+            else None
+        ),
         "evidence_fragments": evidence_bundle.fragments,
         "candidates": projections,
         "deterministic_findings": deterministic_findings,
@@ -413,6 +687,7 @@ def reviewer_request(
         "allowed_finding_types": tuple(ReviewerFindingType.__args__),
         "max_findings": 256,
     }
+    unsigned = {key: value for key, value in unsigned.items() if value is not None}
     return ReviewerRequestV1(**unsigned, request_digest=sha256_value(unsigned))
 
 

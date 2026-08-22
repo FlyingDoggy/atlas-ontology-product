@@ -1,0 +1,21 @@
+{
+  "contract": "agent-skill-package/v1",
+  "skill_id": "ontology-build",
+  "version": "1.2.0",
+  "role": "BUILDER",
+  "entrypoint": "SKILL.md",
+  "output_schema": "schemas/builder-output.schema.json",
+  "references": ["references/modeling-rules.md"],
+  "evals": ["evals/README.md"],
+  "tool_ids": [
+    "evidence.list",
+    "evidence.read",
+    "candidate.propose",
+    "gap.record",
+    "semantica.propose"
+  ],
+  "max_iterations": 3,
+  "max_model_calls": 3,
+  "human_review_required": true,
+  "direct_draft_write": false
+}

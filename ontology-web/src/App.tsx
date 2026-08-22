@@ -14,6 +14,8 @@ import {
   fetchStudioWorkbench,
   fetchConstructionRuns,
   fetchConstructionJobs,
+  fetchConstructionDecision,
+  fetchStudioBuildTasks,
   fetchConstructionReviewDraft,
   fetchStudioSourceLibrary,
   fetchStudioSourcePreview,
@@ -30,6 +32,7 @@ import {
   saveConstructionReviewDraft,
   reviewConstructionRun,
   registerStudioSource,
+  registerStudioSourceBatch,
   installStudioReferenceSourcePack,
   importStudioInstalledSources,
   prepareAgentRuntime,
@@ -50,6 +53,7 @@ import {
   type SolutionRuntime,
   type SolutionCatalog,
   type StudioSourceLibrary,
+  type StudioBuildTask,
   type StudioSolution,
   type WorkspaceEditor,
   type AuthSession,
@@ -60,6 +64,9 @@ import {
   StudioNavigation,
   StudioSubnavigation,
   studioPageDefinition,
+  studioBuildRouteFromPath,
+  studioBuildReviewHref,
+  studioBuildResultHref,
   studioPageFromPath,
   studioPageHref,
   studioSolutionIdFromPath,
@@ -173,13 +180,22 @@ function Header({
   solutionId,
   session,
   directoryHome = false,
+  taskCenter = false,
 }: {
   kind: ProductKind;
   solutionId: string;
   session: AuthSession | null;
   directoryHome?: boolean;
+  taskCenter?: boolean;
 }) {
-  const otherUrl = directoryHome
+  const taskQuery = useQuery({
+    queryKey: ["studio-build-tasks", "header"],
+    queryFn: fetchStudioBuildTasks,
+    enabled: kind === "studio",
+    refetchInterval: (query) => query.state.data?.tasks.some((task) => ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(task.execution_status)) ? 2_000 : 15_000,
+  });
+  const attentionCount = taskQuery.data?.tasks.filter((task) => task.review_status === "NEEDS_REVIEW" || task.result_outcome === "BLOCKED" || task.result_outcome === "TECHNICAL_FAILURE").length ?? 0;
+  const otherUrl = directoryHome || taskCenter
     ? "/ontology-agent/"
     : kind === "agent"
     ? studioPageHref("overview", solutionId)
@@ -205,15 +221,102 @@ function Header({
       </a>
       <div className="header-actions">
         {session?.authenticated ? <span className={`access-role is-${session.role}`}><i aria-hidden="true" />{session.role === "operator" ? "配置人员" : "只读访问"}<small>{session.username}</small></span> : <span className="access-role is-loading">正在确认权限</span>}
-        {directoryHome
-          ? <span className="header-directory-context">解决方案目录</span>
+        {directoryHome || taskCenter
+          ? <span className="header-directory-context">{taskCenter ? "构建任务" : "解决方案目录"}</span>
           : <SolutionSwitcher selectedId={solutionId} kind={kind} canOperate={session?.authenticated === true && session.role === "operator"} />}
+        {kind === "studio" ? <Link className="header-task-center" to="/ontology-studio/tasks/">构建任务{attentionCount > 0 ? <b>{attentionCount}</b> : null}</Link> : null}
         <a className="product-switch" href={otherUrl}>
           {phaseLabels[kind].companion}
           <span aria-hidden="true">↗</span>
         </a>
       </div>
     </header>
+  );
+}
+
+const executionLabels: Record<StudioBuildTask["execution_status"], string> = {
+  QUEUED: "等待执行",
+  RUNNING: "正在构建",
+  COMMITTING: "正在保存结果",
+  CANCEL_REQUESTED: "正在取消",
+  SUCCEEDED: "执行已结束",
+  FAILED: "执行失败",
+  CANCELLED: "已取消",
+  STALE: "输入已过期",
+};
+
+const outcomeLabels: Record<NonNullable<StudioBuildTask["result_outcome"]>, string> = {
+  TECHNICAL_FAILURE: "技术失败",
+  BLOCKED: "产出被阻断",
+  REVIEW_READY_WITH_WARNINGS: "可复核（有警告）",
+  REVIEW_READY: "可复核",
+  NO_APPLICABLE_CHANGES: "无适用变更",
+};
+
+function taskDestination(task: StudioBuildTask): string {
+  if (task.destination.type === "RESULT" && task.run_id && task.decision_id) {
+    return studioBuildResultHref(task.solution_id, task.run_id, task.decision_id);
+  }
+  if (task.destination.type === "REVIEW" && task.run_id) {
+    return studioBuildReviewHref(task.solution_id, task.run_id);
+  }
+  if (task.destination.type === "SOLUTION") return studioPageHref("overview", task.solution_id);
+  return `/ontology-studio/tasks/${encodeURIComponent(task.task_id)}/`;
+}
+
+function StudioTaskCenter({ session }: { session: AuthSession | null }) {
+  const location = useLocation();
+  const taskId = location.pathname.match(/\/ontology-studio\/tasks\/([^/]+)/)?.[1];
+  const [filter, setFilter] = useState<"ATTENTION" | "ACTIVE" | "DONE" | "ALL">("ATTENTION");
+  const query = useQuery({
+    queryKey: ["studio-build-tasks"],
+    queryFn: fetchStudioBuildTasks,
+    refetchInterval: (current) => {
+      const active = current.state.data?.tasks.some((task) => ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(task.execution_status));
+      return active ? (document.hidden ? 10_000 : 2_000) : 15_000;
+    },
+  });
+  const tasks = query.data?.tasks ?? [];
+  const visible = tasks.filter((task) => {
+    if (filter === "ALL") return true;
+    if (filter === "ACTIVE") return ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(task.execution_status);
+    if (filter === "DONE") return task.review_status === "APPLIED" || task.result_outcome === "NO_APPLICABLE_CHANGES";
+    return task.review_status === "NEEDS_REVIEW" || task.result_outcome === "BLOCKED" || task.result_outcome === "TECHNICAL_FAILURE";
+  });
+  const selected = tasks.find((task) => task.task_id === taskId) ?? null;
+  if (query.isPending) return <main className="state-screen"><span className="state-pulse" /><p>正在读取构建任务…</p></main>;
+  if (query.isError) return <main className="state-screen state-error"><h1>无法读取构建任务</h1><button type="button" onClick={() => query.refetch()}>重新检查</button></main>;
+  return (
+    <div className="product-shell">
+      <Header kind="studio" solutionId={selected?.solution_id ?? "ontology.exchange_analytics.adt"} session={session} taskCenter />
+      <main className="studio-task-main">
+        <header className="task-center-heading">
+          <div><span>ONTOLOGY BUILD TASKS</span><h1>构建任务</h1><p>查看执行进度、业务产出和待处理事项。</p></div>
+          <Link className="secondary-action" to="/ontology-studio/solutions/">返回解决方案目录</Link>
+        </header>
+        <nav className="task-center-filters" aria-label="任务筛选">
+          {(["ATTENTION", "ACTIVE", "DONE", "ALL"] as const).map((value) => <button type="button" className={filter === value ? "is-active" : ""} key={value} onClick={() => setFilter(value)}>{value === "ATTENTION" ? "需处理" : value === "ACTIVE" ? "进行中" : value === "DONE" ? "已完成" : "全部"}<b>{tasks.filter((task) => value === "ALL" || (value === "ACTIVE" && ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(task.execution_status)) || (value === "DONE" && (task.review_status === "APPLIED" || task.result_outcome === "NO_APPLICABLE_CHANGES")) || (value === "ATTENTION" && (task.review_status === "NEEDS_REVIEW" || task.result_outcome === "BLOCKED" || task.result_outcome === "TECHNICAL_FAILURE"))).length}</b></button>)}
+        </nav>
+        <div className={`task-center-layout ${selected ? "has-detail" : ""}`}>
+          <section className="task-table" aria-label="构建任务列表">
+            <header><span>解决方案 / 任务</span><span>执行</span><span>产出</span><span>进度</span><span /></header>
+            {visible.length ? visible.map((task) => <article key={task.task_id} className={selected?.task_id === task.task_id ? "is-selected" : ""}>
+              <div><strong>{task.solution_name}</strong><code>{task.task_id}</code><small>{new Date(task.updated_at).toLocaleString("zh-CN", { hour12: false })}</small></div>
+              <span className={`task-status is-${task.execution_status.toLowerCase()}`}>{executionLabels[task.execution_status]}</span>
+              <span className={`task-outcome is-${(task.result_outcome ?? "pending").toLowerCase()}`}>{task.result_outcome ? outcomeLabels[task.result_outcome] : "尚未形成"}</span>
+              <div className="task-progress"><span><i style={{ width: `${Math.min(100, Math.round(task.completed_stages / task.total_stages * 100))}%` }} /></span><small>{task.completed_stages} / {task.total_stages}</small></div>
+              <Link className="row-action" to={taskDestination(task)}>{task.review_status === "NEEDS_REVIEW" ? "进入复核" : task.destination.type === "RESULT" ? "查看结果" : "查看任务"}</Link>
+            </article>) : <div className="task-empty"><strong>当前筛选下没有任务</strong><p>从任一解决方案的“构建与复核”发起构建后，任务会出现在这里。</p></div>}
+          </section>
+          {selected ? <aside className="task-detail-panel">
+            <Link to="/ontology-studio/tasks/" aria-label="关闭任务详情">×</Link>
+            <span>TASK DETAIL</span><h2>{selected.solution_name}</h2><code>{selected.task_id}</code>
+            <dl><div><dt>执行状态</dt><dd>{executionLabels[selected.execution_status]}</dd></div><div><dt>业务结果</dt><dd>{selected.result_outcome ? outcomeLabels[selected.result_outcome] : "尚未形成"}</dd></div><div><dt>当前阶段</dt><dd>{selected.progress_message}</dd></div><div><dt>候选</dt><dd>{selected.candidate_count} 项，其中 {selected.compilable_count} 项可应用</dd></div><div><dt>阻断项</dt><dd>{selected.blocker_count}</dd></div><div><dt>输出语言</dt><dd>{selected.authoring_language === "zh" ? "中文" : selected.authoring_language === "en" ? "英文" : "尚未锁定"}</dd></div></dl>
+            <Link className="primary-action" to={taskDestination(selected)}>{selected.review_status === "NEEDS_REVIEW" ? "进入人工复核" : selected.destination.type === "RESULT" ? "查看复核结果" : "打开任务所在方案"}</Link>
+          </aside> : null}
+        </div>
+      </main>
+    </div>
   );
 }
 
@@ -819,6 +922,8 @@ function StudioPackageWorkbench({
   subpage,
   solutionId,
   reviewer,
+  requestedRunId = null,
+  requestedDecisionId = null,
   readOnly = false,
 }: {
   workspaceId: string;
@@ -826,6 +931,8 @@ function StudioPackageWorkbench({
   subpage: StudioSubpageId;
   solutionId: string;
   reviewer: string;
+  requestedRunId?: string | null;
+  requestedDecisionId?: string | null;
   readOnly?: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -852,11 +959,18 @@ function StudioPackageWorkbench({
       ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(job.status)
     ) ? 1000 : false,
   });
-  const activeReviewRunId = constructionRunsQuery.data?.runs.find((item) => item.decision === null)?.run.run_id ?? null;
+  const activeReviewRunId = requestedRunId
+    ?? constructionRunsQuery.data?.runs.find((item) => item.decision === null)?.run.run_id
+    ?? null;
   const reviewDraftQuery = useQuery({
     queryKey: ["studio-construction-review-draft", workspaceId, activeReviewRunId],
     queryFn: () => fetchConstructionReviewDraft(workspaceId, activeReviewRunId!),
-    enabled: queryScope.reviewDraft && Boolean(activeReviewRunId),
+    enabled: queryScope.reviewDraft && Boolean(activeReviewRunId) && !requestedDecisionId,
+  });
+  const constructionDecisionQuery = useQuery({
+    queryKey: ["studio-construction-decision", workspaceId, activeReviewRunId, requestedDecisionId],
+    queryFn: () => fetchConstructionDecision(workspaceId, activeReviewRunId!, requestedDecisionId!),
+    enabled: queryScope.reviewDraft && Boolean(activeReviewRunId) && Boolean(requestedDecisionId),
   });
   const sourceLibraryQuery = useQuery({
     queryKey: ["studio-source-library", workspaceId],
@@ -977,6 +1091,15 @@ function StudioPackageWorkbench({
       await sourceLibraryQuery.refetch();
     },
   });
+  const registerSourceBatch = useMutation({
+    mutationFn: async ({ items, idempotencyKey }: {
+      items: Parameters<typeof registerStudioSourceBatch>[2];
+      idempotencyKey: string;
+    }) => registerStudioSourceBatch(workspaceId, idempotencyKey, items),
+    onSuccess: async () => {
+      await sourceLibraryQuery.refetch();
+    },
+  });
   const installReferencePack = useMutation({
     mutationFn: async () => installStudioReferenceSourcePack(workspaceId),
     onSuccess: async () => {
@@ -996,12 +1119,15 @@ function StudioPackageWorkbench({
     },
   });
   const startConstruction = useMutation({
-    mutationFn: async (sourceVersionIds: string[]) => {
+    mutationFn: async ({ sourceVersionIds, authoringLanguage }: { sourceVersionIds: string[]; authoringLanguage: "en" | "zh" }) => {
       if (!query.data) throw new ProductApiError("Studio workbench 尚未就绪。", 409);
-      return enqueueConstructionJob(workspaceId, query.data.workspace.revision, sourceVersionIds);
+      return enqueueConstructionJob(workspaceId, query.data.workspace.revision, sourceVersionIds, authoringLanguage);
     },
     onSuccess: async () => {
-      await constructionJobsQuery.refetch();
+      await Promise.all([
+        constructionJobsQuery.refetch(),
+        query.refetch(),
+      ]);
     },
   });
   const cancelConstruction = useMutation({
@@ -1099,11 +1225,12 @@ function StudioPackageWorkbench({
       ontologyPackage={query.data.package}
       intake={query.data.intake}
       library={sourceLibraryQuery.data ?? null}
-      busy={registerSource.isPending || installReferencePack.isPending || importInstalledSources.isPending}
-      error={(registerSource.error ?? installReferencePack.error ?? importInstalledSources.error ?? sourceLibraryQuery.error) instanceof Error
-        ? String((registerSource.error ?? installReferencePack.error ?? importInstalledSources.error ?? sourceLibraryQuery.error)?.message)
+      busy={registerSourceBatch.isPending || registerSource.isPending || installReferencePack.isPending || importInstalledSources.isPending}
+      error={(registerSourceBatch.error ?? registerSource.error ?? installReferencePack.error ?? importInstalledSources.error ?? sourceLibraryQuery.error) instanceof Error
+        ? String((registerSourceBatch.error ?? registerSource.error ?? installReferencePack.error ?? importInstalledSources.error ?? sourceLibraryQuery.error)?.message)
         : null}
       onUpload={async (input) => { await registerSource.mutateAsync(input); }}
+      onUploadBatch={async (items, idempotencyKey) => registerSourceBatch.mutateAsync({ items, idempotencyKey })}
       onPreview={(sourceVersionId) => fetchStudioSourcePreview(workspaceId, sourceVersionId)}
       onInstallReferencePack={async () => { await installReferencePack.mutateAsync(); }}
       onImportInstalledSources={async () => { await importInstalledSources.mutateAsync(); }}
@@ -1114,10 +1241,11 @@ function StudioPackageWorkbench({
         runs={constructionRunsQuery.data ?? null}
         jobs={constructionJobsQuery.data ?? null}
         sources={sourceLibraryQuery.data?.current ?? []}
+        authoringLanguage={query.data.workspace.authoring_language ?? query.data.package.authoring_policy?.authoring_language ?? null}
         currentRevision={query.data.workspace.revision}
         busy={startConstruction.isPending || cancelConstruction.isPending || retryConstruction.isPending}
         error={(startConstruction.error ?? cancelConstruction.error ?? retryConstruction.error ?? constructionJobsQuery.error ?? constructionRunsQuery.error) instanceof Error ? String((startConstruction.error ?? cancelConstruction.error ?? retryConstruction.error ?? constructionJobsQuery.error ?? constructionRunsQuery.error)?.message) : null}
-        onStart={(sourceVersionIds) => startConstruction.mutate(sourceVersionIds)}
+        onStart={(sourceVersionIds, authoringLanguage) => startConstruction.mutate({ sourceVersionIds, authoringLanguage })}
         onCancel={(jobId) => cancelConstruction.mutate(jobId)}
         onRetry={(jobId) => retryConstruction.mutate(jobId)}
         readOnly={readOnly}
@@ -1200,11 +1328,15 @@ function StudioPackageWorkbench({
   } else if (page === "construction" && subpage === "review") content = <ConstructionReviewCenter
     runs={constructionRunsQuery.data ?? null}
     reviewDraft={reviewDraftQuery.data ?? null}
+    decision={constructionDecisionQuery.data ?? null}
+    requestedRunId={requestedRunId}
+    requestedDecisionId={requestedDecisionId}
+    solutionId={solutionId}
     currentRevision={query.data.workspace.revision}
     busy={reviewConstruction.isPending || saveReviewDraft.isPending}
-    error={(reviewConstruction.error ?? saveReviewDraft.error ?? reviewDraftQuery.error ?? constructionRunsQuery.error) instanceof Error ? String((reviewConstruction.error ?? saveReviewDraft.error ?? reviewDraftQuery.error ?? constructionRunsQuery.error)?.message) : null}
+    error={(reviewConstruction.error ?? saveReviewDraft.error ?? constructionDecisionQuery.error ?? reviewDraftQuery.error ?? constructionRunsQuery.error) instanceof Error ? String((reviewConstruction.error ?? saveReviewDraft.error ?? constructionDecisionQuery.error ?? reviewDraftQuery.error ?? constructionRunsQuery.error)?.message) : null}
     onSave={(runId, dispositions) => saveReviewDraft.mutateAsync({ runId, dispositions })}
-    onReview={(runId, dispositions, reviewBatchChecksum) => reviewConstruction.mutate({ runId, dispositions, reviewBatchChecksum })}
+    onReview={(runId, dispositions, reviewBatchChecksum) => reviewConstruction.mutateAsync({ runId, dispositions, reviewBatchChecksum })}
     readOnly={readOnly}
   />;
   else if (page === "data" && subpage === "schemas") content = <SchemaCatalogView
@@ -1529,6 +1661,7 @@ function StudioApplication({
   reviewer: string;
 }) {
   const location = useLocation();
+  const buildRoute = studioBuildRouteFromPath(location.pathname);
   const page = studioPageFromPath(location.pathname);
   const subpage = studioSubpageFromPath(location.pathname, page);
   const definition = studioPageDefinition(page);
@@ -1570,7 +1703,16 @@ function StudioApplication({
         {referenceMode ? <div className="reference-solution-banner"><div><strong>参考方案 · 只读</strong><span>浏览已确认的内容与运行结果；要重新构建或修改，请先复制为独立方案。</span></div><Link to={`/ontology-studio/solutions/?copy=${encodeURIComponent(solution.solution_id)}`}>复制为可编辑方案</Link></div> : null}
         <fieldset className="role-gated-content studio-page-content" disabled={!canOperate}>
           {page === "overview" || page === "inputs" || page === "construction" || page === "semantic" || page === "data" || page === "quality" ? (
-            <StudioPackageWorkbench workspaceId={solution.workspace_id} page={page} subpage={subpage} solutionId={solution.solution_id} reviewer={reviewer} readOnly={referenceMode} />
+            <StudioPackageWorkbench
+              workspaceId={solution.workspace_id}
+              page={page}
+              subpage={subpage}
+              solutionId={solution.solution_id}
+              reviewer={reviewer}
+              requestedRunId={buildRoute?.runId ?? null}
+              requestedDecisionId={buildRoute?.decisionId ?? null}
+              readOnly={referenceMode}
+            />
           ) : null}
         </fieldset>
       </section>
@@ -1745,8 +1887,14 @@ export function App() {
       <Route path="/" element={<Navigate to="/ontology-agent/" replace />} />
       <Route path="/ontology-agent/*" element={<GenericSolutionView kind="agent" solutionId={selectedSolution} />} />
       <Route path="/ontology-studio" element={<Navigate to="/ontology-studio/solutions/" replace />} />
+      <Route path="/ontology-studio/tasks/*" element={<TaskCenterRoute />} />
       <Route path="/ontology-studio/*" element={<GenericSolutionView kind="studio" solutionId={selectedSolution} />} />
       <Route path="*" element={<Navigate to="/ontology-agent/" replace />} />
     </Routes>
   );
+}
+
+function TaskCenterRoute() {
+  const session = useQuery({ queryKey: ["auth-session"], queryFn: fetchAuthSession, staleTime: 60_000 });
+  return <StudioTaskCenter session={session.data ?? null} />;
 }

@@ -140,8 +140,11 @@ services:
       ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
       ONTOLOGY_BUILDER_LLM_ENABLED: "true"
       ONTOLOGY_BUILDER_MODEL: qwen3.8-max
+      ONTOLOGY_BUILDER_MAX_OUTPUT_TOKENS: "12000"
+      ONTOLOGY_BUILDER_PROVIDER_TIMEOUT_SECONDS: "180"
       ONTOLOGY_REVIEWER_LLM_ENABLED: "true"
       ONTOLOGY_REVIEWER_MODEL: qwen3.8-max
+      ONTOLOGY_REVIEWER_PROVIDER_TIMEOUT_SECONDS: "180"
       ONTOLOGY_SKILL_ROOT: /app/skills
       ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
       ONTOLOGY_STUDIO_LLM_EGRESS_DECISION_PATH: /run/ontology-llm/studio-egress-decision.json
@@ -196,6 +199,8 @@ services:
       ONTOLOGY_STUDIO_LLM_ROLLOUT_PATH: /run/ontology-llm/studio-rollout.json
       ONTOLOGY_STUDIO_LLM_EVALUATION_MANIFEST_PATH: /run/ontology-llm/studio-evaluation-manifest.json
       ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_BUILDER_TIMEOUT_SECONDS: "195"
+      ONTOLOGY_REVIEWER_TIMEOUT_SECONDS: "195"
       ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795
       ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS: "20"
     volumes:
@@ -221,13 +226,15 @@ services:
 
   construction-worker:
     <<: *backend
-    command: ["ontology-agent", "construction-worker", "--poll-seconds", "1", "--lease-seconds", "120"]
+    command: ["ontology-agent", "construction-worker", "--poll-seconds", "1", "--lease-seconds", "600"]
     restart: unless-stopped
     healthcheck:
       disable: true
     environment:
       <<: *backend-env
       ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_BUILDER_TIMEOUT_SECONDS: "195"
+      ONTOLOGY_REVIEWER_TIMEOUT_SECONDS: "195"
       ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795
       ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS: "20"
     volumes:

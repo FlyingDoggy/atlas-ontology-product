@@ -43,6 +43,32 @@ def test_active_job_is_deduplicated_and_claim_has_one_lease() -> None:
     assert store.claim_next("worker-b", lease_seconds=60) is None
 
 
+def test_progress_is_monotonic_and_list_all_is_product_scoped() -> None:
+    store = InMemoryConstructionJobStore(clock=lambda: NOW)
+    claimed = store.claim_next_after_enqueue(_input(), "worker-a")
+    progressed = store.report_progress(
+        claimed.job_id,
+        "worker-a",
+        claimed.lease_epoch,
+        current_stage="BUILDING_CANDIDATES",
+        completed_stages=2,
+        progress_message="BUILDING_REVIEW_CANDIDATES",
+    )
+
+    assert progressed.current_stage == "BUILDING_CANDIDATES"
+    assert progressed.completed_stages == 2
+    assert store.list_all() == (progressed,)
+    with pytest.raises(ConstructionJobConflict, match="not monotonic"):
+        store.report_progress(
+            claimed.job_id,
+            "worker-a",
+            claimed.lease_epoch,
+            current_stage="SOURCE_SETTLEMENT",
+            completed_stages=1,
+            progress_message="ROLLBACK_IS_NOT_PROGRESS",
+        )
+
+
 def test_cancel_before_commit_wins_and_late_attempt_cannot_commit() -> None:
     store = InMemoryConstructionJobStore(clock=lambda: NOW)
     claimed = store.claim_next_after_enqueue(_input(), "worker-a")

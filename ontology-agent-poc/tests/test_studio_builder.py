@@ -12,7 +12,9 @@ from ontology_agent.studio.builder import (
     BuilderPhaseOutputV1,
     BuilderPhaseRequestV1,
     BuilderPhaseResponseV1,
+    _phase_evidence_fragments,
 )
+from ontology_agent.studio.evidence import normalize_evidence
 from ontology_agent.studio.skill_packages import load_skill_package
 
 
@@ -164,6 +166,7 @@ def test_builder_derives_source_authority_from_exact_evidence_not_the_model(
 
     assert result.proposals[0].operation.payload["sources"] == ["source.input"]
 
+
 def test_builder_rejects_collection_escape_between_phases(
     package: OntologyPackage,
 ) -> None:
@@ -174,3 +177,31 @@ def test_builder_rejects_collection_escape_between_phases(
             intake=_intake(),
             package=package,
         )
+
+
+def test_phase_evidence_routing_prioritizes_the_phase_source_role() -> None:
+    assets = []
+    for source_id, kind, body in (
+        ("source.model", "data_model", "entity and table definitions"),
+        ("source.metric", "metric_transcription", "metric formula and grain"),
+        ("source.sql", "sql", "SELECT 1"),
+    ):
+        assets.append(
+            {
+                "asset_id": source_id,
+                "kind": kind,
+                "checksum": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+                "content_text": body,
+            }
+        )
+    bundle = normalize_evidence(
+        {"assets": assets}, workspace_id="workspace.generic"
+    )
+
+    semantic = _phase_evidence_fragments(bundle, "SEMANTIC")
+    analytics = _phase_evidence_fragments(bundle, "ANALYTICS")
+    data = _phase_evidence_fragments(bundle, "DATA")
+
+    assert semantic[0].source_kind == "data_model"
+    assert analytics[0].source_kind == "metric_transcription"
+    assert data[0].source_kind == "data_model"

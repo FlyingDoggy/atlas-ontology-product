@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ontology.local/contracts/builder-phase-output-v1.json",
+  "title": "Builder Phase Output V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "phase", "request_digest", "proposals", "gaps", "done"],
+  "properties": {
+    "contract": {"const": "builder-phase-output/v1"},
+    "phase": {"enum": ["SEMANTIC", "ANALYTICS", "DATA"]},
+    "request_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "proposals": {"type": "array", "maxItems": 24},
+    "gaps": {"type": "array", "maxItems": 64},
+    "done": {"type": "boolean"}
+  }
+}

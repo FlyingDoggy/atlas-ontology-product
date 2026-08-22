@@ -158,7 +158,11 @@ def _anchor(
     )
 
 
-def _normalized_metric_name(value: str) -> str:
+def _normalized_metric_name(value: str | None) -> str:
+    """Normalize one available label without requiring a fabricated translation."""
+
+    if value is None:
+        return ""
     return re.sub(r"[^a-z0-9\u3400-\u9fff]+", "", value.casefold())
 
 

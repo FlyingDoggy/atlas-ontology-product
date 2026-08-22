@@ -84,6 +84,20 @@ const localizedTextSchema = z
   .object({ en: z.string().min(1), zh: z.string().min(1) })
   .strict();
 
+const ontologyNameSchema = z
+  .object({
+    en: z.string().min(1).optional(),
+    zh: z.string().min(1).optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.en || value.zh), {
+    message: "Ontology name requires at least one language",
+  })
+  .transform((value) => ({
+    en: value.en ?? value.zh!,
+    zh: value.zh ?? value.en!,
+  }));
+
 export const solutionDirectoryEntrySchema = z.object({
   contract: z.literal("studio-solution-directory-entry/v1"),
   solution_id: z.string().min(1),
@@ -377,13 +391,15 @@ const editorDescriptorSchema = z
   })
   .strict();
 
+const packageCollectionSchema = z.enum([
+  "sources", "decisions", "actors", "processes", "entities", "properties", "relationships",
+  "dimensions", "rules", "metrics", "data_sources", "bindings", "joins",
+  "sql_contracts", "analysis_patterns", "policies", "questions",
+]);
+
 export const packageDraftOperationSchema = z.object({
   action: z.enum(["UPSERT", "CONFIRM", "DEPRECATE"]),
-  collection: z.enum([
-    "sources", "decisions", "actors", "processes", "entities", "properties", "relationships",
-    "dimensions", "rules", "metrics", "data_sources", "bindings", "joins",
-    "sql_contracts", "analysis_patterns", "policies", "questions",
-  ]),
+  collection: packageCollectionSchema,
   object_id: z.string().min(1),
   payload: z.record(z.string(), z.unknown()).nullable(),
 }).strict();
@@ -400,6 +416,8 @@ const draftWorkspaceSchema = z
     updated_at: z.string().min(1),
     revision_created_at: z.string().nullable(),
     solution_intent: z.string().optional().default(""),
+    authoring_language: z.enum(["en", "zh"]).nullable().optional(),
+    language_policy_digest: sha256.nullable().optional(),
     intake_submission_id: z.string().min(1).nullable().optional().default(null),
     intake_checksum: sha256.nullable().optional().default(null),
     source_anchors: z.array(
@@ -449,7 +467,7 @@ const governedObjectSchema = z.object({
   id: z.string().min(1),
   version: z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/),
   status: governedStatusSchema,
-  name: localizedTextSchema,
+  name: ontologyNameSchema,
   definition: z.string().min(1),
   owner: z.string().min(1),
   sources: z.array(z.string().min(1)).min(1),
@@ -569,6 +587,12 @@ const workbenchPackageSchema = z.object({
   version: z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/),
   status: governedStatusSchema,
   created_at: z.string().min(1),
+  authoring_policy: z.object({
+    contract: z.literal("ontology-authoring-policy/v1"),
+    authoring_language: z.enum(["en", "zh"]),
+    allowed_verbatim_terms: z.array(z.string()),
+    policy_digest: sha256,
+  }).strict().nullable().optional(),
   scenario: governedObjectSchema.passthrough(),
   actors: z.array(governedObjectSchema.passthrough()),
   processes: z.array(governedObjectSchema.passthrough()),
@@ -928,6 +952,8 @@ export const constructionRunSchema = z.object({
   base_revision: z.number().int().positive(),
   base_draft_checksum: sha256,
   source_set_digest: sha256,
+  authoring_language: z.enum(["en", "zh"]).nullable().optional(),
+  language_policy_digest: sha256.nullable().optional(),
   profile_ref: z.string().min(1),
   status: z.enum(["QUEUED", "RUNNING", "NEEDS_REVIEW", "FAILED", "CANCEL_REQUESTED", "CANCELLED", "STALE"]),
   engine_status: z.enum(["COMPLETED", "NOT_CONFIGURED", "FAILED"]),
@@ -941,7 +967,10 @@ export const constructionRunSchema = z.object({
 }).strict();
 
 const constructionReviewDecisionSchema = z.object({
-  contract: z.literal("construction-review-decision/v1"),
+  contract: z.enum([
+    "construction-review-decision/v1",
+    "construction-review-decision/v2",
+  ]),
   decision_id: z.string().regex(/^construction-decision\.[0-9a-f]{32}$/),
   run_id: z.string().regex(/^construction-run\.[0-9a-f]{32}$/),
   run_checksum: sha256,
@@ -955,6 +984,20 @@ const constructionReviewDecisionSchema = z.object({
   status: z.enum(["APPLIED", "APPLIED_WITH_DEFERRED", "REVIEWED_NO_CHANGE"]),
   resulting_revision: z.number().int().positive(),
   resulting_draft_checksum: sha256,
+  applied: z.array(z.object({
+    candidate_id: z.string().regex(/^candidate\.[0-9a-f]{32}$/),
+    collection: packageCollectionSchema,
+    object_id: z.string().min(1),
+    change_type: z.enum(["CREATE", "UPDATE", "NO_CHANGE", "UNKNOWN"]),
+    changed_paths: z.array(z.string()),
+    previous_asset_digest: sha256.nullable(),
+    reviewed_content_digest: sha256,
+    final_confirmed_asset_digest: sha256,
+    confirmation_status: z.enum(["CONFIRMED", "EXACT_REGISTERED"]),
+  }).strict()).default([]),
+  deferred_candidate_ids: z.array(z.string().regex(/^candidate\.[0-9a-f]{32}$/)).default([]),
+  rejected_candidate_ids: z.array(z.string().regex(/^candidate\.[0-9a-f]{32}$/)).default([]),
+  server_blockers: z.array(z.string()).default([]),
   decided_at: z.string().min(1),
   decision_checksum: sha256,
 }).strict();
@@ -978,6 +1021,8 @@ export type ConstructionCandidate = z.infer<typeof constructionCandidateSchema>;
 export type ReviewerFinding = z.infer<typeof reviewerFindingSchema>;
 export type ConstructionRun = z.infer<typeof constructionRunSchema>;
 export type ConstructionRunList = z.infer<typeof constructionRunListSchema>;
+export type ConstructionReviewDecision = z.infer<typeof constructionReviewDecisionSchema>;
+export type ConstructionReviewResult = z.infer<typeof constructionReviewResultSchema>;
 export type ConstructionDisposition = {
   candidate_id: string;
   action: "ACCEPT" | "EDIT" | "REJECT" | "DEFER";
@@ -996,6 +1041,8 @@ export const constructionJobSchema = z.object({
   base_draft_checksum: sha256,
   source_set_digest: sha256,
   selected_source_version_ids: z.array(z.string().regex(/^source-version\.[0-9a-f]{32}$/)),
+  authoring_language: z.enum(["en", "zh"]).nullable().optional(),
+  language_policy_digest: sha256.nullable().optional(),
   profile_ref: z.string().min(1),
   status: z.enum(["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED", "SUCCEEDED", "FAILED", "CANCELLED", "STALE"]),
   attempt_id: z.string().regex(/^construction-attempt\.[0-9a-f]{32}$/).nullable(),
@@ -1004,6 +1051,10 @@ export const constructionJobSchema = z.object({
   lease_expires_at: z.string().nullable(),
   result_run_id: z.string().regex(/^construction-run\.[0-9a-f]{32}$/).nullable(),
   error_code: z.string().nullable(),
+  current_stage: z.enum(["QUEUED", "SOURCE_SETTLEMENT", "BUILDING_CANDIDATES", "PERSISTING_RESULT", "COMPLETED", "FAILED", "CANCELLED", "STALE"]).default("QUEUED"),
+  completed_stages: z.number().int().nonnegative().default(0),
+  total_stages: z.number().int().positive().default(6),
+  progress_message: z.string().min(1).default("JOB_QUEUED"),
   created_at: z.string().min(1),
   started_at: z.string().nullable(),
   completed_at: z.string().nullable(),
@@ -1018,6 +1069,50 @@ export const constructionJobListSchema = z.object({
 
 export type ConstructionJob = z.infer<typeof constructionJobSchema>;
 export type ConstructionJobList = z.infer<typeof constructionJobListSchema>;
+
+export const studioBuildTaskSchema = z.object({
+  contract: z.literal("studio-build-task-summary/v1"),
+  task_id: z.string().regex(/^construction-job\.[0-9a-f]{32}$/),
+  solution_id: z.string().min(1),
+  solution_name: z.string().min(1),
+  workspace_id: z.string().min(1),
+  authoring_language: z.enum(["en", "zh"]).nullable(),
+  language_policy_digest: sha256.nullable(),
+  execution_status: z.enum(["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED", "SUCCEEDED", "FAILED", "CANCELLED", "STALE"]),
+  attempt_id: z.string().regex(/^construction-attempt\.[0-9a-f]{32}$/).nullable(),
+  lease_epoch: z.number().int().nonnegative(),
+  current_stage: z.string().min(1),
+  completed_stages: z.number().int().nonnegative(),
+  total_stages: z.number().int().positive(),
+  progress_message: z.string().min(1),
+  result_outcome: z.enum(["TECHNICAL_FAILURE", "BLOCKED", "REVIEW_READY_WITH_WARNINGS", "REVIEW_READY", "NO_APPLICABLE_CHANGES"]).nullable(),
+  outcome_policy_version: z.literal("studio-build-outcome/v1"),
+  reason_codes: z.array(z.string()),
+  run_id: z.string().regex(/^construction-run\.[0-9a-f]{32}$/).nullable(),
+  run_checksum: sha256.nullable(),
+  review_status: z.enum(["NOT_READY", "NEEDS_REVIEW", "APPLIED"]),
+  decision_id: z.string().regex(/^construction-decision\.[0-9a-f]{32}$/).nullable(),
+  candidate_count: z.number().int().nonnegative(),
+  compilable_count: z.number().int().nonnegative(),
+  blocker_count: z.number().int().nonnegative(),
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+  completed_at: z.string().nullable(),
+  destination: z.object({
+    type: z.enum(["TASK", "REVIEW", "RESULT", "SOLUTION"]),
+    solution_id: z.string().min(1),
+    run_id: z.string().regex(/^construction-run\.[0-9a-f]{32}$/).nullable(),
+    decision_id: z.string().regex(/^construction-decision\.[0-9a-f]{32}$/).nullable(),
+  }).strict(),
+}).strict();
+
+export const studioBuildTaskListSchema = z.object({
+  contract: z.literal("studio-build-task-list/v1"),
+  tasks: z.array(studioBuildTaskSchema),
+}).strict();
+
+export type StudioBuildTask = z.infer<typeof studioBuildTaskSchema>;
+export type StudioBuildTaskList = z.infer<typeof studioBuildTaskListSchema>;
 
 export const constructionReviewDraftSchema = z.object({
   contract: z.literal("construction-review-draft/v1"),
@@ -1113,6 +1208,50 @@ export const studioSourceLibrarySchema = z.object({
 export type StudioSourceKind = z.infer<typeof sourceKindSchema>;
 export type StudioSourceVersion = z.infer<typeof studioSourceVersionSchema>;
 export type StudioSourceLibrary = z.infer<typeof studioSourceLibrarySchema>;
+
+export const sourceIntakeBatchReceiptSchema = z.object({
+  contract: z.literal("source-intake-batch-receipt/v1"),
+  batch_id: z.string().regex(/^source-batch\.[0-9a-f]{32}$/),
+  workspace_id: z.string().min(1),
+  idempotency_key: z.string().min(8),
+  request_digest: sha256,
+  physical_files: z.array(z.object({
+    client_file_id: z.string().min(1),
+    original_name: z.string().min(1),
+    content_checksum: sha256,
+    size_bytes: z.number().int().positive(),
+    declared_media_type: z.string().min(1),
+    detected_media_type: z.string().min(1),
+    parser_id: z.string().nullable(),
+    parser_version: z.string().nullable(),
+    capability: z.enum(["TEXT_EXTRACTED", "XLSX_TABULAR_EXTRACTED", "ARCHIVED_ONLY"]),
+    reason_code: z.string().min(1),
+    selected_ranges: z.array(z.string()),
+    truncated: z.boolean(),
+  }).strict()),
+  registrations: z.array(z.object({
+    client_file_id: z.string().min(1),
+    source_version_id: z.string().regex(/^source-version\.[0-9a-f]{32}$/),
+    source_id: z.string().min(1),
+    kind: sourceKindSchema,
+    capability: z.enum(["TEXT_EXTRACTED", "XLSX_TABULAR_EXTRACTED", "ARCHIVED_ONLY"]),
+  }).strict()),
+  failures: z.array(z.object({
+    client_file_id: z.string().min(1),
+    reason_code: z.string().min(1),
+    detail: z.string().min(1),
+    retryable: z.boolean(),
+  }).strict()),
+  completed_at: z.iso.datetime({ offset: true }),
+  subject_checksum: sha256,
+}).strict();
+
+export type SourceIntakeBatchReceipt = z.infer<typeof sourceIntakeBatchReceiptSchema>;
+export type SourceIntakeBatchItemInput = {
+  clientFileId: string;
+  file: File;
+  registrations: Array<{ kind: StudioSourceKind; title: string }>;
+};
 
 const referenceSourcePackInstallSchema = z.object({
   contract: z.literal("ontology-reference-source-pack-install/v1"),
@@ -1716,14 +1855,29 @@ export async function fetchConstructionJobs(workspaceId: string): Promise<Constr
   return parsed.data;
 }
 
+export async function fetchStudioBuildTasks(): Promise<StudioBuildTaskList> {
+  const payload = await requestStudioJson("/control/construction-tasks");
+  const parsed = studioBuildTaskListSchema.safeParse(payload);
+  if (!parsed.success) throw new ProductApiError("构建任务未通过客户端合同校验。", 0);
+  return parsed.data;
+}
+
+export async function fetchStudioBuildTask(taskId: string): Promise<StudioBuildTask> {
+  const payload = await requestStudioJson(`/control/construction-tasks/${encodeURIComponent(taskId)}`);
+  const parsed = studioBuildTaskSchema.safeParse(payload);
+  if (!parsed.success) throw new ProductApiError("构建任务详情未通过客户端合同校验。", 0);
+  return parsed.data;
+}
+
 export async function enqueueConstructionJob(
   workspaceId: string,
   expectedRevision: number,
   sourceVersionIds: string[] = [],
+  authoringLanguage?: "en" | "zh",
 ): Promise<ConstructionJob> {
   const payload = await requestStudioJson(`/control/workspaces/${encodeURIComponent(workspaceId)}/construction-jobs`, {
     method: "POST",
-    body: JSON.stringify({ expected_revision: expectedRevision, source_version_ids: sourceVersionIds }),
+    body: JSON.stringify({ expected_revision: expectedRevision, source_version_ids: sourceVersionIds, authoring_language: authoringLanguage }),
   });
   const parsed = constructionJobSchema.safeParse(payload);
   if (!parsed.success) throw new ProductApiError("Construction job 未通过客户端合同校验。", 0);
@@ -1754,10 +1908,11 @@ export async function startConstructionRun(
   workspaceId: string,
   expectedRevision: number,
   sourceVersionIds: string[] = [],
+  authoringLanguage?: "en" | "zh",
 ): Promise<ConstructionRun> {
   const payload = await requestStudioJson(`/control/workspaces/${encodeURIComponent(workspaceId)}/construction-runs`, {
     method: "POST",
-    body: JSON.stringify({ expected_revision: expectedRevision, source_version_ids: sourceVersionIds }),
+    body: JSON.stringify({ expected_revision: expectedRevision, source_version_ids: sourceVersionIds, authoring_language: authoringLanguage }),
   });
   const parsed = constructionRunSchema.safeParse(payload);
   if (!parsed.success) throw new ProductApiError("Construction run 未通过客户端合同校验。", 0);
@@ -1786,6 +1941,19 @@ export async function reviewConstructionRun(
   );
   const parsed = constructionReviewResultSchema.safeParse(payload);
   if (!parsed.success) throw new ProductApiError("Construction review 未通过客户端合同校验。", 0);
+  return parsed.data;
+}
+
+export async function fetchConstructionDecision(
+  workspaceId: string,
+  runId: string,
+  decisionId: string,
+): Promise<ConstructionReviewDecision> {
+  const payload = await requestStudioJson(
+    `/control/workspaces/${encodeURIComponent(workspaceId)}/construction-runs/${encodeURIComponent(runId)}/decisions/${encodeURIComponent(decisionId)}`,
+  );
+  const parsed = constructionReviewDecisionSchema.safeParse(payload);
+  if (!parsed.success) throw new ProductApiError("复核应用结果未通过客户端合同校验。", 0);
   return parsed.data;
 }
 
@@ -1902,6 +2070,56 @@ export async function registerStudioSource(
   const parsed = studioSourceVersionSchema.safeParse(payload);
   if (!parsed.success) {
     throw new ProductApiError("来源材料版本未通过客户端合同校验。", 0);
+  }
+  return parsed.data;
+}
+
+export async function registerStudioSourceBatch(
+  workspaceId: string,
+  idempotencyKey: string,
+  items: SourceIntakeBatchItemInput[],
+): Promise<SourceIntakeBatchReceipt> {
+  const form = new FormData();
+  form.set("manifest_json", JSON.stringify({
+    contract: "source-intake-batch/v1",
+    idempotency_key: idempotencyKey,
+    items: items.map((item) => ({
+      client_file_id: item.clientFileId,
+      original_name: item.file.name,
+      declared_media_type: item.file.type || "application/octet-stream",
+      registrations: item.registrations,
+    })),
+  }));
+  for (const item of items) form.append("files", item.file, item.file.name);
+  let response: Response;
+  try {
+    response = await fetch(
+      `/control/workspaces/${encodeURIComponent(workspaceId)}/source-intake/batches`,
+      { method: "POST", credentials: "same-origin", headers: { Accept: "application/json" }, body: form },
+    );
+  } catch {
+    throw new ProductApiError("无法连接 Ontology Studio 来源材料库。", 0);
+  }
+  if (response.status === 401) {
+    const next = encodeURIComponent(window.location.pathname);
+    window.location.assign(`/login/?next=${next}`);
+    throw new ProductApiError("登录会话已过期。", 401);
+  }
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new ProductApiError("批量登记返回了无法识别的内容。", response.status);
+  }
+  if (!response.ok) {
+    const detail = typeof payload === "object" && payload && "detail" in payload
+      ? String(payload.detail)
+      : "批量材料登记失败。";
+    throw new ProductApiError(detail, response.status);
+  }
+  const parsed = sourceIntakeBatchReceiptSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new ProductApiError("批量登记回执未通过客户端合同校验。", 0);
   }
   return parsed.data;
 }

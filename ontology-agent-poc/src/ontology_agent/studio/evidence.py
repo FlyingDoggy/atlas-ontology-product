@@ -238,6 +238,59 @@ def _text_fragments(
     return tuple(output)
 
 
+def _xlsx_sheet_priority(source_kind: str, sheet_name: str) -> int:
+    kind = source_kind.casefold()
+    name = sheet_name.casefold()
+    is_reference = any(
+        marker in name
+        for marker in (
+            "reference",
+            "example",
+            "guide",
+            "instruction",
+            "submission",
+            "参考",
+            "示例",
+            "说明",
+            "指南",
+        )
+    )
+    if "requirement" in kind:
+        matches = any(
+            keyword in name
+            for keyword in ("requirement", "process", "business", "需求", "流程", "业务")
+        )
+        return 0 if matches and not is_reference else 2 if is_reference else 1
+    if "metric" in kind or "indicator" in kind:
+        matches = any(
+            keyword in name
+            for keyword in ("metric", "indicator", "kpi", "measure", "指标", "口径")
+        )
+        return 0 if matches and not is_reference else 2 if is_reference else 1
+    if "model" in kind or "schema" in kind:
+        matches = any(
+            keyword in name
+            for keyword in (
+                "model",
+                "schema",
+                "overview",
+                "entity",
+                "table",
+                "数据模型",
+                "模型",
+                "表",
+            )
+        )
+        return 0 if matches and not is_reference else 2 if is_reference else 1
+    if "dictionary" in kind or "sample" in kind:
+        # A dictionary commonly names sheets after physical tables rather than
+        # using the word "dictionary". Treat every non-guide/non-overview sheet
+        # as a detail sheet and sample them fairly below.
+        is_summary = is_reference or "overview" in name or "概览" in name
+        return 2 if is_summary else 0
+    return 1
+
+
 def _xlsx_fragments(asset: dict[str, Any]) -> tuple[EvidenceFragmentV1, ...] | None:
     source_id, version_id, checksum, kind = _identity(asset)
     preview = _record(asset.get("source_preview"))
@@ -251,9 +304,9 @@ def _xlsx_fragments(asset: dict[str, Any]) -> tuple[EvidenceFragmentV1, ...] | N
         or preview.get("content_checksum") != checksum
     ):
         raise EvidenceNormalizationError("XLSX preview identity mismatch")
-    output: list[EvidenceFragmentV1] = []
-    for raw_sheet in preview.get("sheets") or ():
-        sheet = _record(raw_sheet)
+    sheets = tuple(_record(raw) for raw in preview.get("sheets") or ())
+    sheet_outputs: list[tuple[int, int, tuple[EvidenceFragmentV1, ...]]] = []
+    for sheet_index, sheet in enumerate(sheets):
         sheet_name = sheet.get("sheet_name")
         if not isinstance(sheet_name, str) or not sheet_name:
             raise EvidenceNormalizationError("XLSX sheet identity is invalid")
@@ -278,13 +331,14 @@ def _xlsx_fragments(asset: dict[str, Any]) -> tuple[EvidenceFragmentV1, ...] | N
                 raise EvidenceNormalizationError("XLSX cell checksum mismatch")
             rendered = str(display) if formula is None else f"{display!s} [formula: {formula}]"
             rows[int(match.group(2))].append((str(coordinate), rendered))
+        projected_rows: list[EvidenceFragmentV1] = []
         for row_number, cells in sorted(rows.items()):
             cells.sort(key=lambda item: item[0])
             content = " | ".join(f"{coordinate}={value}" for coordinate, value in cells)
             if not content:
                 continue
             cell_range = f"{cells[0][0]}:{cells[-1][0]}"
-            output.append(
+            projected_rows.append(
                 _fragment(
                     source_id=source_id,
                     source_version_id=version_id,
@@ -299,6 +353,30 @@ def _xlsx_fragments(asset: dict[str, Any]) -> tuple[EvidenceFragmentV1, ...] | N
                     truncated=bool(sheet.get("truncated")),
                 )
             )
+        sheet_outputs.append(
+            (
+                _xlsx_sheet_priority(kind, sheet_name),
+                sheet_index,
+                tuple(projected_rows),
+            )
+        )
+
+    # Within one logical priority, sample rows across sheets instead of allowing
+    # the first wide table to hide every later table from the global budget.
+    output: list[EvidenceFragmentV1] = []
+    for priority in sorted({item[0] for item in sheet_outputs}):
+        group = [
+            fragments
+            for _, _, fragments in sorted(
+                (item for item in sheet_outputs if item[0] == priority),
+                key=lambda item: item[1],
+            )
+        ]
+        group_depth = max((len(fragments) for fragments in group), default=0)
+        for row_index in range(group_depth):
+            for fragments in group:
+                if row_index < len(fragments):
+                    output.append(fragments[row_index])
     return tuple(output)
 
 
@@ -311,12 +389,16 @@ def normalize_evidence(
     lines_per_fragment: int = 20,
 ) -> EvidenceBundleV1:
     """Turn exact selected source versions into bounded, traceable model input."""
-    if not 1 <= max_fragments <= 2_000 or not 1 <= lines_per_fragment <= 100:
+    if (
+        not 1 <= max_fragments <= 2_000
+        or not 1 <= lines_per_fragment <= 100
+        or not 1 <= max_total_chars <= 10_000_000
+    ):
         raise EvidenceNormalizationError("Evidence normalization limits are invalid")
     fragments: list[EvidenceFragmentV1] = []
     unsupported: list[UnsupportedEvidenceSourceV1] = []
     source_identities: list[dict[str, Any]] = []
-    total_chars = 0
+    projected_sources: list[tuple[EvidenceFragmentV1, ...]] = []
     for asset in _assets(intake):
         source_id, version_id, checksum, kind = _identity(asset)
         source_identities.append(
@@ -340,15 +422,26 @@ def normalize_evidence(
                 )
             )
             continue
-        for fragment in projected:
+        projected_sources.append(projected)
+
+    # Evidence is sampled across sources, not source-by-source. This prevents one
+    # large workbook from exhausting the global budget before requirements,
+    # metrics, or executable logic receive any representation.
+    total_chars = 0
+    max_source_fragments = max((len(items) for items in projected_sources), default=0)
+    for fragment_index in range(max_source_fragments):
+        if len(fragments) >= max_fragments:
+            break
+        for projected in projected_sources:
             if len(fragments) >= max_fragments:
                 break
+            if fragment_index >= len(projected):
+                continue
+            fragment = projected[fragment_index]
             if total_chars + len(fragment.content) > max_total_chars:
-                break
+                continue
             fragments.append(fragment)
             total_chars += len(fragment.content)
-        if len(fragments) >= max_fragments or total_chars >= max_total_chars:
-            break
     source_set_digest = sha256_value(source_identities)
     unsigned = {
         "contract": "evidence-bundle/v1",

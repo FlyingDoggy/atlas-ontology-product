@@ -10,6 +10,8 @@ from openpyxl import Workbook
 
 from ontology_agent.studio.source_library import (
     FileSourceLibraryStore,
+    SourceIntakeBatchManifestV1,
+    SourceLibraryConflict,
     SourceLibraryError,
     StudioSourceLibraryService,
 )
@@ -51,6 +53,133 @@ def test_source_versions_are_immutable_and_one_current_version_exists_per_logica
     assert service.list_current("workspace.adt.reference") == (second,)
     assert service.list_versions("workspace.adt.reference") == (second, first)
     assert service.read_exact(first) != service.read_exact(second)
+
+
+def test_batch_intake_registers_multiple_files_and_multiple_roles_with_one_receipt(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    requirements = "O-01,分析每日成交活动\n".encode()
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Data Dictionary"
+    sheet.append(["field", "type"])
+    sheet.append(["trade_id", "string"])
+    workbook_body = BytesIO()
+    workbook.save(workbook_body)
+    manifest = SourceIntakeBatchManifestV1.model_validate(
+        {
+            "idempotency_key": "batch-browser-0001",
+            "items": [
+                {
+                    "client_file_id": "requirements",
+                    "original_name": "requirements.csv",
+                    "declared_media_type": "text/csv",
+                    "registrations": [
+                        {"kind": "requirement_transcription", "title": "业务需求"},
+                    ],
+                },
+                {
+                    "client_file_id": "dictionary",
+                    "original_name": "cash_dictionary.xlsx",
+                    "declared_media_type": "application/octet-stream",
+                    "registrations": [
+                        {"kind": "data_dictionary", "title": "字段字典"},
+                        {"kind": "data_model", "title": "逻辑数据模型"},
+                    ],
+                },
+            ],
+        }
+    )
+
+    receipt = service.register_batch(
+        workspace_id="workspace.cash.batch",
+        manifest=manifest,
+        bodies=(requirements, workbook_body.getvalue()),
+    )
+    repeated = service.register_batch(
+        workspace_id="workspace.cash.batch",
+        manifest=manifest,
+        bodies=(requirements, workbook_body.getvalue()),
+    )
+
+    assert receipt == repeated
+    assert [item.capability for item in receipt.physical_files] == [
+        "TEXT_EXTRACTED",
+        "XLSX_TABULAR_EXTRACTED",
+    ]
+    assert len(receipt.registrations) == 3
+    assert receipt.failures == ()
+    assert len(service.list_current("workspace.cash.batch")) == 3
+
+
+def test_batch_intake_reports_archived_only_and_rejects_it_for_transcription(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    manifest = SourceIntakeBatchManifestV1.model_validate(
+        {
+            "idempotency_key": "batch-browser-0002",
+            "items": [
+                {
+                    "client_file_id": "supporting-pdf",
+                    "original_name": "supporting.pdf",
+                    "declared_media_type": "application/pdf",
+                    "registrations": [{"kind": "other", "title": "补充材料"}],
+                },
+                {
+                    "client_file_id": "requirements-pdf",
+                    "original_name": "requirements.pdf",
+                    "declared_media_type": "application/pdf",
+                    "registrations": [
+                        {"kind": "requirement_transcription", "title": "业务需求"}
+                    ],
+                },
+            ],
+        }
+    )
+
+    receipt = service.register_batch(
+        workspace_id="workspace.cash.batch",
+        manifest=manifest,
+        bodies=(b"%PDF synthetic", b"%PDF synthetic requirements"),
+    )
+
+    assert receipt.physical_files[0].capability == "ARCHIVED_ONLY"
+    assert receipt.registrations[0].capability == "ARCHIVED_ONLY"
+    assert receipt.failures[0].client_file_id == "requirements-pdf"
+    assert receipt.failures[0].reason_code == "TRANSCRIPTION_REQUIRES_TEXT_OR_XLSX"
+
+
+def test_batch_idempotency_key_cannot_name_different_bytes(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    manifest = SourceIntakeBatchManifestV1.model_validate(
+        {
+            "idempotency_key": "batch-browser-0003",
+            "items": [
+                {
+                    "client_file_id": "requirements",
+                    "original_name": "requirements.md",
+                    "declared_media_type": "text/markdown",
+                    "registrations": [
+                        {"kind": "requirement_transcription", "title": "业务需求"}
+                    ],
+                }
+            ],
+        }
+    )
+    service.register_batch(
+        workspace_id="workspace.cash.batch",
+        manifest=manifest,
+        bodies=(b"first",),
+    )
+
+    with pytest.raises(SourceLibraryConflict, match="Idempotency"):
+        service.register_batch(
+            workspace_id="workspace.cash.batch",
+            manifest=manifest,
+            bodies=(b"second",),
+        )
 
 
 def test_multiple_attachments_of_the_same_kind_coexist_and_reupload_versions_one_document(

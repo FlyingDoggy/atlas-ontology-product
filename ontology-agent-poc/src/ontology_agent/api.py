@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -111,6 +111,7 @@ from .studio.construction_jobs import (
     InMemoryConstructionJobStore,
     PostgresConstructionJobStore,
 )
+from .studio.task_projection import StudioBuildTaskSummaryV1, project_build_task
 from .studio.editor import DraftOperationsV1, EditorDescriptorError
 from .studio.intake import IntakeError
 from .studio.llm import (
@@ -164,7 +165,10 @@ from .studio.source_projection import (
     build_authoring_projection,
 )
 from .studio.source_library import (
+    MAX_SOURCE_BATCH_BYTES,
+    MAX_SOURCE_BATCH_FILES,
     SourceKind,
+    SourceIntakeBatchManifestV1,
     SourceLibraryError,
     StudioSourceLibraryService,
 )
@@ -341,6 +345,7 @@ class ConstructionStartRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: int = Field(ge=1)
     source_version_ids: tuple[str, ...] = Field(default=(), max_length=100)
+    authoring_language: Literal["en", "zh"] | None = None
 
 
 class StudioObservationReviewRequest(BaseModel):
@@ -860,7 +865,7 @@ def _studio_construction(
                 ),
                 skill=load_skill_package(
                     "ontology-build",
-                    os.environ.get("ONTOLOGY_BUILD_SKILL_VERSION", "1.1.0"),
+                    os.environ.get("ONTOLOGY_BUILD_SKILL_VERSION", "1.2.0"),
                     root=(
                         Path(os.environ["ONTOLOGY_SKILL_ROOT"])
                         if os.environ.get("ONTOLOGY_SKILL_ROOT")
@@ -902,11 +907,7 @@ def _studio_construction(
         raise ConstructionError("Ontology Review Skill is unavailable") from exc
     try:
         settings = ProductInfrastructureSettings.from_env()
-        run_store = (
-            PostgresConstructionRunStore.from_settings(settings)
-            if settings.mode == "postgresql-s3"
-            else FileConstructionRunStore(DEFAULT_STUDIO_DIR / "construction")
-        )
+        run_store = _construction_run_store(settings)
     except (ProductInfrastructureError, ConstructionError) as exc:
         raise ConstructionError(
             "Construction durable settings are unavailable"
@@ -947,6 +948,26 @@ _LOCAL_CONSTRUCTION_JOBS = InMemoryConstructionJobStore()
 _LOCAL_REVIEW_DRAFTS = InMemoryReviewDraftStore()
 
 
+def _construction_run_store(
+    settings: ProductInfrastructureSettings | None = None,
+) -> Any:
+    """Return the durable Run/Decision authority without building a workspace.
+
+    Task projections are read models. They must not initialize the authoring,
+    source-intake, Builder, or Reviewer graph merely to display durable state.
+    """
+
+    try:
+        resolved = settings or ProductInfrastructureSettings.from_env()
+        if resolved.mode == "postgresql-s3":
+            return PostgresConstructionRunStore.from_settings(resolved)
+        return FileConstructionRunStore(DEFAULT_STUDIO_DIR / "construction")
+    except (ProductInfrastructureError, ConstructionError) as exc:
+        raise ConstructionError(
+            "Construction durable settings are unavailable"
+        ) from exc
+
+
 def _construction_job_store() -> Any:
     try:
         settings = ProductInfrastructureSettings.from_env()
@@ -957,6 +978,35 @@ def _construction_job_store() -> Any:
         raise ConstructionJobError(
             "Construction job authority is unavailable"
         ) from exc
+
+
+def _construction_revision_with_language(
+    workspace_id: str,
+    request: ConstructionStartRequest,
+) -> int:
+    """Freeze a blank Solution's authoring language before the first Build."""
+
+    adapter = _studio_adapter(workspace_id)
+    workspace_service = adapter.workspace
+    current = workspace_service.get(workspace_id)
+    existing = getattr(current, "authoring_language", None)
+    requested = request.authoring_language
+    if existing is not None:
+        if requested is not None and requested != existing:
+            raise WorkspaceConflictError(
+                "Ontology authoring language is locked for this Solution"
+            )
+        return current.revision
+    configure = getattr(workspace_service, "configure_authoring_language", None)
+    if configure is None:
+        return current.revision
+    language = requested or "en"
+    configured = configure(
+        language,
+        expected_revision=request.expected_revision,
+        workspace_id=workspace_id,
+    )
+    return configured.revision
 
 
 def _review_draft_store() -> Any:
@@ -2044,6 +2094,47 @@ async def register_workspace_source(
     return version.model_dump(mode="json")
 
 
+@control_app.post("/control/workspaces/{workspace_id}/source-intake/batches")
+async def register_workspace_source_batch(
+    workspace_id: str,
+    manifest_json: str = Form(...),
+    files: list[UploadFile] = File(...),
+) -> dict[str, Any]:
+    """Register one user-selected physical batch and return its exact receipt."""
+
+    try:
+        _registration_for_workspace(workspace_id)
+        manifest = SourceIntakeBatchManifestV1.model_validate_json(manifest_json)
+        if len(files) != len(manifest.items):
+            raise SourceLibraryError(
+                "Batch manifest and binary part count disagree"
+            )
+        if len(files) > MAX_SOURCE_BATCH_FILES:
+            raise SourceLibraryError("Source intake batch has too many files")
+        bodies: list[bytes] = []
+        total = 0
+        for upload, item in zip(files, manifest.items, strict=True):
+            if upload.filename != item.original_name:
+                raise SourceLibraryError(
+                    "Batch binary order or file identity does not match manifest"
+                )
+            body = await upload.read()
+            total += len(body)
+            if total > MAX_SOURCE_BATCH_BYTES:
+                raise SourceLibraryError(
+                    "Source intake batch exceeds the 100 MiB limit"
+                )
+            bodies.append(body)
+        receipt = _studio_source_library().register_batch(
+            workspace_id=workspace_id,
+            manifest=manifest,
+            bodies=tuple(bodies),
+        )
+        return receipt.model_dump(mode="json")
+    except (SolutionCatalogError, SourceLibraryError, ValueError) as exc:
+        raise _workspace_error(exc) from exc
+
+
 @control_app.post(
     "/control/workspaces/{workspace_id}/sources/install-reference-pack"
 )
@@ -2165,15 +2256,119 @@ def list_workspace_construction_jobs(workspace_id: str) -> dict[str, Any]:
     }
 
 
+def _build_task_summary(
+    job: Any,
+    *,
+    run_store: Any | None = None,
+    solution_name: str | None = None,
+) -> StudioBuildTaskSummaryV1:
+    """Project durable execution state into one truthful product-level task."""
+
+    if solution_name is None:
+        registration = _registration_for_workspace(job.workspace_id)
+        display_name = registration.subject.display_name
+        solution_name = display_name.zh or display_name.en
+    durable_runs = run_store or _construction_run_store()
+    run = None
+    decision = None
+    try:
+        run = durable_runs.get_run(job.run_id)
+    except ConstructionError:
+        # A queued/running job has no immutable run yet. A terminal job without
+        # one is deliberately projected as a technical failure by the policy.
+        pass
+    if run is not None:
+        decision = durable_runs.get_decision(run.run_id)
+    return project_build_task(
+        job=job,
+        solution_name=solution_name,
+        run=run,
+        decision=decision,
+    )
+
+
+@control_app.get("/control/construction-tasks")
+def list_construction_tasks(
+    status: str | None = None,
+    solution_id: str | None = None,
+) -> dict[str, Any]:
+    try:
+        jobs = _construction_job_store().list_all()
+        if solution_id:
+            jobs = tuple(job for job in jobs if job.solution_id == solution_id)
+        run_store = _construction_run_store()
+        directory_names = {
+            entry.solution_id: entry.display_name.zh or entry.display_name.en
+            for entry in _solution_directory().list()
+        }
+        solution_names: dict[str, str] = {}
+        projected: list[StudioBuildTaskSummaryV1] = []
+        for job in jobs:
+            if job.workspace_id not in solution_names:
+                solution_name = directory_names.get(job.solution_id)
+                if solution_name is None:
+                    registration = _registration_for_workspace(job.workspace_id)
+                    display_name = registration.subject.display_name
+                    solution_name = display_name.zh or display_name.en
+                solution_names[job.workspace_id] = solution_name
+            projected.append(
+                _build_task_summary(
+                    job,
+                    run_store=run_store,
+                    solution_name=solution_names[job.workspace_id],
+                )
+            )
+        tasks = tuple(projected)
+    except (
+        ConstructionJobError,
+        ConstructionError,
+        WorkspaceError,
+        IntakeError,
+        SourceProjectionError,
+        SolutionCatalogError,
+        EditorDescriptorError,
+    ) as exc:
+        raise _workspace_error(exc) from exc
+    if status:
+        requested = status.strip().upper()
+        tasks = tuple(
+            task
+            for task in tasks
+            if task.execution_status == requested or task.result_outcome == requested
+        )
+    return {
+        "contract": "studio-build-task-list/v1",
+        "tasks": [task.model_dump(mode="json") for task in tasks],
+    }
+
+
+@control_app.get("/control/construction-tasks/{task_id}")
+def get_construction_task(task_id: str) -> dict[str, Any]:
+    try:
+        task = _build_task_summary(_construction_job_store().get(task_id))
+    except (
+        ConstructionJobError,
+        ConstructionError,
+        WorkspaceError,
+        IntakeError,
+        SourceProjectionError,
+        SolutionCatalogError,
+        EditorDescriptorError,
+    ) as exc:
+        raise _workspace_error(exc) from exc
+    return task.model_dump(mode="json")
+
+
 @control_app.post("/control/workspaces/{workspace_id}/construction-jobs")
 def enqueue_workspace_construction_job(
     workspace_id: str,
     request: ConstructionStartRequest,
 ) -> dict[str, Any]:
     try:
+        revision = _construction_revision_with_language(workspace_id, request)
         service = _studio_construction(workspace_id, request.source_version_ids)
         job = _construction_job_store().enqueue(
-            service.job_input(expected_revision=request.expected_revision)
+            service.job_input(expected_revision=revision)
         )
     except (
         ConstructionJobConflict,
@@ -2247,8 +2442,9 @@ def start_workspace_construction_run(
     request: ConstructionStartRequest,
 ) -> dict[str, Any]:
     try:
+        revision = _construction_revision_with_language(workspace_id, request)
         run = _studio_construction(workspace_id, request.source_version_ids).start(
-            expected_revision=request.expected_revision
+            expected_revision=revision
         )
     except (
         ConstructionError,
@@ -2269,10 +2465,18 @@ def review_workspace_construction_run(
     workspace_id: str,
     run_id: str,
     request: ConstructionReviewRequestV1,
+    http_request: Request,
 ) -> dict[str, Any]:
     try:
+        role = http_request.headers.get("x-atlas-role", "").strip().lower()
+        if role and role != "operator":
+            raise ConstructionConflict("Operator authority is required for final review")
+        principal = http_request.headers.get("x-atlas-user", "").strip()
+        authoritative_request = request.model_copy(
+            update={"reviewer": principal or request.reviewer}
+        )
         service = _studio_construction(workspace_id)
-        result = service.review(run_id, request)
+        result = service.review(run_id, authoritative_request)
         if result.decision.workspace_id != workspace_id:
             raise ConstructionConflict("Construction decision workspace mismatch")
     except (
@@ -2287,6 +2491,40 @@ def review_workspace_construction_run(
     ) as exc:
         raise _workspace_error(exc) from exc
     return result.model_dump(mode="json")
+
+
+@control_app.get(
+    "/control/workspaces/{workspace_id}/construction-runs/{run_id}/decisions/{decision_id}"
+)
+def get_workspace_construction_decision(
+    workspace_id: str,
+    run_id: str,
+    decision_id: str,
+) -> dict[str, Any]:
+    try:
+        records = _studio_construction(workspace_id).list()
+        decision = next(
+            (
+                current_decision
+                for current_run, current_decision in records
+                if current_run.run_id == run_id
+                and current_decision is not None
+                and current_decision.decision_id == decision_id
+            ),
+            None,
+        )
+        if decision is None:
+            raise ConstructionError("Construction decision is not available")
+    except (
+        ConstructionError,
+        WorkspaceError,
+        IntakeError,
+        SourceProjectionError,
+        SolutionCatalogError,
+        EditorDescriptorError,
+    ) as exc:
+        raise _workspace_error(exc) from exc
+    return decision.model_dump(mode="json")
 
 
 @control_app.get(

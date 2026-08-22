@@ -5,7 +5,10 @@ from openpyxl import Workbook
 
 from ontology_agent.io import DEFAULT_CASH_TRADING_SCENARIO_DIR, load_package
 from ontology_agent.studio.intake import ADTIntakeRegistry
-from ontology_agent.studio.source_projection import build_authoring_projection
+from ontology_agent.studio.source_projection import (
+    _canonical_metric_target,
+    build_authoring_projection,
+)
 from ontology_agent.studio.source_library import (
     FileSourceLibraryStore,
     StudioSourceLibraryService,
@@ -53,6 +56,25 @@ def test_projection_falls_back_to_canonical_catalog_without_fabricating_source_s
     assert {item.support_class for item in projection.metric_candidates} == {
         "CANONICAL_DRAFT"
     }
+
+
+def test_metric_matching_accepts_a_single_language_name(
+    package,
+) -> None:
+    metric = package.metrics[0]
+    english_name = metric.name.en or "English-only metric"
+    english_only = metric.model_copy(
+        update={"name": metric.name.model_copy(update={"en": english_name, "zh": None})}
+    )
+    single_language_package = package.model_copy(
+        update={"metrics": (english_only, *package.metrics[1:])}
+    )
+
+    assert _canonical_metric_target(
+        single_language_package,
+        metric_key="M-99",
+        name=english_name,
+    ) == metric.id
 
 
 def test_combined_xlsx_template_projects_cash_requirements_and_metrics_with_exact_cells(

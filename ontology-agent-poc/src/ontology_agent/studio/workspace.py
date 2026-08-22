@@ -24,6 +24,7 @@ from .intake import (
 from .package_authoring import (
     PackageDraftOperation,
     PackageDraftOperationsV1,
+    ReviewFinalizationOperationsV1,
     apply_package_operations as materialize_package_operations,
 )
 from .workspace_store import (
@@ -589,7 +590,7 @@ class DraftWorkspaceService:
 
     def apply_package_operations(
         self,
-        request: PackageDraftOperationsV1,
+        request: PackageDraftOperationsV1 | ReviewFinalizationOperationsV1,
         *,
         workspace_id: str | None = None,
         transaction_hook_factory: (

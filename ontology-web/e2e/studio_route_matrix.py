@@ -16,20 +16,26 @@ ROUTES = (
     ("", "概览", "工作区概览"),
     ("inputs/requirements/", "输入与证据", "业务需求"),
     ("inputs/sources/", "输入与证据", "来源材料"),
-    ("inputs/runs/", "输入与证据", "构建运行"),
+    ("construction/runs/", "构建与复核", "构建任务"),
+    ("construction/review/", "构建与复核", "复核队列"),
     ("semantic/model/", "语义模型", "业务模型"),
     ("semantic/metrics/", "语义模型", "指标与规则"),
     ("semantic/graph/", "语义模型", "知识图谱"),
     ("semantic/experience/", "语义模型", "分析能力"),
     ("data/schemas/", "数据", "数据源与 Schema"),
     ("data/mappings/", "数据", "映射与关联"),
+    ("data/sql/", "数据", "SQL 合同"),
     ("data/samples/", "数据", "样例与枚举"),
-    ("quality/review/", "质量与治理", "复核中心"),
-    ("quality/policies/", "质量与治理", "访问与披露策略"),
-    ("quality/validation/", "质量与治理", "验证结果"),
-    ("quality/changes/", "质量与治理", "问题与变更"),
-    ("release/versions/", "版本与发布", "版本与审批"),
-    ("release/delivery/", "版本与发布", "交付与运行"),
+    ("quality/policies/", "质量与发布", "访问与披露策略"),
+    ("quality/validation/", "质量与发布", "验证结果"),
+    ("quality/changes/", "质量与发布", "问题与变更"),
+    ("quality/versions/", "质量与发布", "版本与审批"),
+    ("quality/delivery/", "质量与发布", "交付与运行"),
+)
+
+GLOBAL_ROUTES = (
+    ("/ontology-studio/solutions/", "全部解决方案"),
+    ("/ontology-studio/tasks/", "构建任务"),
 )
 
 
@@ -44,7 +50,7 @@ def credentials() -> tuple[str, str]:
 
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(headless=True)
-    context = browser.new_context(viewport={"width": 1280, "height": 900})
+    context = browser.new_context(viewport={"width": 1440, "height": 900})
     page = context.new_page()
     page.set_default_timeout(45_000)
     browser_errors: list[str] = []
@@ -59,7 +65,7 @@ with sync_playwright() as playwright:
     )
 
     root = f"/ontology-studio/solutions/{SOLUTION_ID}/"
-    page.goto(f"{BASE_URL}{root}", wait_until="networkidle", timeout=60_000)
+    page.goto(f"{BASE_URL}{root}", wait_until="domcontentloaded", timeout=60_000)
     if urlparse(page.url).path == "/login/":
         username, password = credentials()
         page.get_by_label("用户名", exact=True).fill(username)
@@ -68,8 +74,22 @@ with sync_playwright() as playwright:
         page.wait_for_url(lambda value: urlparse(value).path != "/login/")
 
     checked: list[str] = []
+    for path, heading in GLOBAL_ROUTES:
+        page.goto(
+            f"{BASE_URL}{path}", wait_until="domcontentloaded", timeout=60_000
+        )
+        page.get_by_role("heading", name=heading, exact=True, level=1).wait_for()
+        assert "读取失败" not in page.locator("body").inner_text(), path
+        overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 1")
+        assert not overflow, f"horizontal overflow: {path}"
+        checked.append(path)
+
     for suffix, page_title, subpage_title in ROUTES:
-        page.goto(f"{BASE_URL}{root}{suffix}", wait_until="networkidle", timeout=60_000)
+        page.goto(
+            f"{BASE_URL}{root}{suffix}",
+            wait_until="domcontentloaded",
+            timeout=60_000,
+        )
         page.get_by_role("heading", name=page_title, exact=True, level=1).wait_for()
         current = page.locator('.studio-subnavigation a[aria-current="page"]')
         if suffix:
@@ -78,7 +98,7 @@ with sync_playwright() as playwright:
         else:
             assert current.count() == 0
         assert page.locator(".studio-page-content").locator(":scope > *").count() > 0
-        assert "读取失败" not in page.locator("body").inner_text()
+        assert "读取失败" not in page.locator("body").inner_text(), suffix or "overview"
         overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 1")
         if overflow:
             offenders = page.evaluate("""

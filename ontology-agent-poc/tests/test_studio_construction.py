@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from io import BytesIO
 import hashlib
+from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,12 +16,15 @@ from ontology_agent.io import DEFAULT_CASH_TRADING_SCENARIO_DIR, load_package, s
 from ontology_agent.release import StudioReleases
 from ontology_agent.studio.construction import (
     ConstructionDispositionV1,
+    ConstructionReviewDecisionV1,
     ConstructionReviewRequestV1,
     FileConstructionRunStore,
+    PostgresConstructionRunStore,
     StudioConstructionService,
 )
 from ontology_agent.studio.construction_jobs import InMemoryConstructionJobStore
 from ontology_agent.studio.construction_worker import ConstructionWorker
+from ontology_agent.studio.task_projection import project_build_task
 from ontology_agent.studio.cash_workspace import CashTradingDraftWorkspaceService
 from ontology_agent.studio.intake import ADTIntakeRegistry
 from ontology_agent.studio.package_authoring import PackageDraftOperationsV1
@@ -181,6 +186,173 @@ def test_source_first_construction_closes_all_exact_inputs_without_claiming_sema
     assert len({item.occurrence_key for item in run.candidates}) == 13
     assert service.get(run.run_id) == run
     assert service.start(expected_revision=before.revision).run_id == run.run_id
+
+
+def test_legacy_v1_review_decision_keeps_its_original_exact_identity() -> None:
+    provisional = ConstructionReviewDecisionV1(
+        contract="construction-review-decision/v1",
+        decision_id="construction-decision." + "1" * 32,
+        run_id="construction-run." + "2" * 32,
+        run_checksum="3" * 64,
+        workspace_id="workspace.legacy",
+        base_revision=1,
+        base_draft_checksum="4" * 64,
+        reviewer="domain-owner.demo",
+        dispositions=(),
+        request_digest="5" * 64,
+        status="REVIEWED_NO_CHANGE",
+        resulting_revision=1,
+        resulting_draft_checksum="4" * 64,
+        decided_at=datetime(2026, 8, 22, tzinfo=timezone.utc),
+        decision_checksum="0" * 64,
+    )
+    v2_only_fields = {
+        "applied",
+        "deferred_candidate_ids",
+        "rejected_candidate_ids",
+        "server_blockers",
+    }
+    unsigned = provisional.model_dump(
+        mode="json",
+        exclude={"decision_checksum", *v2_only_fields},
+        exclude_none=True,
+    )
+    decision = provisional.model_copy(
+        update={"decision_checksum": sha256_value(unsigned)}
+    )
+    legacy_subject = decision.model_dump(mode="json", exclude=v2_only_fields)
+    row = SimpleNamespace(
+        run_id=decision.run_id,
+        decision_id=decision.decision_id,
+        workspace_id=decision.workspace_id,
+        decision_checksum=decision.decision_checksum,
+        subject_checksum=sha256_value(
+            decision.model_dump(
+                mode="json",
+                exclude=v2_only_fields,
+                exclude_none=True,
+            )
+        ),
+        request_digest=decision.request_digest,
+        subject=legacy_subject,
+    )
+
+    restored = PostgresConstructionRunStore._decision_from_row(row)
+
+    assert restored == decision
+
+
+def test_product_task_projects_execution_success_as_review_ready_not_complete(
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    service, workspace = _service(tmp_path, scenario_dir)
+    before = workspace.get()
+    jobs = InMemoryConstructionJobStore()
+    claimed = jobs.claim_next_after_enqueue(
+        service.job_input(expected_revision=before.revision), "worker-a"
+    )
+    run = service.start(
+        expected_revision=before.revision,
+        planned_run_id=claimed.run_id,
+        attempt_id=claimed.attempt_id,
+        lease_epoch=claimed.lease_epoch,
+    )
+    jobs.begin_commit(claimed.job_id, "worker-a", claimed.lease_epoch)
+    completed = jobs.complete_success(
+        claimed.job_id,
+        "worker-a",
+        claimed.lease_epoch,
+        run_id=run.run_id,
+    )
+
+    task = project_build_task(
+        job=completed,
+        solution_name="ADT 参考分析",
+        run=run,
+        decision=None,
+    )
+
+    assert task.execution_status == "SUCCEEDED"
+    assert task.result_outcome in {"REVIEW_READY", "REVIEW_READY_WITH_WARNINGS"}
+    assert task.review_status == "NEEDS_REVIEW"
+    assert task.destination.type == "REVIEW"
+
+
+def test_task_api_reads_durable_job_run_and_decision_without_building_workspace(
+    tmp_path: Path,
+    scenario_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, workspace = _service(tmp_path, scenario_dir)
+    before = workspace.get()
+    jobs = InMemoryConstructionJobStore()
+    claimed = jobs.claim_next_after_enqueue(
+        service.job_input(expected_revision=before.revision), "worker-a"
+    )
+    run = service.start(
+        expected_revision=before.revision,
+        planned_run_id=claimed.run_id,
+        attempt_id=claimed.attempt_id,
+        lease_epoch=claimed.lease_epoch,
+    )
+    jobs.begin_commit(claimed.job_id, "worker-a", claimed.lease_epoch)
+    completed = jobs.complete_success(
+        claimed.job_id,
+        "worker-a",
+        claimed.lease_epoch,
+        run_id=run.run_id,
+    )
+
+    class _DurableRunStore:
+        def __init__(self) -> None:
+            self.run_reads = 0
+            self.decision_reads = 0
+
+        def get_run(self, run_id: str):
+            self.run_reads += 1
+            assert run_id == run.run_id
+            return run
+
+        def get_decision(self, run_id: str):
+            self.decision_reads += 1
+            assert run_id == run.run_id
+            return None
+
+    durable = _DurableRunStore()
+    registration_reads = []
+
+    monkeypatch.setattr(api_module, "_construction_job_store", lambda: jobs)
+    monkeypatch.setattr(api_module, "_construction_run_store", lambda settings=None: durable)
+    monkeypatch.setattr(
+        api_module,
+        "_solution_directory",
+        lambda: SimpleNamespace(list=lambda: ()),
+    )
+
+    def registration(workspace_id: str):
+        registration_reads.append(workspace_id)
+        return SimpleNamespace(
+            subject=SimpleNamespace(
+                display_name=SimpleNamespace(zh="ADT 参考分析", en="ADT Reference")
+            )
+        )
+
+    monkeypatch.setattr(api_module, "_registration_for_workspace", registration)
+
+    def forbidden_workspace_build(*args, **kwargs):
+        raise AssertionError("task projection must not initialize Studio construction")
+
+    monkeypatch.setattr(api_module, "_studio_construction", forbidden_workspace_build)
+
+    response = control_client.get("/control/construction-tasks")
+
+    assert response.status_code == 200
+    assert response.json()["tasks"][0]["task_id"] == completed.job_id
+    assert response.json()["tasks"][0]["review_status"] == "NEEDS_REVIEW"
+    assert durable.run_reads == 1
+    assert durable.decision_reads == 1
+    assert registration_reads == [completed.workspace_id]
 
 
 def test_generic_builder_candidates_enter_review_without_writing_draft(
@@ -433,7 +605,12 @@ def test_exact_cash_reference_pack_compiles_a_complete_typed_case_candidate_set(
         ),
     )
     assert reviewed.decision.status == "APPLIED_WITH_DEFERRED"
-    assert len(reviewed.workspace["package_operations"]) == len(expected_targets)
+    assert len(reviewed.workspace["package_operations"]) == 2 * len(expected_targets)
+    assert len(reviewed.decision.applied) == len(expected_targets)
+    assert all(
+        item.confirmation_status == "CONFIRMED"
+        for item in reviewed.decision.applied
+    )
 
 
 def test_cash_attachments_become_exact_human_review_candidates_without_automatic_truth(
@@ -571,7 +748,12 @@ def test_review_requires_every_candidate_and_applies_only_typed_operations_once(
 
     assert result.decision.status == "APPLIED_WITH_DEFERRED"
     assert result.workspace["revision"] == before.revision + 1
-    assert len(result.workspace["package_operations"]) == 3
+    assert len(result.workspace["package_operations"]) == 6
+    assert len(result.decision.applied) == 3
+    assert all(
+        item.confirmation_status == "CONFIRMED"
+        for item in result.decision.applied
+    )
     assert service.review(
         run.run_id,
         ConstructionReviewRequestV1(
@@ -682,10 +864,24 @@ def test_control_api_exposes_run_and_review_without_hidden_adt_payload(
         }
         for item in run["candidates"]
     ]
+    forbidden = control_client.post(
+        "/control/workspaces/workspace.adt.reference/construction-runs/"
+        + run["run_id"]
+        + "/review",
+        headers={"X-Atlas-Role": "viewer", "X-Atlas-User": "read-only.user"},
+        json={
+            "contract": "construction-review-request/v1",
+            "expected_revision": run["base_revision"],
+            "reviewer": "spoofed.user",
+            "dispositions": dispositions,
+        },
+    )
+    assert forbidden.status_code == 409
     reviewed = control_client.post(
         "/control/workspaces/workspace.adt.reference/construction-runs/"
         + run["run_id"]
         + "/review",
+        headers={"X-Atlas-Role": "operator", "X-Atlas-User": "hkex.domain.owner"},
         json={
             "contract": "construction-review-request/v1",
             "expected_revision": run["base_revision"],
@@ -694,4 +890,34 @@ def test_control_api_exposes_run_and_review_without_hidden_adt_payload(
         },
     )
     assert reviewed.status_code == 200
-    assert reviewed.json()["decision"]["status"] == "APPLIED_WITH_DEFERRED"
+    decision = reviewed.json()["decision"]
+    assert decision["contract"] == "construction-review-decision/v2"
+    assert decision["status"] == "APPLIED_WITH_DEFERRED"
+    assert decision["reviewer"] == "hkex.domain.owner"
+    assert decision["applied"]
+    assert all(item["confirmation_status"] == "CONFIRMED" for item in decision["applied"])
+    assert reviewed.json()["workspace"]["revision"] == run["base_revision"] + 1
+
+    fetched = control_client.get(
+        "/control/workspaces/workspace.adt.reference/construction-runs/"
+        + run["run_id"]
+        + "/decisions/"
+        + decision["decision_id"]
+    )
+    assert fetched.status_code == 200
+    assert fetched.json() == decision
+
+    retried = control_client.post(
+        "/control/workspaces/workspace.adt.reference/construction-runs/"
+        + run["run_id"]
+        + "/review",
+        headers={"X-Atlas-Role": "operator", "X-Atlas-User": "hkex.domain.owner"},
+        json={
+            "contract": "construction-review-request/v1",
+            "expected_revision": run["base_revision"],
+            "reviewer": "spoofed.user",
+            "dispositions": dispositions,
+        },
+    )
+    assert retried.status_code == 200
+    assert retried.json()["decision"] == decision
