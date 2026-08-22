@@ -500,7 +500,10 @@ def _transcription_projection(
     requirements: list[RequirementProjectionV1] = []
     for line_number, snippet, cells in _markdown_rows(requirement_text, "O-"):
         if len(cells) != 4:
-            raise SourceProjectionError("Requirement table row is incomplete")
+            # IDs can legitimately appear in narrative/dependency tables.  A
+            # row is an exact legacy transcription only when its full schema
+            # is present; otherwise it remains raw Builder evidence.
+            continue
         requirements.append(
             RequirementProjectionV1(
                 requirement_key=cells[0],
@@ -521,7 +524,7 @@ def _transcription_projection(
     metrics: list[MetricCandidateProjectionV1] = []
     for line_number, snippet, cells in _markdown_rows(metric_text, "M-"):
         if len(cells) != 10:
-            raise SourceProjectionError("Metric transcription row is incomplete")
+            continue
         canonical_id = _canonical_metric_target(
             package,
             metric_key=cells[0],
@@ -557,6 +560,13 @@ def _transcription_projection(
                 ),
             )
         )
+    # A generic Solution is allowed to provide narrative requirement and metric
+    # documents instead of the legacy exact-transcription table shape.  Those
+    # documents remain exact Builder evidence, but they do not populate this
+    # optional compatibility projection.  Falling back here keeps free-form
+    # customer material buildable without pretending that rows were parsed.
+    if not requirements and not metrics:
+        return None
     if not requirements or not metrics:
         raise SourceProjectionError("Transcription tables contain no supported rows")
     return StudioAuthoringProjectionV1(

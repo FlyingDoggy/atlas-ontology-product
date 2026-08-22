@@ -3306,22 +3306,8 @@ a:focus-visible, button:focus-visible {
 .mapping-product-page.is-readonly .join-inspector .data-deprecate-confirm,
 .mapping-product-page.is-readonly .join-editor { display: none; }
 
-/* Product-level build task center. Execution progress and review outcome are
+/* Product-level task center. Execution progress and review outcome are
    intentionally separate information roles. */
-.header-task-center {
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--semantic-space-2);
-  padding-inline: var(--semantic-space-3);
-  color: var(--semantic-text-inverse);
-  border: 1px solid var(--semantic-border-inverse);
-  text-decoration: none;
-  font-size: var(--semantic-type-control);
-  font-weight: 700;
-}
-.header-task-center:hover { border-color: var(--semantic-border-inverse-strong); }
-.header-task-center b { min-width: 22px; height: 22px; display: grid; place-items: center; color: var(--semantic-action-on-primary); background: var(--semantic-feedback-danger); border-radius: 11px; font: 700 var(--semantic-type-meta)/1 var(--semantic-font-numeric); }
 .studio-task-main { width: min(var(--studio-content-max), 100%); margin-inline: auto; padding: var(--semantic-space-12) clamp(24px, 5vw, 72px) 80px; }
 .task-center-heading { display: flex; align-items: end; justify-content: space-between; gap: var(--semantic-space-6); padding-bottom: var(--semantic-space-6); border-bottom: 1px solid var(--semantic-border-subtle); }
 .task-center-heading > div { display: grid; gap: var(--semantic-space-2); }

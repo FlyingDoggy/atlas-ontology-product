@@ -1,5 +1,6 @@
 from pathlib import Path
 from io import BytesIO
+import hashlib
 
 from openpyxl import Workbook
 
@@ -56,6 +57,47 @@ def test_projection_falls_back_to_canonical_catalog_without_fabricating_source_s
     assert {item.support_class for item in projection.metric_candidates} == {
         "CANONICAL_DRAFT"
     }
+
+
+def test_narrative_transcriptions_remain_builder_evidence_without_requiring_legacy_rows(
+    scenario_dir: Path,
+) -> None:
+    package = load_package(scenario_dir / "ontology" / "package.yaml")
+    requirement_text = "# Business requirements\n\nDescribe the process and seven questions."
+    metric_text = (
+        "# Metric logic\n\nEach metric is described in its own section.\n\n"
+        "| M-01 | M-03 |\n|---|---|\n| M-02 | M-03 |"
+    )
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.requirements",
+                "kind": "requirement_transcription",
+                "locator": "inline/requirements.md",
+                "checksum": hashlib.sha256(requirement_text.encode()).hexdigest(),
+                "content_text": requirement_text,
+            },
+            {
+                "asset_id": "source.metrics",
+                "kind": "metric_transcription",
+                "locator": "inline/metrics.md",
+                "checksum": hashlib.sha256(metric_text.encode()).hexdigest(),
+                "content_text": metric_text,
+            },
+        ]
+    }
+
+    projection = build_authoring_projection(
+        package=package,
+        intake=intake,
+        scenario_dir=scenario_dir,
+    )
+
+    assert projection.source_mode == "CANONICAL_FALLBACK"
+    assert all(
+        item.support_class == "CANONICAL_DRAFT"
+        for item in projection.metric_candidates
+    )
 
 
 def test_metric_matching_accepts_a_single_language_name(

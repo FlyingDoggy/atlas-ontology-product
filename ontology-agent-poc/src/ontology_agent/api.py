@@ -1036,6 +1036,7 @@ def _workspace_error(exc: Exception) -> HTTPException:
             ConstructionJobError,
             ReviewDraftError,
             SourceLibraryError,
+            SourceProjectionError,
         ),
     ):
         return HTTPException(status_code=409, detail=str(exc))

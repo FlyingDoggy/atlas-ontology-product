@@ -62,7 +62,7 @@ export const studioPages: StudioPageDefinition[] = [
     description: "生成候选、机器复核与人工处置",
     defaultSubpage: "runs",
     subpages: [
-      { id: "runs", label: "构建任务", description: "选择材料、运行 Builder 并查看产出" },
+      { id: "runs", label: "构建运行", description: "选择材料、运行 Builder 并查看产出" },
       { id: "review", label: "复核队列", description: "证据、差异、机器发现与人工处置" },
     ],
   },
@@ -257,7 +257,7 @@ export function StudioNavigation({
         </Link>
         <Link className="studio-product-home" to="/ontology-studio/tasks/">
           <span className="studio-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg></span>
-          <div><strong>构建任务</strong><small>进度、结果与待处理</small></div>
+          <div><strong>任务中心</strong><small>跨方案进度与待处理</small></div>
         </Link>
       </nav>
       <div className="studio-sidebar-context">

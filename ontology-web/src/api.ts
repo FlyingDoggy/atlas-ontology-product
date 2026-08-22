@@ -86,8 +86,8 @@ const localizedTextSchema = z
 
 const ontologyNameSchema = z
   .object({
-    en: z.string().min(1).optional(),
-    zh: z.string().min(1).optional(),
+    en: z.string().min(1).nullish(),
+    zh: z.string().min(1).nullish(),
   })
   .strict()
   .refine((value) => Boolean(value.en || value.zh), {

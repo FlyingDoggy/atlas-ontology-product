@@ -18,6 +18,7 @@ from ..models import (
     Metric,
     OntologyPackage,
     PhysicalBinding,
+    Relationship,
     StrictModel,
 )
 from .evidence import EvidenceBundleV1, EvidenceFragmentV1
@@ -412,7 +413,36 @@ def deterministic_candidate_findings(
                     recommendation="先登记缺失来源或决策，再重新生成候选。",
                 )
             )
-        if operation.collection == "bindings":
+        if operation.collection == "relationships":
+            relationship = Relationship.model_validate(payload)
+            missing_entities = sorted(
+                {relationship.from_entity, relationship.to_entity} - known_entities
+            )
+            if missing_entities:
+                detail = (
+                    "Unknown relationship endpoint entities: "
+                    + ", ".join(missing_entities)
+                    + "."
+                )
+                findings.append(
+                    ReviewerFindingV1(
+                        finding_id=_finding_id(
+                            "BROKEN_REFERENCE", (candidate.candidate_id,), detail
+                        ),
+                        finding_type="BROKEN_REFERENCE",
+                        severity="ERROR",
+                        summary="Relationship endpoints do not close against the candidate model",
+                        detail=detail,
+                        candidate_ids=(candidate.candidate_id,),
+                        evidence_fragment_ids=(),
+                        blocks_release=True,
+                        recommendation=(
+                            "Add or accept both endpoint entities, or reject the "
+                            "relationship candidate before applying the review batch."
+                        ),
+                    )
+                )
+        elif operation.collection == "bindings":
             binding = PhysicalBinding.model_validate(payload)
             fields = physical_fields.get((binding.source, binding.table))
             defects: list[str] = []

@@ -375,3 +375,42 @@ def test_deterministic_review_blocks_join_outside_candidate_schemas(
         for item in findings
         if join_candidate.candidate_id in item.candidate_ids
     )
+
+
+def test_deterministic_review_blocks_relationship_with_missing_endpoint(
+    package: OntologyPackage,
+) -> None:
+    source_id = package.sources[0].id
+    owner_id = package.actors[0].id
+    relationship_operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "relationships",
+            "object_id": "relationship.review_test.missing_endpoint",
+            "payload": {
+                "id": "relationship.review_test.missing_endpoint",
+                "status": "proposed",
+                "name": {"en": "Missing endpoint relationship"},
+                "definition": "A relationship whose target entity is absent.",
+                "owner": owner_id,
+                "sources": [source_id],
+                "from_entity": package.entities[0].id,
+                "to_entity": "entity.missing",
+                "predicate": "references",
+                "cardinality": "N:1",
+            },
+        }
+    )
+    candidate = _typed_candidate("9", "LINK", relationship_operation)
+
+    findings = deterministic_candidate_findings(
+        (candidate,), package=package, evidence_bundle=None
+    )
+
+    assert any(
+        item.finding_type == "BROKEN_REFERENCE"
+        and item.blocks_release
+        and "entity.missing" in item.detail
+        for item in findings
+        if candidate.candidate_id in item.candidate_ids
+    )

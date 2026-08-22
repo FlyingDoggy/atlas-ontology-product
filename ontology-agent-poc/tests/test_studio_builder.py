@@ -154,6 +154,32 @@ def test_builder_creates_typed_review_candidates_without_mutating_draft(
     assert package.model_dump(mode="json") == original
 
 
+def test_builder_1_2_runs_one_bounded_semantic_dependency_audit(
+    package: OntologyPackage,
+) -> None:
+    model = FakeBuilderModel()
+    builder = BoundedBuilderOrchestrator(
+        model=model,
+        skill=load_skill_package("ontology-build", "1.2.0"),
+    )
+
+    result = builder.build(
+        run_id="construction-run." + "9" * 32,
+        workspace_id="workspace.generic",
+        intake=_intake(),
+        package=package,
+    )
+
+    assert [request.phase for request in model.requests] == [
+        "SEMANTIC",
+        "SEMANTIC",
+        "DATA",
+        "ANALYTICS",
+    ]
+    assert len(result.phase_receipts) == 4
+    assert len(result.proposals) == 1
+
+
 def test_builder_derives_source_authority_from_exact_evidence_not_the_model(
     package: OntologyPackage,
 ) -> None:

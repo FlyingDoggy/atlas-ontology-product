@@ -188,13 +188,6 @@ function Header({
   directoryHome?: boolean;
   taskCenter?: boolean;
 }) {
-  const taskQuery = useQuery({
-    queryKey: ["studio-build-tasks", "header"],
-    queryFn: fetchStudioBuildTasks,
-    enabled: kind === "studio",
-    refetchInterval: (query) => query.state.data?.tasks.some((task) => ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(task.execution_status)) ? 2_000 : 15_000,
-  });
-  const attentionCount = taskQuery.data?.tasks.filter((task) => task.review_status === "NEEDS_REVIEW" || task.result_outcome === "BLOCKED" || task.result_outcome === "TECHNICAL_FAILURE").length ?? 0;
   const otherUrl = directoryHome || taskCenter
     ? "/ontology-agent/"
     : kind === "agent"
@@ -222,9 +215,8 @@ function Header({
       <div className="header-actions">
         {session?.authenticated ? <span className={`access-role is-${session.role}`}><i aria-hidden="true" />{session.role === "operator" ? "配置人员" : "只读访问"}<small>{session.username}</small></span> : <span className="access-role is-loading">正在确认权限</span>}
         {directoryHome || taskCenter
-          ? <span className="header-directory-context">{taskCenter ? "构建任务" : "解决方案目录"}</span>
+          ? <span className="header-directory-context">{taskCenter ? "任务中心" : "解决方案目录"}</span>
           : <SolutionSwitcher selectedId={solutionId} kind={kind} canOperate={session?.authenticated === true && session.role === "operator"} />}
-        {kind === "studio" ? <Link className="header-task-center" to="/ontology-studio/tasks/">构建任务{attentionCount > 0 ? <b>{attentionCount}</b> : null}</Link> : null}
         <a className="product-switch" href={otherUrl}>
           {phaseLabels[kind].companion}
           <span aria-hidden="true">↗</span>
@@ -284,21 +276,21 @@ function StudioTaskCenter({ session }: { session: AuthSession | null }) {
     return task.review_status === "NEEDS_REVIEW" || task.result_outcome === "BLOCKED" || task.result_outcome === "TECHNICAL_FAILURE";
   });
   const selected = tasks.find((task) => task.task_id === taskId) ?? null;
-  if (query.isPending) return <main className="state-screen"><span className="state-pulse" /><p>正在读取构建任务…</p></main>;
-  if (query.isError) return <main className="state-screen state-error"><h1>无法读取构建任务</h1><button type="button" onClick={() => query.refetch()}>重新检查</button></main>;
+  if (query.isPending) return <main className="state-screen"><span className="state-pulse" /><p>正在读取任务中心…</p></main>;
+  if (query.isError) return <main className="state-screen state-error"><h1>无法读取任务中心</h1><button type="button" onClick={() => query.refetch()}>重新检查</button></main>;
   return (
     <div className="product-shell">
       <Header kind="studio" solutionId={selected?.solution_id ?? "ontology.exchange_analytics.adt"} session={session} taskCenter />
       <main className="studio-task-main">
         <header className="task-center-heading">
-          <div><span>ONTOLOGY BUILD TASKS</span><h1>构建任务</h1><p>查看执行进度、业务产出和待处理事项。</p></div>
+          <div><span>TASK CENTER</span><h1>任务中心</h1><p>跨解决方案查看构建进度、业务产出和待处理事项。</p></div>
           <Link className="secondary-action" to="/ontology-studio/solutions/">返回解决方案目录</Link>
         </header>
         <nav className="task-center-filters" aria-label="任务筛选">
           {(["ATTENTION", "ACTIVE", "DONE", "ALL"] as const).map((value) => <button type="button" className={filter === value ? "is-active" : ""} key={value} onClick={() => setFilter(value)}>{value === "ATTENTION" ? "需处理" : value === "ACTIVE" ? "进行中" : value === "DONE" ? "已完成" : "全部"}<b>{tasks.filter((task) => value === "ALL" || (value === "ACTIVE" && ["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED"].includes(task.execution_status)) || (value === "DONE" && (task.review_status === "APPLIED" || task.result_outcome === "NO_APPLICABLE_CHANGES")) || (value === "ATTENTION" && (task.review_status === "NEEDS_REVIEW" || task.result_outcome === "BLOCKED" || task.result_outcome === "TECHNICAL_FAILURE"))).length}</b></button>)}
         </nav>
         <div className={`task-center-layout ${selected ? "has-detail" : ""}`}>
-          <section className="task-table" aria-label="构建任务列表">
+          <section className="task-table" aria-label="任务列表">
             <header><span>解决方案 / 任务</span><span>执行</span><span>产出</span><span>进度</span><span /></header>
             {visible.length ? visible.map((task) => <article key={task.task_id} className={selected?.task_id === task.task_id ? "is-selected" : ""}>
               <div><strong>{task.solution_name}</strong><code>{task.task_id}</code><small>{new Date(task.updated_at).toLocaleString("zh-CN", { hour12: false })}</small></div>
@@ -1731,6 +1723,7 @@ function GenericSolutionView({ kind, solutionId }: { kind: ProductKind; solution
   const agentCatalog = useQuery({
     queryKey: ["agent-solution-catalog", "selected"],
     queryFn: fetchAgentSolutionCatalog,
+    enabled: kind === "agent",
   });
   const selectedSolution = agentCatalog.data
     ? [...agentCatalog.data.solutions]
@@ -1752,12 +1745,13 @@ function GenericSolutionView({ kind, solutionId }: { kind: ProductKind; solution
   const studioRuntime = useQuery({
     queryKey: ["solution-runtime", solutionId, "studio-lineage"],
     queryFn: () => fetchSolutionRuntime(solutionId),
-    enabled: kind === "studio" && selectedSolution?.runtime.state === "ACTIVE",
+    enabled: kind === "studio" && Boolean(selectedStudioSolution),
+    retry: false,
   });
-  if (agentCatalog.isPending || (kind === "studio" && (studioCatalog.isPending || (selectedSolution?.runtime.state === "ACTIVE" && studioRuntime.isPending)))) {
+  if ((kind === "agent" && agentCatalog.isPending) || (kind === "studio" && studioCatalog.isPending)) {
     return <main className="state-screen"><span className="state-pulse" /><p>正在核验 selected solution…</p></main>;
   }
-  if (agentCatalog.isError || !agentCatalog.data || (kind === "studio" && (studioCatalog.isError || !studioCatalog.data))) {
+  if ((kind === "agent" && (agentCatalog.isError || !agentCatalog.data)) || (kind === "studio" && (studioCatalog.isError || !studioCatalog.data))) {
     return <main className="state-screen state-error"><span className="error-code">SOLUTION UNAVAILABLE</span><h1>无法打开所选 solution</h1><p>Catalog 或 exact runtime 未通过验证。</p></main>;
   }
   const solution = kind === "studio" ? selectedStudioSolution : selectedSolution;

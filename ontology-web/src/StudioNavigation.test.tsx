@@ -67,6 +67,9 @@ describe("StudioNavigation", () => {
     expect(screen.getByRole("navigation", { name: "Ontology Studio" })).toBeTruthy();
     const directoryLink = screen.getByRole("link", { name: /解决方案目录/ });
     expect(directoryLink.getAttribute("href")).toBe("/ontology-studio/solutions/");
+    const taskCenterLink = screen.getByRole("link", { name: /任务中心/ });
+    expect(taskCenterLink.getAttribute("href")).toBe("/ontology-studio/tasks/");
+    expect(screen.queryByRole("link", { name: /构建任务/ })).toBeNull();
     expect(screen.getByRole("navigation", { name: "当前解决方案工作区" })).toBeTruthy();
     expect(screen.getByText("解决方案工作区")).toBeTruthy();
     expect(screen.getByRole("link", { name: /概览/ })).toBeTruthy();
@@ -93,6 +96,6 @@ describe("StudioNavigation", () => {
     );
     expect(screen.getByRole("navigation", { name: "构建与复核子页面" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /复核队列/ }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("link", { name: /构建任务/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /构建运行/ })).toBeTruthy();
   });
 });

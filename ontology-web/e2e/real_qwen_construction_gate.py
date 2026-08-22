@@ -33,6 +33,17 @@ REQUIRED_COMPILE_TYPES = {
     "MAPPING",
 }
 
+CASH_TRADING_FORMAL_METRIC_IDS = {
+    "metric.active_client_trading_volume",
+    "metric.cancel_to_trade_ratio",
+    "metric.client_order_completion_rate",
+    "metric.order_fill_rate",
+    "metric.order_rejection_rate",
+    "metric.order_to_trade_ratio",
+    "metric.potential_self_trade_rate",
+    "metric.trade_capture_latency_p95",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -47,6 +58,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--poll-seconds", type=float, default=2.0)
     parser.add_argument("--timeout-seconds", type=float, default=600.0)
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="Optional ontology-demo-source-manifest/v1 file for a non-Cash-Trading scenario.",
+    )
+    parser.add_argument(
+        "--authoring-language",
+        choices=("en", "zh"),
+        help="Override the manifest's Ontology output language.",
+    )
     parser.add_argument("--no-finalize", action="store_true")
     return parser.parse_args()
 
@@ -143,6 +164,71 @@ def source_inventory(root: Path) -> list[dict[str, Any]]:
     ]
 
 
+def demo_definition(root: Path, manifest_path: Path | None) -> dict[str, Any]:
+    if manifest_path is None:
+        inventory = source_inventory(root)
+        return {
+            "solution": {
+                "display_name": {
+                    "en": f"Cash Trading Real Qwen Smoke {time.strftime('%Y%m%d-%H%M%S')}",
+                    "zh": "现金交易真实模型验收",
+                },
+                "description": {
+                    "en": "Build a reviewable Cash Trading ontology from the exact Deloitte HK input package.",
+                    "zh": "基于 Deloitte HK 提供的现金交易材料，构建一套可复核的本体方案。",
+                },
+                "owner": "Ontology Product QA",
+                "authoring_language": "zh",
+            },
+            "inventory": inventory,
+            "acceptance": {
+                "minimum_metric_or_gap_count": 8,
+                "minimum_published_metric_count": 8,
+                "expected_metric_ids": sorted(CASH_TRADING_FORMAL_METRIC_IDS),
+                "required_compilable_types": sorted(REQUIRED_COMPILE_TYPES),
+                "expected_physical_file_count": len(inventory),
+                "expected_logical_source_count": sum(
+                    len(item["registrations"]) for item in inventory
+                ),
+            },
+        }
+    resolved = manifest_path if manifest_path.is_absolute() else root / manifest_path
+    payload = json.loads(resolved.read_text(encoding="utf-8"))
+    if payload.get("contract") != "ontology-demo-source-manifest/v1":
+        raise RuntimeError(f"Unsupported demo manifest contract: {payload.get('contract')}")
+    inventory = []
+    for item in payload.get("files", []):
+        inventory.append(
+            {
+                "path": resolved.parent / item["path"],
+                "media_type": item.get("media_type"),
+                "registrations": item["registrations"],
+            }
+        )
+    if not inventory:
+        raise RuntimeError("Demo manifest does not declare any source files")
+    solution = payload.get("solution")
+    acceptance = payload.get("acceptance")
+    if not isinstance(solution, dict) or not isinstance(acceptance, dict):
+        raise RuntimeError("Demo manifest must declare solution and acceptance objects")
+    return {"solution": solution, "inventory": inventory, "acceptance": acceptance}
+
+
+def localized_solution_text(value: Any, language: str) -> str:
+    if isinstance(value, dict):
+        selected = value.get(language)
+        if isinstance(selected, str) and selected.strip():
+            return selected.strip()
+        for fallback in ("en", "zh"):
+            candidate = value.get(fallback)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+        raise RuntimeError("Localized Solution text does not contain a usable value")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    raise RuntimeError("Solution description must be non-empty text")
+
+
 def register_sources(
     client: httpx.Client, workspace_id: str, inventory: list[dict[str, Any]]
 ) -> dict[str, Any]:
@@ -156,7 +242,7 @@ def register_sources(
         media_type = media_type or "application/octet-stream"
         manifest_items.append(
             {
-                "client_file_id": f"cash-smoke-{index}",
+                "client_file_id": f"ontology-demo-{index}",
                 "original_name": path.name,
                 "declared_media_type": media_type,
                 "registrations": item["registrations"],
@@ -165,7 +251,7 @@ def register_sources(
         files.append(("files", (path.name, path.read_bytes(), media_type)))
     manifest = {
         "contract": "source-intake-batch/v1",
-        "idempotency_key": f"real-qwen-smoke-{time.time_ns()}",
+        "idempotency_key": f"real-qwen-demo-{time.time_ns()}",
         "items": manifest_items,
     }
     return expect(
@@ -221,16 +307,47 @@ def run_payload(client: httpx.Client, workspace_id: str, run_id: str) -> dict[st
     raise RuntimeError(f"Immutable run {run_id} was not found")
 
 
-def oracle(run: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
-    compilable = [item for item in run["candidates"] if item["compile_eligible"]]
+def oracle(
+    run: dict[str, Any],
+    task: dict[str, Any],
+    *,
+    required_compile_types: set[str] | None = None,
+    minimum_metric_or_gap_count: int = 8,
+    minimum_publishable_metric_count: int = 8,
+    expected_metric_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    required = required_compile_types or REQUIRED_COMPILE_TYPES
+    blocked = {
+        candidate_id
+        for finding in run["machine_findings"]
+        if finding["blocks_release"]
+        for candidate_id in finding["candidate_ids"]
+    }
+    compilable = [
+        item
+        for item in run["candidates"]
+        if item["compile_eligible"] and item["candidate_id"] not in blocked
+    ]
     compilable_types = Counter(item["candidate_type"] for item in compilable)
     all_types = Counter(item["candidate_type"] for item in run["candidates"])
     metric_or_gap = all_types["METRIC"] + all_types["GAP"]
-    missing_types = sorted(REQUIRED_COMPILE_TYPES - set(compilable_types))
+    unblocked_metric_ids = sorted(
+        operation["object_id"]
+        for item in compilable
+        if item["candidate_type"] == "METRIC"
+        for operation in [item.get("proposed_operation")]
+        if isinstance(operation, dict)
+    )
+    missing_expected_metric_ids = sorted(
+        (expected_metric_ids or set()) - set(unblocked_metric_ids)
+    )
+    missing_types = sorted(required - set(compilable_types))
     pass_gate = (
         task.get("result_outcome") in REVIEW_READY
         and not missing_types
-        and metric_or_gap >= 8
+        and metric_or_gap >= minimum_metric_or_gap_count
+        and len(unblocked_metric_ids) >= minimum_publishable_metric_count
+        and not missing_expected_metric_ids
     )
     return {
         "pass": pass_gate,
@@ -240,6 +357,8 @@ def oracle(run: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
         "candidate_types": dict(sorted(all_types.items())),
         "compilable_types": dict(sorted(compilable_types.items())),
         "metric_or_gap_count": metric_or_gap,
+        "unblocked_metric_ids": unblocked_metric_ids,
+        "missing_expected_metric_ids": missing_expected_metric_ids,
         "missing_required_compile_types": missing_types,
         "run_checksum": run["run_checksum"],
         "source_set_digest": run["source_set_digest"],
@@ -263,7 +382,10 @@ def finalize(
     workspace_id: str,
     base_revision: int,
     run: dict[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]]:
+    *,
+    minimum_published_metric_count: int,
+    expected_metric_ids: set[str],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     blocked = {
         candidate_id
         for finding in run["machine_findings"]
@@ -339,6 +461,22 @@ def finalize(
         200,
     )
     workspace = result["workspace"]
+    workbench = expect(
+        client.get(f"/control/workspaces/{workspace_id}/workbench"), 200
+    )
+    package = workbench["package"]
+    applied_metric_ids = {item["id"] for item in package["metrics"]}
+    missing_expected_metrics = sorted(expected_metric_ids - applied_metric_ids)
+    if (
+        len(applied_metric_ids) < minimum_published_metric_count
+        or missing_expected_metrics
+    ):
+        raise RuntimeError(
+            "Human-reviewed Draft does not contain the required governed metrics: "
+            f"count={len(applied_metric_ids)} "
+            f"minimum={minimum_published_metric_count} "
+            f"missing={','.join(missing_expected_metrics)}"
+        )
     validated = expect(
         client.post(
             f"/control/workspaces/{workspace_id}/validate",
@@ -353,7 +491,10 @@ def finalize(
         ),
         200,
     )
-    return result, published
+    return result, published, {
+        "metric_count": len(applied_metric_ids),
+        "metric_ids": sorted(applied_metric_ids),
+    }
 
 
 def verify_product_routes(
@@ -364,7 +505,10 @@ def verify_product_routes(
     run_id: str,
 ) -> None:
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        # The acceptance gate runs on demo operators' machines where Chrome is
+        # already present. Using the installed stable channel avoids coupling a
+        # production-route check to a separately downloaded Playwright browser.
+        browser = playwright.chromium.launch(channel="chrome", headless=True)
         context = browser.new_context(viewport={"width": 1440, "height": 900})
         page = context.new_page()
         page.goto(f"{base_url}/login/", wait_until="networkidle")
@@ -388,6 +532,25 @@ def main() -> int:
     if args.runs < 1:
         raise ValueError("--runs must be positive")
     project_root = Path(__file__).resolve().parents[2]
+    definition = demo_definition(project_root, args.manifest)
+    solution_definition = definition["solution"]
+    acceptance = definition["acceptance"]
+    authoring_language = (
+        args.authoring_language
+        or str(solution_definition.get("authoring_language") or "en")
+    )
+    required_types = set(
+        acceptance.get("required_compilable_types") or REQUIRED_COMPILE_TYPES
+    )
+    minimum_metric_or_gap_count = int(
+        acceptance.get("minimum_metric_or_gap_count", 8)
+    )
+    minimum_published_metric_count = int(
+        acceptance.get("minimum_published_metric_count", minimum_metric_or_gap_count)
+    )
+    expected_metric_ids = {
+        str(item) for item in acceptance.get("expected_metric_ids", ())
+    }
     username, password = load_demo_credentials(
         args.access_file if args.access_file.is_absolute() else project_root / args.access_file
     )
@@ -417,12 +580,11 @@ def main() -> int:
                 json={
                     "contract": "studio-solution-create/v1",
                     "creation_mode": "BLANK",
-                    "display_name": {
-                        "en": f"Cash Trading Real Qwen Smoke {time.strftime('%Y%m%d-%H%M%S')}",
-                        "zh": "现金交易真实模型验收",
-                    },
-                    "description": "Local acceptance evidence for the generic Ontology Studio construction workflow.",
-                    "owner": "Ontology Product QA",
+                    "display_name": solution_definition["display_name"],
+                    "description": localized_solution_text(
+                        solution_definition["description"], authoring_language
+                    ),
+                    "owner": solution_definition["owner"],
                 },
             ),
             201,
@@ -430,18 +592,27 @@ def main() -> int:
         solution_id = created["solution_id"]
         workspace_id = created["workspace_id"]
         initial = expect(client.get(f"/control/workspaces/{workspace_id}"), 200)
-        receipt = register_sources(client, workspace_id, source_inventory(project_root))
-        if len(receipt["physical_files"]) != 5 or len(receipt["registrations"]) != 7:
-            raise RuntimeError("Cash smoke input did not produce 5 physical / 7 logical sources")
+        receipt = register_sources(client, workspace_id, definition["inventory"])
+        expected_physical = int(acceptance["expected_physical_file_count"])
+        expected_logical = int(acceptance["expected_logical_source_count"])
+        if (
+            len(receipt["physical_files"]) != expected_physical
+            or len(receipt["registrations"]) != expected_logical
+        ):
+            raise RuntimeError(
+                "Demo input did not produce the expected physical/logical source counts: "
+                f"expected={expected_physical}/{expected_logical} "
+                f"actual={len(receipt['physical_files'])}/{len(receipt['registrations'])}"
+            )
         if receipt["failures"]:
-            raise RuntimeError(f"Cash smoke source intake failed: {receipt['failures']}")
+            raise RuntimeError(f"Demo source intake failed: {receipt['failures']}")
         source_ids = [item["source_version_id"] for item in receipt["registrations"]]
         print(
             "SOLUTION",
             solution_id,
             workspace_id,
-            "sources=5/7",
-            "language=en",
+            f"sources={expected_physical}/{expected_logical}",
+            f"language={authoring_language}",
             flush=True,
         )
         results: list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
@@ -454,7 +625,7 @@ def main() -> int:
                     json={
                         "expected_revision": current["revision"],
                         "source_version_ids": source_ids,
-                        "authoring_language": "en",
+                        "authoring_language": authoring_language,
                     },
                 ),
                 200,
@@ -486,7 +657,14 @@ def main() -> int:
             ):
                 raise RuntimeError("A model run mutated Draft before HITL")
             run = run_payload(client, workspace_id, job["run_id"])
-            assessed = oracle(run, task)
+            assessed = oracle(
+                run,
+                task,
+                required_compile_types=required_types,
+                minimum_metric_or_gap_count=minimum_metric_or_gap_count,
+                minimum_publishable_metric_count=minimum_published_metric_count,
+                expected_metric_ids=expected_metric_ids,
+            )
             results.append((task, run, assessed))
             print(
                 "ORACLE",
@@ -497,6 +675,9 @@ def main() -> int:
                 f"compilable={assessed['compilable_count']}",
                 f"metric_or_gap={assessed['metric_or_gap_count']}",
                 "missing=" + ",".join(assessed["missing_required_compile_types"]),
+                "missing_metrics=" + ",".join(
+                    assessed["missing_expected_metric_ids"]
+                ),
                 flush=True,
             )
         passing = [item for item in results if item[2]["pass"]]
@@ -517,10 +698,16 @@ def main() -> int:
             return 2
         publication: dict[str, Any] | None = None
         decision: dict[str, Any] | None = None
+        governed_assets: dict[str, Any] | None = None
         selected_run = passing[0][1]
         if not args.no_finalize:
-            review, publication = finalize(
-                client, workspace_id, selected_run["base_revision"], selected_run
+            review, publication, governed_assets = finalize(
+                client,
+                workspace_id,
+                selected_run["base_revision"],
+                selected_run,
+                minimum_published_metric_count=minimum_published_metric_count,
+                expected_metric_ids=expected_metric_ids,
             )
             decision = review["decision"]
             print(
@@ -549,6 +736,7 @@ def main() -> int:
                 "runs": [item[2] for item in results],
                 "decision_id": decision["decision_id"] if decision else None,
                 "release": publication["release"] if publication else None,
+                "governed_assets": governed_assets,
                 "ui_route_verified": True,
             },
             ensure_ascii=False,

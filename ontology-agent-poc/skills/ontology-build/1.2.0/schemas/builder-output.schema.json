@@ -9,7 +9,7 @@
     "contract": {"const": "builder-phase-output/v1"},
     "phase": {"enum": ["SEMANTIC", "ANALYTICS", "DATA"]},
     "request_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "proposals": {"type": "array", "maxItems": 24},
+    "proposals": {"type": "array", "maxItems": 48},
     "gaps": {"type": "array", "maxItems": 64},
     "done": {"type": "boolean"}
   }

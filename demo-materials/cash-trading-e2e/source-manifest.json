@@ -1,0 +1,66 @@
+{
+  "manifest_version": "1.0",
+  "case_id": "cash-trading",
+  "case_name": "现金市场订单与成交活动监控",
+  "prepared_on": "2026-08-23",
+  "authoring_language": "zh-CN",
+  "files": [
+    {
+      "path": "01_Deloitte_HK_Input/HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "display_name": "业务需求与指标逻辑",
+      "provenance": "Deloitte HK provided",
+      "content_mutated": false,
+      "logical_roles": [
+        "requirement_transcription",
+        "metric_transcription"
+      ],
+      "sha256": "fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
+      "notes": "Cash Trading 内容位于输入页；ADT 页仅作为原模板内参考，不是本次 Demo 的业务案例。"
+    },
+    {
+      "path": "01_Deloitte_HK_Input/order_trade_activities_data_dictionary.xlsx",
+      "display_name": "订单与成交数据模型及字段字典",
+      "provenance": "Deloitte HK provided",
+      "content_mutated": false,
+      "logical_roles": [
+        "data_model",
+        "data_dictionary"
+      ],
+      "sha256": "2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a",
+      "notes": "包含 Data Model Overview、订单、成交及多个参考实体 Sheet。"
+    },
+    {
+      "path": "01_Deloitte_HK_Input/cash_trading_sample_data.xlsx",
+      "display_name": "Cash Trading 构造型样例数据",
+      "provenance": "Deloitte HK provided",
+      "content_mutated": false,
+      "logical_roles": [
+        "data_dictionary"
+      ],
+      "sha256": "d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018",
+      "notes": "仅用于字段、类型、枚举和粒度观察；不是 HKEX 真实生产数据。"
+    },
+    {
+      "path": "01_Deloitte_HK_Input/email screenshot.jpeg",
+      "display_name": "材料来源与限制说明",
+      "provenance": "Deloitte HK provided",
+      "content_mutated": false,
+      "logical_roles": [
+        "other"
+      ],
+      "sha256": "488ed1d5b718337236bca5b812bd6606d73888e5028d347671c2569bc798fb9c",
+      "notes": "作为来源证据归档；图片不作为自动构建的结构化业务权威。"
+    },
+    {
+      "path": "02_Product_Supplement/reference_controls.sql",
+      "display_name": "Cash Trading 参考控制 SQL",
+      "provenance": "Atlas product-owned synthetic supplement",
+      "content_mutated": false,
+      "logical_roles": [
+        "sql"
+      ],
+      "sha256": "32457c30e9853c48ccea851322e7892e74e7a074ba2d45af80650741d6bcfdd5",
+      "notes": "产品团队根据已登记指标与字段编写的演示补充，不代表 Deloitte HK/HKEX 现有 SQL。"
+    }
+  ]
+}

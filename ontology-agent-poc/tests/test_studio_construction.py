@@ -13,6 +13,10 @@ from openpyxl import Workbook
 from ontology_agent import api as api_module
 from ontology_agent.api import control_app
 from ontology_agent.io import DEFAULT_CASH_TRADING_SCENARIO_DIR, load_package, sha256_value
+from ontology_agent.language_policy import (
+    create_authoring_policy,
+    operation_language_violations,
+)
 from ontology_agent.release import StudioReleases
 from ontology_agent.studio.construction import (
     ConstructionDispositionV1,
@@ -38,6 +42,7 @@ from ontology_agent.studio.builder import (
     BoundedBuilderOrchestrator,
     BuilderPhaseOutputV1,
     BuilderPhaseResponseV1,
+    _source_operations,
 )
 from ontology_agent.studio.skill_packages import load_skill_package
 from ontology_agent.studio.source_projection import StudioAuthoringProjectionV1
@@ -101,6 +106,35 @@ class _ConstructionBuilderModel:
             provider_request_id=f"provider-{request.phase.lower()}",
             output=output,
             output_digest=sha256_value(output),
+        )
+
+
+class _PartiallyInvalidConstructionBuilderModel(_ConstructionBuilderModel):
+    def generate(self, request):
+        response = super().generate(request)
+        if request.phase != "SEMANTIC":
+            return response
+        valid = response.output.proposals[0]
+        invalid_payload = dict(valid.operation.payload or {})
+        invalid_payload["id"] = "entity.untrusted_request"
+        invalid_operation = valid.operation.model_copy(
+            update={
+                "object_id": "entity.untrusted_request",
+                "payload": invalid_payload,
+            }
+        )
+        invalid = valid.model_copy(
+            update={
+                "proposal_id": "proposal.untrusted_request",
+                "operation": invalid_operation,
+                "evidence_fragment_ids": ("evidence." + "0" * 64,),
+            }
+        )
+        output = response.output.model_copy(
+            update={"proposals": (valid, invalid)}
+        )
+        return response.model_copy(
+            update={"output": output, "output_digest": sha256_value(output)}
         )
 
 
@@ -410,6 +444,104 @@ def test_generic_builder_candidates_enter_review_without_writing_draft(
     assert reviewer_stage.status == "PASS"
     assert run.machine_findings[0].finding_id == "finding.model.confirm_owner"
     assert all(item.review_status == "UNREVIEWED" for item in run.candidates)
+
+
+def test_builder_quarantines_one_unknown_evidence_citation_without_losing_valid_work(
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    workspace = DraftWorkspaceService(
+        tmp_path / "workspace",
+        scenario_dir,
+        StudioReleases(tmp_path / "releases"),
+    )
+    package = workspace.candidate_package()
+    body = "A service request is submitted, assessed and closed."
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.service_request",
+                "kind": "requirement_transcription",
+                "locator": "source-library:source-version.00000000000000000000000000000000",
+                "source_version_id": "source-version.00000000000000000000000000000000",
+                "checksum": hashlib.sha256(body.encode()).hexdigest(),
+                "registered_at": "2026-08-22T00:00:00Z",
+                "content_text": body,
+            }
+        ]
+    }
+    service = StudioConstructionService(
+        store=FileConstructionRunStore(tmp_path / "construction"),
+        workspace=workspace,
+        package=package,
+        intake=intake,
+        authoring=StudioAuthoringProjectionV1(
+            requirements=(), metric_candidates=(), source_mode="CANONICAL_FALLBACK"
+        ),
+        builder=BoundedBuilderOrchestrator(
+            model=_PartiallyInvalidConstructionBuilderModel(),
+            skill=load_skill_package("ontology-build", "1.0.0"),
+        ),
+        engine=None,
+    )
+
+    run = service.start(expected_revision=workspace.get().revision)
+
+    assert {item.candidate_type for item in run.candidates} == {
+        "SOURCE",
+        "OBJECT",
+        "GAP",
+    }
+    assert not any(
+        item.canonical_target == "entity.untrusted_request" for item in run.candidates
+    )
+    quarantined = next(
+        item for item in run.candidates if item.candidate_type == "GAP"
+    )
+    assert (
+        quarantined.proposal["gap_id"]
+        == "gap.quarantined.proposal.untrusted_request"
+    )
+    assert quarantined.compile_eligible is False
+    builder_stage = next(
+        item for item in run.stage_receipts if item.stage == "BUILDER_AGENT"
+    )
+    assert builder_stage.status == "PASS"
+
+
+def test_builder_registers_source_notes_in_the_selected_authoring_language(
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    workspace = DraftWorkspaceService(
+        tmp_path / "workspace",
+        scenario_dir,
+        StudioReleases(tmp_path / "releases"),
+    )
+    package = workspace.candidate_package().model_copy(
+        update={"authoring_policy": create_authoring_policy("zh")}
+    )
+    body = "证券交收失败监控业务需求。"
+    intake = {
+        "assets": [
+            {
+                "asset_id": "source.requirements",
+                "kind": "requirement_transcription",
+                "title": "业务需求",
+                "locator": "source-library:source-version.00000000000000000000000000000000",
+                "source_version_id": "source-version.00000000000000000000000000000000",
+                "checksum": hashlib.sha256(body.encode()).hexdigest(),
+                "registered_at": "2026-08-22T00:00:00Z",
+                "content_text": body,
+            }
+        ]
+    }
+
+    operation = _source_operations(intake, package=package)[0]
+    payload = operation.payload or {}
+
+    assert str(payload["notes"]).startswith("已登记的精确来源版本。内容校验和：")
+    assert operation_language_violations(payload, package.authoring_policy) == ()
 
 
 def test_durable_worker_executes_planned_run_and_records_terminal_job(

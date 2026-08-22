@@ -14,8 +14,8 @@
     "gap.record",
     "semantica.propose"
   ],
-  "max_iterations": 3,
-  "max_model_calls": 3,
+  "max_iterations": 4,
+  "max_model_calls": 4,
   "human_review_required": true,
   "direct_draft_write": false
 }

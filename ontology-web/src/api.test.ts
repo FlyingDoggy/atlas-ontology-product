@@ -503,6 +503,19 @@ describe("studioWorkbenchSchema", () => {
     expect(parsed.workspace.intake_submission_id).toBeNull();
   });
 
+  it("normalizes one-language ontology names produced by an authoring policy", () => {
+    const value: Record<string, any> = workbench();
+    value.package.entities[0].name.zh = null;
+    value.package.properties[0].name.zh = null;
+    value.package.relationships[0].name.zh = null;
+
+    const parsed = studioWorkbenchSchema.parse(value);
+
+    expect(parsed.package.entities[0].name).toEqual({ en: "Trade", zh: "Trade" });
+    expect(parsed.package.properties[0].name).toEqual({ en: "Trade ID", zh: "Trade ID" });
+    expect(parsed.package.relationships[0].name).toEqual({ en: "Trade market", zh: "Trade market" });
+  });
+
   it("rejects a relationship to an entity outside the package", () => {
     const value = workbench();
     value.package.relationships[0].to_entity = "entity.browser_fixture";

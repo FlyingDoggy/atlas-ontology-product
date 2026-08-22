@@ -6,6 +6,12 @@
 - A relationship declares a business predicate, direction and cardinality.
 - A metric declares a base entity, result grain, value type, unit, aggregation,
   typed formula and query contract. A textual formula alone is not executable.
+- Base metrics own physical query contracts and may reference bound fields.
+  Derived metrics own no physical query contract and compose governed metrics.
+- A ratio or percentage normally requires separately governed numerator and
+  denominator base metrics before the named derived metric can close.
+- `Metric.base_entity` references an Entity; `Metric.query.base_source` references
+  a DataSource; metric grain and allowed dimensions reference Dimension objects.
 - A rule separates population eligibility, data quality and policy restrictions.
 - A data contract separates logical semantics from physical sources and mappings.
 - A binding connects one logical target to one physical source/table/column.

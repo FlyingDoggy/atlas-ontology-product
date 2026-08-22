@@ -41,9 +41,9 @@ PHASE_COLLECTIONS: dict[BuilderPhase, tuple[str, ...]] = {
 }
 
 PHASE_PROPOSAL_LIMITS: dict[BuilderPhase, int] = {
-    "SEMANTIC": 24,
-    "ANALYTICS": 24,
-    "DATA": 24,
+    "SEMANTIC": 48,
+    "ANALYTICS": 48,
+    "DATA": 48,
 }
 
 PHASE_EVIDENCE_KIND_PRIORITY: dict[BuilderPhase, tuple[str, ...]] = {
@@ -342,6 +342,11 @@ def _source_operations(
     payload = intake.model_dump(mode="json") if hasattr(intake, "model_dump") else dict(intake)
     assets = payload.get("assets") or payload.get("source_files") or ()
     operations: list[PackageDraftOperation] = []
+    authoring_language = (
+        package.authoring_policy.authoring_language
+        if package.authoring_policy is not None
+        else "en"
+    )
     for raw in sorted(
         (dict(item) for item in assets if isinstance(item, dict)),
         key=lambda item: str(item.get("asset_id") or item.get("file_id") or ""),
@@ -354,6 +359,11 @@ def _source_operations(
         if not source_id or not locator or len(checksum) != 64:
             raise BuilderError("Selected source cannot be registered in the Draft")
         source_type = _SOURCE_TYPE_BY_KIND.get(kind, "public_reference")
+        notes = (
+            "已登记的精确来源版本。内容校验和：" + checksum
+            if authoring_language == "zh"
+            else "Exact registered source version. Content checksum: " + checksum
+        )
         source_payload = {
             "id": source_id,
             "source_type": source_type,
@@ -362,9 +372,7 @@ def _source_operations(
             "owner": package.scenario.owner,
             "captured_on": _captured_on(raw, package.created_at.date()).isoformat(),
             "trust": "primary",
-            "notes": (
-                "Exact registered source version. Content checksum: " + checksum
-            ),
+            "notes": notes,
         }
         operations.append(
             PackageDraftOperation(
@@ -433,8 +441,19 @@ class BoundedBuilderOrchestrator:
             return self._result(bundle, source_operations, proposals, gaps, [])
 
         receipts: list[BuilderPhaseReceiptV1] = []
-        seen_targets: set[tuple[str, str]] = set()
-        for phase in ("SEMANTIC", "ANALYTICS", "DATA"):
+        seen_operations: dict[tuple[str, str], PackageDraftOperation] = {}
+        # Skill 1.2+ has one bounded closure-audit pass. Older immutable Skill
+        # packages retain their original three-call behavior.
+        phase_plan: tuple[BuilderPhase, ...] = (
+            ("SEMANTIC", "SEMANTIC", "DATA", "ANALYTICS")
+            if self.skill.manifest.max_model_calls >= 4
+            else ("SEMANTIC", "DATA", "ANALYTICS")
+        )
+        # Base Metric query contracts reference governed DataSource IDs and
+        # physically bound Properties. Build that dependency closure before the
+        # analytics phase; otherwise the model is forced to guess future source
+        # identities or to confuse an Entity ID with a DataSource ID.
+        for phase in phase_plan:
             request = _phase_request(
                 run_id=run_id,
                 workspace_id=workspace_id,
@@ -453,15 +472,41 @@ class BoundedBuilderOrchestrator:
             ):
                 raise BuilderError("Builder phase did not close its exact request")
             allowed = set(PHASE_COLLECTIONS[phase])
+            phase_proposal_count = 0
+            phase_gap_count = 0
             for proposal in output.proposals:
                 operation = proposal.operation
                 target = (operation.collection, operation.object_id)
                 if operation.action != "UPSERT" or operation.collection not in allowed:
                     raise BuilderError("Builder proposal escaped its phase authority")
-                if target in seen_targets:
-                    raise BuilderError("Builder proposed one package target more than once")
                 if not set(proposal.evidence_fragment_ids).issubset(known_fragments):
-                    raise BuilderError("Builder cited an unknown evidence fragment")
+                    # A single bad model citation must never gain source authority, but it
+                    # also must not discard every independently valid proposal in the run.
+                    # Quarantine it as an explicit blocking Gap for human follow-up.
+                    valid_fragment_ids = tuple(
+                        fragment_id
+                        for fragment_id in proposal.evidence_fragment_ids
+                        if fragment_id in known_fragments
+                    )
+                    gaps.append(
+                        BuildGapV1(
+                            gap_id=f"gap.quarantined.{proposal.proposal_id}",
+                            category="INCOMPLETE_CONTRACT",
+                            description=(
+                                f"Builder proposal {proposal.proposal_id} was quarantined "
+                                "because it cited evidence outside the selected exact "
+                                "source projection. No Draft operation was created."
+                            ),
+                            evidence_fragment_ids=valid_fragment_ids,
+                            blocking=True,
+                            clarification_question=(
+                                "Which registered source fragment supports this proposed "
+                                "ontology asset?"
+                            ),
+                        )
+                    )
+                    phase_gap_count += 1
+                    continue
                 # Provenance is derived from exact cited fragments. A model may
                 # choose evidence, but it cannot invent or omit source authority.
                 exact_sources = sorted(
@@ -474,6 +519,30 @@ class BoundedBuilderOrchestrator:
                 parsed_payload["sources"] = exact_sources
                 operation = operation.model_copy(update={"payload": parsed_payload})
                 proposal = proposal.model_copy(update={"operation": operation})
+                if target in seen_operations:
+                    if sha256_value(seen_operations[target]) == sha256_value(operation):
+                        # A closure-audit pass may repeat an unchanged proposal.
+                        # It adds no candidate and gains no extra authority.
+                        continue
+                    gaps.append(
+                        BuildGapV1(
+                            gap_id=f"gap.conflict.{proposal.proposal_id}",
+                            category="CONFLICT",
+                            description=(
+                                "Builder closure audit proposed a conflicting payload for "
+                                f"{operation.collection}/{operation.object_id}. The earlier "
+                                "typed candidate remains unchanged."
+                            ),
+                            evidence_fragment_ids=proposal.evidence_fragment_ids,
+                            blocking=True,
+                            clarification_question=(
+                                "Which evidence-supported definition should the human "
+                                "reviewer retain?"
+                            ),
+                        )
+                    )
+                    phase_gap_count += 1
+                    continue
                 status = parsed_payload.get("status")
                 if status not in {"proposed", "needs_clarification"}:
                     raise BuilderError("Builder attempted to manufacture review status")
@@ -487,19 +556,43 @@ class BoundedBuilderOrchestrator:
                 ):
                     raise BuilderError("Builder invented source or decision authority")
                 working = apply_package_operations(working, (operation,))
-                seen_targets.add(target)
+                seen_operations[target] = operation
                 proposals.append(proposal)
+                phase_proposal_count += 1
             for gap in output.gaps:
                 if not set(gap.evidence_fragment_ids).issubset(known_fragments):
-                    raise BuilderError("Builder gap cited an unknown evidence fragment")
+                    valid_fragment_ids = tuple(
+                        fragment_id
+                        for fragment_id in gap.evidence_fragment_ids
+                        if fragment_id in known_fragments
+                    )
+                    gaps.append(
+                        BuildGapV1(
+                            gap_id=f"gap.quarantined.{gap.gap_id}",
+                            category="INCOMPLETE_CONTRACT",
+                            description=(
+                                f"Builder gap {gap.gap_id} was quarantined because it "
+                                "cited evidence outside the selected exact source "
+                                "projection."
+                            ),
+                            evidence_fragment_ids=valid_fragment_ids,
+                            blocking=True,
+                            clarification_question=(
+                                "Which registered source fragment supports this reported gap?"
+                            ),
+                        )
+                    )
+                    phase_gap_count += 1
+                    continue
                 gaps.append(gap)
+                phase_gap_count += 1
             receipts.append(
                 BuilderPhaseReceiptV1(
                     phase=phase,
                     request_digest=request.request_digest,
                     output_digest=response.output_digest,
-                    proposal_count=len(output.proposals),
-                    gap_count=len(output.gaps),
+                    proposal_count=phase_proposal_count,
+                    gap_count=phase_gap_count,
                     requested_model=response.requested_model,
                     response_model=response.response_model,
                     provider_request_id=response.provider_request_id,
