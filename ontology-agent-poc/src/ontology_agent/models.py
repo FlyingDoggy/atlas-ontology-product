@@ -596,6 +596,14 @@ class EvidenceRecord(StrictModel):
 class AnalysisResponse(StrictModel):
     status: Literal["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"]
     answer: str
+    conversation_id: str | None = Field(
+        default=None, pattern=r"^conversation\.[0-9a-f]{32}$"
+    )
+    turn_id: str | None = Field(default=None, pattern=r"^turn\.[0-9a-f]{32}$")
+    turn_index: int | None = Field(default=None, ge=1)
+    parent_execution_id: str | None = Field(
+        default=None, pattern=r"^exec\.[0-9a-f]{32}$"
+    )
     execution_id: str | None = None
     snapshot_checksum: str | None = None
     plan: AnalysisPlan | None = None

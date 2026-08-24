@@ -320,6 +320,10 @@ export const solutionLlmExecutionSchema = z.object({
 export const solutionAnalysisSchema = z.object({
   status: z.enum(["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"]),
   answer: z.string(),
+  conversation_id: z.string().regex(/^conversation\.[0-9a-f]{32}$/).nullable(),
+  turn_id: z.string().regex(/^turn\.[0-9a-f]{32}$/).nullable(),
+  turn_index: z.number().int().min(1).nullable(),
+  parent_execution_id: z.string().regex(/^exec\.[0-9a-f]{32}$/).nullable(),
   execution_id: z.string().nullable(),
   snapshot_checksum: sha256.nullable(),
   plan: z.object({
@@ -1694,10 +1698,16 @@ export async function analyzeSolution(
   question: string,
   role: string,
   questionCaseId?: string,
+  conversationId?: string,
 ): Promise<SolutionAnalysis> {
   const payload = await requestAgentJson(`/api/solutions/${encodeURIComponent(solutionId)}/analyze`, {
     method: "POST",
-    body: JSON.stringify({ question, role, question_case_id: questionCaseId }),
+    body: JSON.stringify({
+      question,
+      role,
+      question_case_id: questionCaseId,
+      conversation_id: conversationId,
+    }),
   });
   const parsed = solutionAnalysisSchema.safeParse(payload);
   if (!parsed.success) {

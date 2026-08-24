@@ -588,6 +588,10 @@ describe("solution-neutral Agent contracts", () => {
     const answered = {
       status: "ANSWERED",
       answer: "20 potential self-trade pairs were identified.",
+      conversation_id: `conversation.${"1".repeat(32)}`,
+      turn_id: `turn.${"2".repeat(32)}`,
+      turn_index: 1,
+      parent_execution_id: null,
       execution_id: "execution.cash.001",
       snapshot_checksum: digest,
       plan: {

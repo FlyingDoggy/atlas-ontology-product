@@ -9,6 +9,10 @@ const digest = "a".repeat(64);
 const result: SolutionAnalysis = {
   status: "ANSWERED",
   answer: "ADT increased by 3.2%.",
+  conversation_id: `conversation.${"1".repeat(32)}`,
+  turn_id: `turn.${"2".repeat(32)}`,
+  turn_index: 1,
+  parent_execution_id: null,
   execution_id: `exec.${"b".repeat(32)}`,
   snapshot_checksum: digest,
   plan: {

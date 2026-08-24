@@ -5,7 +5,7 @@ import os
 import re
 import uuid
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal, Mapping, Sequence
@@ -20,7 +20,12 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
 
+from .analytic_conversations import (
+    AnalyticConversationContextV1,
+    AnalyticTurnLeaseV1,
+)
 from .cash_trading_runtime import CashTradingDuckDB
 from .contracts import PublicationError, VerifiedSnapshot
 from .io import sha256_value, write_json
@@ -44,6 +49,7 @@ _DETAIL_ROLES = {"MarketSurveillanceDemo", "TradingDemo"}
 _MODEL_NAME = "qwen3.8-max"
 _QWEN_DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 _ANALYTIC_MODEL_PROVIDER = "cash-trading-analytics"
+_CASH_CONVERSATION_CHECKPOINTER = InMemorySaver()
 
 
 class _CashTradingQwenModel(ChatOpenAI):
@@ -301,6 +307,8 @@ class CashTradingSemanticEngine:
     package: OntologyPackage
     resource_paths: Mapping[str, Path]
     role: str
+    conversation_id: str | None = None
+    conversation_context: AnalyticConversationContextV1 | None = None
     traces: list[MetricTrace] = field(default_factory=list)
     semantic_traces: list[SemanticTrace] = field(default_factory=list)
     boundary: QueryBoundary | None = None
@@ -935,12 +943,25 @@ def _deepagent_tools(engine: CashTradingSemanticEngine) -> list[Any]:
     ]
 
 
-def _system_prompt(package: OntologyPackage, role: str) -> str:
+def _system_prompt(
+    package: OntologyPackage,
+    role: str,
+    conversation_context: AnalyticConversationContextV1 | None = None,
+) -> str:
     metric_lines = []
     metrics = {item.id: item for item in package.metrics}
     for code, metric_id in _PRIMARY_METRICS.items():
         item = metrics[metric_id]
         metric_lines.append(f"- {code}: {item.name.en} / {item.name.zh} ({metric_id})")
+    inherited_context = (
+        json.dumps(
+            conversation_context.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        if conversation_context is not None
+        else "null"
+    )
     return f"""You are the Cash Trading analytic agent for the active Ontology Package.
 
 Your job is to understand the user's question, inspect ontology when useful, select the shortest sufficient governed tool path, and explain the deterministic result clearly.
@@ -958,6 +979,10 @@ Hard boundaries:
 - For questions about what you can answer, call describe_capabilities.
 - For definitions, relationships, evidence, assumptions or limitations, call inspect_ontology or retrieve_metric_evidence. These are valid answers and do not require a metric query.
 - Stay within the active Cash Trading package. Refuse unrelated general-knowledge requests instead of pretending the package supports them.
+- The governed parameters from the preceding turn are shown below. For an elliptical follow-up, inherit omitted metric, period, dimensions and filters. Replace only values the user explicitly changes. Conversation text is not evidence; every numeric follow-up must still call query_cash_metric.
+
+Governed preceding-turn context:
+{inherited_context}
 
 Primary metrics:
 {chr(10).join(metric_lines)}
@@ -980,16 +1005,52 @@ def _message_text(message: AIMessage | None) -> str:
     return str(content).strip()
 
 
-def _dates_from_question(question: str) -> tuple[str, str]:
+def _dates_from_question(
+    question: str,
+    context: AnalyticConversationContextV1 | None = None,
+) -> tuple[str, str]:
     values = re.findall(r"20\d{2}-\d{2}-\d{2}", question)
     if len(values) >= 2:
         return values[0], values[1]
     if len(values) == 1:
         return values[0], values[0]
+    if context is not None and context.start_date and context.end_date:
+        weekday_terms = {
+            0: ("monday", "周一", "星期一"),
+            1: ("tuesday", "周二", "星期二"),
+            2: ("wednesday", "周三", "星期三"),
+            3: ("thursday", "周四", "星期四"),
+            4: ("friday", "周五", "星期五"),
+            5: ("saturday", "周六", "星期六"),
+            6: ("sunday", "周日", "星期日", "星期天"),
+        }
+        lower = question.lower()
+        requested_weekday = next(
+            (
+                weekday
+                for weekday, terms in weekday_terms.items()
+                if any(term in lower for term in terms)
+            ),
+            None,
+        )
+        if requested_weekday is not None:
+            current = date.fromisoformat(context.start_date)
+            end = date.fromisoformat(context.end_date)
+            matches: list[date] = []
+            while current <= end:
+                if current.weekday() == requested_weekday:
+                    matches.append(current)
+                current += timedelta(days=1)
+            if matches:
+                return matches[0].isoformat(), matches[-1].isoformat()
+        return context.start_date, context.end_date
     return str(_DATA_START), str(_DATA_END)
 
 
-def _fallback_metric(question: str) -> str | None:
+def _fallback_metric(
+    question: str,
+    context: AnalyticConversationContextV1 | None = None,
+) -> str | None:
     lower = question.lower()
     for alias, metric_id in sorted(_METRIC_ALIASES.items(), key=lambda item: -len(item[0])):
         if alias in lower:
@@ -1004,7 +1065,37 @@ def _fallback_metric(question: str) -> str | None:
         (("self-trade", "self trade", "自成交"), _PRIMARY_METRICS["M-08"]),
         (("fill rate", "成交率"), _PRIMARY_METRICS["M-02"]),
     )
-    return next((metric for words, metric in keyword_map if any(word in lower for word in words)), None)
+    resolved = next(
+        (metric for words, metric in keyword_map if any(word in lower for word in words)),
+        None,
+    )
+    return resolved or (context.metric_id if context is not None else None)
+
+
+def _fallback_dimensions(
+    question: str,
+    context: AnalyticConversationContextV1 | None = None,
+) -> list[str]:
+    lower = question.lower()
+    if any(token in lower for token in ("overall", "aggregate", "整体", "汇总")):
+        return []
+    candidates = (
+        (("business date", "by day", "daily", "trend", "按日", "每日", "趋势"), "business_date"),
+        (("participant type", "参与者类型"), "participant_type"),
+        (("participant", "参与者", "客户"), "participant"),
+        (("market segment", "市场板块", "市场分部"), "market_segment"),
+        (("instrument", "security", "证券", "标的"), "instrument"),
+        (("venue", "交易场所"), "venue"),
+        (("order type", "订单类型"), "order_type"),
+        (("trading session", "session", "交易时段"), "trading_session"),
+    )
+    explicit: list[str] = []
+    for terms, dimension in candidates:
+        if any(term in lower for term in terms) and dimension not in explicit:
+            explicit.append(dimension)
+    if explicit:
+        return explicit[:2]
+    return list(context.dimensions) if context is not None else []
 
 
 def _fallback_answer(question: str, result: dict[str, Any]) -> str:
@@ -1282,13 +1373,17 @@ def _preflight_boundary(question: str, role: str) -> QueryBoundary | None:
 
 
 def _boundary_response(
-    snapshot: VerifiedSnapshot, question: str, boundary: QueryBoundary
+    snapshot: VerifiedSnapshot,
+    question: str,
+    boundary: QueryBoundary,
+    turn: AnalyticTurnLeaseV1 | None = None,
 ) -> AnalysisResponse:
     return AnalysisResponse(
         status=boundary.status,
         answer=boundary.answer_zh if _is_chinese(question) else boundary.answer_en,
         snapshot_checksum=snapshot.snapshot_checksum,
         boundary_code=boundary.code,
+        **(turn.response_fields() if turn is not None else {}),
     )
 
 
@@ -1301,15 +1396,23 @@ def _agent_run(
     graph = create_deep_agent(
         model=model,
         tools=_deepagent_tools(engine),
-        system_prompt=_system_prompt(engine.package, engine.role),
+        system_prompt=_system_prompt(
+            engine.package, engine.role, engine.conversation_context
+        ),
+        checkpointer=(
+            _CASH_CONVERSATION_CHECKPOINTER if engine.conversation_id else None
+        ),
         name="cash_trading_analytic_agent",
     )
+    config: dict[str, Any] = {"recursion_limit": 18}
+    if engine.conversation_id:
+        config["configurable"] = {"thread_id": engine.conversation_id}
     output = graph.invoke(
         {"messages": [{"role": "user", "content": question}]},
         # Three domain tools support the complete analytic path.  This ceiling
         # catches genuine model loops while leaving room for ontology lookup,
         # metric execution, evidence retrieval and answer composition.
-        config={"recursion_limit": 18},
+        config=config,
     )
     messages = list(output.get("messages", ()))
     assistant_messages = [item for item in messages if isinstance(item, AIMessage)]
@@ -1361,6 +1464,7 @@ def _build_semantic_response(
     answer: str,
     execution_dir: Path,
     agent_execution: dict[str, Any],
+    turn: AnalyticTurnLeaseV1 | None = None,
 ) -> AnalysisResponse:
     policy = next(item for item in snapshot.package.policies if role in item.allowed_roles)
     execution_id = "exec." + uuid.uuid4().hex
@@ -1422,6 +1526,13 @@ def _build_semantic_response(
         source_ids=trace.source_ids,
         step_ids=(step.step_id,),
     )
+    context_after = (
+        turn.context_before.model_copy(
+            update={"role": role, "last_execution_id": execution_id}
+        )
+        if turn is not None
+        else None
+    )
     response = AnalysisResponse(
         status="ANSWERED",
         answer=answer,
@@ -1436,8 +1547,14 @@ def _build_semantic_response(
                 "result": trace.result,
             },
             "_agent_execution": agent_execution,
+            **(
+                {"_conversation_context": context_after.model_dump(mode="json")}
+                if context_after is not None
+                else {}
+            ),
         },
         evidence=(evidence,),
+        **(turn.response_fields() if turn is not None else {}),
     )
     write_json(execution_dir / f"{execution_id}.json", response.model_dump(mode="json"))
     return response
@@ -1452,6 +1569,7 @@ def _build_response(
     answer: str,
     execution_dir: Path,
     agent_execution: dict[str, Any],
+    turn: AnalyticTurnLeaseV1 | None = None,
 ) -> AnalysisResponse:
     policy = next(item for item in snapshot.package.policies if role in item.allowed_roles)
     execution_id = "exec." + uuid.uuid4().hex
@@ -1557,6 +1675,17 @@ def _build_response(
         ],
         "_agent_execution": agent_execution,
     }
+    if turn is not None and engine.traces:
+        final_trace = engine.traces[-1]
+        facts["_conversation_context"] = AnalyticConversationContextV1(
+            metric_id=final_trace.metric_id,
+            start_date=final_trace.start_date,
+            end_date=final_trace.end_date,
+            dimensions=final_trace.dimensions,
+            filters=final_trace.filters,
+            role=role,
+            last_execution_id=execution_id,
+        ).model_dump(mode="json")
     response = AnalysisResponse(
         status="ANSWERED",
         answer=answer,
@@ -1566,6 +1695,7 @@ def _build_response(
         steps=tuple(steps),
         facts=facts,
         evidence=tuple(evidence),
+        **(turn.response_fields() if turn is not None else {}),
     )
     write_json(execution_dir / f"{execution_id}.json", response.model_dump(mode="json"))
     return response
@@ -1578,6 +1708,7 @@ def analyze_cash_deepagent_snapshot(
     role: str,
     execution_dir: Path,
     model: BaseChatModel | None = None,
+    turn: AnalyticTurnLeaseV1 | None = None,
 ) -> AnalysisResponse:
     try:
         verify_snapshot_handle(snapshot)
@@ -1586,6 +1717,7 @@ def analyze_cash_deepagent_snapshot(
             status="FAILED",
             answer="The active Cash Trading package failed integrity verification.",
             boundary_code="SNAPSHOT_VERIFICATION_FAILED",
+            **(turn.response_fields() if turn is not None else {}),
         )
     if role not in _ALLOWED_ROLES:
         return AnalysisResponse(
@@ -1596,11 +1728,18 @@ def analyze_cash_deepagent_snapshot(
                 else f"Role {role} is not permitted to analyze this solution."
             ),
             boundary_code="ROLE_DENIED",
+            **(turn.response_fields() if turn is not None else {}),
         )
     preflight_boundary = _preflight_boundary(question, role)
     if preflight_boundary is not None:
-        return _boundary_response(snapshot, question, preflight_boundary)
-    engine = CashTradingSemanticEngine(snapshot.package, snapshot.resource_paths, role)
+        return _boundary_response(snapshot, question, preflight_boundary, turn)
+    engine = CashTradingSemanticEngine(
+        snapshot.package,
+        snapshot.resource_paths,
+        role,
+        conversation_id=(turn.conversation_id if turn is not None else None),
+        conversation_context=(turn.context_before if turn is not None else None),
+    )
     selected_model = model or _configured_model()
     answer = ""
     model_calls = 0
@@ -1614,7 +1753,7 @@ def analyze_cash_deepagent_snapshot(
             model_calls = 1
             model_error = type(exc).__name__
     if engine.boundary is not None:
-        return _boundary_response(snapshot, question, engine.boundary)
+        return _boundary_response(snapshot, question, engine.boundary, turn)
     if (
         selected_model is not None
         and model_error is None
@@ -1639,6 +1778,7 @@ def analyze_cash_deepagent_snapshot(
             answer=answer,
             execution_dir=execution_dir,
             agent_execution=agent_execution,
+            turn=turn,
         )
     if engine.semantic_traces:
         trace = engine.semantic_traces[-1]
@@ -1652,6 +1792,7 @@ def analyze_cash_deepagent_snapshot(
             answer=answer,
             execution_dir=execution_dir,
             agent_execution=agent_execution,
+            turn=turn,
         )
 
     semantic_trace = _fallback_semantic_trace(engine, question)
@@ -1664,19 +1805,23 @@ def analyze_cash_deepagent_snapshot(
             answer=_semantic_fallback_answer(question, semantic_trace),
             execution_dir=execution_dir,
             agent_execution=agent_execution,
+            turn=turn,
         )
 
-    metric_id = _fallback_metric(question)
+    conversation_context = turn.context_before if turn is not None else None
+    metric_id = _fallback_metric(question, conversation_context)
     if metric_id is not None:
-        start, end = _dates_from_question(question)
-        group_by = ["business_date"] if any(
-            token in question.lower()
-            for token in ("trend", "daily", "by day", "趋势", "每日", "按日")
-        ) else []
+        start, end = _dates_from_question(question, conversation_context)
+        group_by = _fallback_dimensions(question, conversation_context)
+        filters = (
+            dict(conversation_context.filters)
+            if conversation_context is not None
+            else None
+        )
         try:
-            result = engine.query_metric(metric_id, start, end, group_by, None)
+            result = engine.query_metric(metric_id, start, end, group_by, filters)
         except CashTradingQueryBoundary as exc:
-            return _boundary_response(snapshot, question, exc.boundary)
+            return _boundary_response(snapshot, question, exc.boundary, turn)
         return _build_response(
             snapshot=snapshot,
             engine=engine,
@@ -1685,6 +1830,7 @@ def analyze_cash_deepagent_snapshot(
             answer=_fallback_answer(question, result),
             execution_dir=execution_dir,
             agent_execution=agent_execution,
+            turn=turn,
         )
 
     return AnalysisResponse(
@@ -1696,4 +1842,5 @@ def analyze_cash_deepagent_snapshot(
         ),
         snapshot_checksum=snapshot.snapshot_checksum,
         boundary_code="INTENT_NOT_RESOLVED",
+        **(turn.response_fields() if turn is not None else {}),
     )

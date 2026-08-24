@@ -6,8 +6,11 @@ import pytest
 
 from ontology_agent.cash_trading_deepagent import (
     CashTradingSemanticEngine,
+    _agent_run,
     _deepagent_tools,
 )
+from ontology_agent.analytic_conversations import AnalyticConversationContextV1
+from langchain_core.messages import AIMessage
 from ontology_agent.io import load_package
 
 
@@ -196,3 +199,58 @@ def test_markets_role_cannot_request_participant_level_results() -> None:
 
     with pytest.raises(ValueError, match="participant-level"):
         engine.query_metric("M-04", group_by=["participant"])
+
+
+def test_deepagent_uses_conversation_id_as_its_checkpoint_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    package = load_package(CASH_SCENARIO / "ontology" / "package.yaml")
+    resource_paths = {
+        f"source.{path.stem}": path
+        for path in (CASH_SCENARIO / "data").glob("*.parquet")
+    }
+    context = AnalyticConversationContextV1(
+        metric_id="metric.order_rejection_rate",
+        start_date="2026-08-03",
+        end_date="2026-08-07",
+        role="MarketSurveillanceDemo",
+        last_execution_id="exec." + "1" * 32,
+    )
+    engine = CashTradingSemanticEngine(
+        package,
+        resource_paths,
+        "MarketSurveillanceDemo",
+        conversation_id="conversation." + "2" * 32,
+        conversation_context=context,
+    )
+    captured: dict[str, object] = {}
+
+    class FakeGraph:
+        def invoke(self, payload, *, config):
+            captured.update(payload=payload, config=config)
+            return {"messages": [AIMessage(content="Grounded follow-up answer.")]}
+
+    def fake_create_deep_agent(**kwargs):
+        captured.update(kwargs=kwargs)
+        return FakeGraph()
+
+    monkeypatch.setattr(
+        "ontology_agent.cash_trading_deepagent.create_deep_agent",
+        fake_create_deep_agent,
+    )
+
+    answer, model_calls = _agent_run(
+        engine=engine,
+        question="Break that down by participant.",
+        model=object(),
+    )
+
+    assert answer == "Grounded follow-up answer."
+    assert model_calls == 1
+    assert captured["config"] == {
+        "recursion_limit": 18,
+        "configurable": {"thread_id": engine.conversation_id},
+    }
+    kwargs = captured["kwargs"]
+    assert kwargs["checkpointer"] is not None
+    assert "metric.order_rejection_rate" in kwargs["system_prompt"]

@@ -1564,6 +1564,14 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
   const [role, setRole] = useState("");
   const [result, setResult] = useState<SolutionAnalysis | null>(null);
   const [submittedQuestion, setSubmittedQuestion] = useState("");
+  const conversationId = useMemo(() => {
+    const randomUuid = globalThis.crypto?.randomUUID?.().replaceAll("-", "").toLowerCase();
+    if (randomUuid && /^[0-9a-f]{32}$/.test(randomUuid)) return `conversation.${randomUuid}`;
+    const bytes = new Uint8Array(16);
+    if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+    else for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+    return `conversation.${Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("")}`;
+  }, [solution.solution_id]);
   const selectedQuestionCase = questions.data?.cases.find((item) => item.case_id === selectedQuestionCaseId);
   const exactQuestionCaseId = selectedQuestionCase?.question === question.trim()
     ? selectedQuestionCase.case_id
@@ -1574,6 +1582,7 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
       submitted,
       role || runtime.data?.default_role || "",
       questionCaseId,
+      conversationId,
     ),
     onSuccess: (payload) => {
       setResult(payload);

@@ -100,6 +100,10 @@ beforeEach(() => {
   analyzeSolutionMock.mockResolvedValue({
     status: "CLARIFY",
     answer: "请说明要查看的指标或 Ontology 定义。",
+    conversation_id: "conversation." + "1".repeat(32),
+    turn_id: "turn." + "2".repeat(32),
+    turn_index: 1,
+    parent_execution_id: null,
     execution_id: null,
     snapshot_checksum: digest,
     plan: null,
@@ -144,10 +148,22 @@ describe("AgentSolutionWorkspace", () => {
       "你都能回答什么问题",
       "MarketSurveillanceDemo",
       undefined,
+      expect.stringMatching(/^conversation\.[0-9a-f]{32}$/),
     ));
+    const firstConversationId = analyzeSolutionMock.mock.calls[0][4];
     expect(input).toHaveProperty("value", "");
     expect(await screen.findByText("你都能回答什么问题")).toBeTruthy();
     expect(await screen.findByText("请说明要查看的指标或 Ontology 定义。")).toBeTruthy();
     expect(screen.queryByText(/You都能回答什么questions/)).toBeNull();
+
+    fireEvent.change(input, { target: { value: "按参与者拆开" } });
+    fireEvent.click(screen.getByRole("button", { name: /发送|Send/ }));
+    await waitFor(() => expect(analyzeSolutionMock).toHaveBeenLastCalledWith(
+      solution.solution_id,
+      "按参与者拆开",
+      "MarketSurveillanceDemo",
+      undefined,
+      firstConversationId,
+    ));
   });
 });

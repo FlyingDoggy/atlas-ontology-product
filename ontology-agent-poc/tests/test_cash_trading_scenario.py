@@ -455,6 +455,71 @@ def test_cash_model_failure_falls_back_to_the_same_semantic_metric_engine(
     assert payload["plan"]["intent"] == "cash_metric_analysis"
 
 
+def test_cash_follow_up_inherits_governed_context_and_keeps_independent_lineage(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: None)
+    conversation_id = "conversation." + "8" * 32
+
+    first_response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "conversation_id": conversation_id,
+            "question": (
+                "What was the order rejection rate from 2026-08-03 to 2026-08-07?"
+            ),
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+    second_response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "conversation_id": conversation_id,
+            "question": "Break that down by participant.",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+    third_response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "conversation_id": conversation_id,
+            "question": "Now show Friday only.",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert third_response.status_code == 200
+    first = first_response.json()
+    second = second_response.json()
+    third = third_response.json()
+    assert first["conversation_id"] == conversation_id
+    assert first["turn_index"] == 1
+    assert second["turn_index"] == 2
+    assert second["parent_execution_id"] == first["execution_id"]
+    assert second["execution_id"] != first["execution_id"]
+    second_query = second["facts"]["queries"][0]
+    assert second_query["metric_code"] == "M-01"
+    assert second_query["period"] == {
+        "start": "2026-08-03",
+        "end": "2026-08-07",
+    }
+    assert second_query["dimensions"] == ["dimension.participant"]
+    assert second["evidence"][0]["execution_id"] == second["execution_id"]
+    assert third["turn_index"] == 3
+    assert third["parent_execution_id"] == second["execution_id"]
+    third_query = third["facts"]["queries"][0]
+    assert third_query["metric_code"] == "M-01"
+    assert third_query["period"] == {
+        "start": "2026-08-07",
+        "end": "2026-08-07",
+    }
+    assert third_query["dimensions"] == ["dimension.participant"]
+
+
 def test_open_cash_question_is_available_to_deepagent_without_registration_gate(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -15,13 +15,20 @@ from .adt_scenario import (
     adt_golden_certification,
     adt_synthetic_binding,
 )
+from .analytic_conversations import (
+    AnalyticConversationConflict,
+    AnalyticConversationContextV1,
+    AnalyticConversationError,
+    InMemoryAnalyticConversationStore,
+    PostgresAnalyticConversationStore,
+)
+from .cash_trading_deepagent import analyze_cash_deepagent_snapshot
 from .cash_trading_scenario import (
     CASH_CERTIFICATION_PROFILE,
     CASH_PACKAGE_ID,
     cash_trading_golden_certification,
     cash_trading_synthetic_binding,
 )
-from .cash_trading_deepagent import analyze_cash_deepagent_snapshot
 from .contracts import ReleaseRef, RuntimeSnapshotRef
 from .generic_scenario import (
     generic_bound_goal,
@@ -265,6 +272,9 @@ class SolutionAnalyzeRequest(BaseModel):
     question_case_id: str | None = Field(default=None, min_length=1, max_length=200)
     question: str = Field(min_length=1, max_length=1000)
     role: str | None = Field(default=None, min_length=1, max_length=100)
+    conversation_id: str | None = Field(
+        default=None, pattern=r"^conversation\.[0-9a-f]{32}$"
+    )
 
 
 class SolutionQuestionCase(BaseModel):
@@ -1105,6 +1115,7 @@ def _studio_source_library() -> StudioSourceLibraryService:
 _LOCAL_CONSTRUCTION_JOBS = InMemoryConstructionJobStore()
 _LOCAL_REVIEW_DRAFTS = InMemoryReviewDraftStore()
 _LOCAL_AGENT_CHECKPOINTS = InMemoryAgentCheckpointStore()
+_LOCAL_ANALYTIC_CONVERSATIONS = InMemoryAnalyticConversationStore()
 
 
 def _construction_run_store(
@@ -1147,6 +1158,18 @@ def _agent_checkpoint_store() -> Any:
         return _LOCAL_AGENT_CHECKPOINTS
     except (ProductInfrastructureError, AgenticStoreError) as exc:
         raise AgenticStoreError("Agent checkpoint activity is unavailable") from exc
+
+
+def _analytic_conversation_store() -> Any:
+    try:
+        settings = ProductInfrastructureSettings.from_env()
+        if settings.mode == "postgresql-s3":
+            return PostgresAnalyticConversationStore.from_settings(settings)
+        return _LOCAL_ANALYTIC_CONVERSATIONS
+    except (ProductInfrastructureError, AnalyticConversationError) as exc:
+        raise AnalyticConversationError(
+            "Analytic conversation authority is unavailable"
+        ) from exc
 
 
 def _construction_revision_with_language(
@@ -1393,17 +1416,66 @@ def analyze_solution(
         for policy in snapshot.package.policies
     )
     if solution_id == CASH_PACKAGE_ID:
+        try:
+            conversation_store = _analytic_conversation_store()
+            turn = conversation_store.begin_turn(
+                conversation_id=request.conversation_id,
+                solution_id=solution_id,
+                role=role,
+                snapshot_checksum=snapshot.snapshot_checksum,
+                question=request.question,
+            )
+        except AnalyticConversationConflict as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="Conversation belongs to a different ontology solution",
+            ) from exc
+        except AnalyticConversationError as exc:
+            raise HTTPException(
+                status_code=503, detail="Analytic conversation is unavailable"
+            ) from exc
         response = analyze_cash_deepagent_snapshot(
             snapshot,
             question=request.question,
             role=role,
             execution_dir=DEFAULT_EXECUTION_DIR,
+            turn=turn,
         )
         payload = _runtime_payload(response.model_dump(mode="json"))
         facts = payload.get("facts")
         execution = None
+        context_payload = None
         if isinstance(facts, dict):
             execution = facts.pop("_agent_execution", None)
+            context_payload = facts.pop("_conversation_context", None)
+        context_after = turn.context_before.model_copy(
+            update={
+                "role": role,
+                "last_execution_id": response.execution_id
+                or turn.context_before.last_execution_id,
+            }
+        )
+        if isinstance(context_payload, dict):
+            try:
+                context_after = AnalyticConversationContextV1.model_validate(
+                    context_payload
+                )
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Analytic runtime returned invalid conversation context",
+                ) from exc
+        try:
+            conversation_store.complete_turn(
+                turn,
+                status=response.status,
+                execution_id=response.execution_id,
+                context_after=context_after,
+            )
+        except AnalyticConversationError as exc:
+            raise HTTPException(
+                status_code=503, detail="Analytic conversation could not be committed"
+            ) from exc
         payload["llm"] = execution or deterministic_only(
             "DEEPAGENT_EXECUTION_METADATA_UNAVAILABLE"
         ).model_dump(mode="json")
