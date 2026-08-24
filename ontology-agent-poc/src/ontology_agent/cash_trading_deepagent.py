@@ -225,7 +225,8 @@ def _formula_refs(node: Any) -> tuple[set[str], set[str]]:
 class MetricTrace:
     metric_id: str
     metric_code: str
-    metric_name: str
+    metric_name_en: str
+    metric_name_zh: str
     unit: str
     start_date: str
     end_date: str
@@ -247,7 +248,11 @@ class MetricTrace:
         return {
             "metric_code": self.metric_code,
             "metric_id": self.metric_id,
-            "metric_name": self.metric_name,
+            # Keep the historical English field for API compatibility and expose
+            # both labels so each product surface can render its active locale.
+            "metric_name": self.metric_name_en,
+            "metric_name_en": self.metric_name_en,
+            "metric_name_zh": self.metric_name_zh,
             "unit": self.unit,
             "period": {"start": self.start_date, "end": self.end_date},
             "dimensions": list(self.dimensions),
@@ -650,7 +655,8 @@ class CashTradingSemanticEngine:
         trace = MetricTrace(
             metric_id=ontology_metric.id,
             metric_code=code,
-            metric_name=ontology_metric.name.zh or ontology_metric.name.en,
+            metric_name_en=ontology_metric.name.en or ontology_metric.name.zh or code,
+            metric_name_zh=ontology_metric.name.zh or ontology_metric.name.en or code,
             unit=ontology_metric.unit,
             start_date=start.isoformat(),
             end_date=end.isoformat(),
@@ -974,10 +980,14 @@ Hard boundaries:
 - Never omit a limitation returned by query_cash_metric; incorporate it into the answer in the user's language.
 - Mention that the data is constructed-synthetic once, briefly; do not repeat system architecture.
 - Answer in the language used by the user.
+- Use the metric name in the user's language. Do not mix prose languages except for exact IDs, field names and verbatim business terms.
+- The product renders the governed result rows in a structured table below your answer. Do not repeat those rows as a Markdown table or row-by-row list.
+- Use one concise answer paragraph. Add one short interpretation paragraph only when the user asks for a trend, comparison, explanation, anomaly or exploration.
 - Current role: {role}.
 - Available sample data: 2026-08-03 through 2026-08-07 (2026-08-05 is a non-trading day).
 - For questions about what you can answer, call describe_capabilities.
 - For definitions, relationships, evidence, assumptions or limitations, call inspect_ontology or retrieve_metric_evidence. These are valid answers and do not require a metric query.
+- When a question names multiple metrics or concepts, retrieve and address every named asset before comparing them. Never return a partial semantic match as a complete answer.
 - Stay within the active Cash Trading package. Refuse unrelated general-knowledge requests instead of pretending the package supports them.
 - The governed parameters from the preceding turn are shown below. For an elliptical follow-up, inherit omitted metric, period, dimensions and filters. Replace only values the user explicitly changes. Conversation text is not evidence; every numeric follow-up must still call query_cash_metric.
 
@@ -1072,15 +1082,28 @@ def _fallback_metric(
     return resolved or (context.metric_id if context is not None else None)
 
 
-def _fallback_dimensions(
-    question: str,
-    context: AnalyticConversationContextV1 | None = None,
-) -> list[str]:
+def _explicit_dimensions(question: str) -> list[str]:
     lower = question.lower()
-    if any(token in lower for token in ("overall", "aggregate", "整体", "汇总")):
-        return []
     candidates = (
-        (("business date", "by day", "daily", "trend", "按日", "每日", "趋势"), "business_date"),
+        (
+            (
+                "business date",
+                "by day",
+                "each day",
+                "per day",
+                "daily",
+                "trend",
+                "over time",
+                "time series",
+                "time-series",
+                "按日",
+                "每日",
+                "趋势",
+                "走势",
+                "时序",
+            ),
+            "business_date",
+        ),
         (("participant type", "参与者类型"), "participant_type"),
         (("participant", "参与者", "客户"), "participant"),
         (("market segment", "市场板块", "市场分部"), "market_segment"),
@@ -1093,43 +1116,114 @@ def _fallback_dimensions(
     for terms, dimension in candidates:
         if any(term in lower for term in terms) and dimension not in explicit:
             explicit.append(dimension)
+    return explicit[:2]
+
+
+def _fallback_dimensions(
+    question: str,
+    context: AnalyticConversationContextV1 | None = None,
+) -> list[str]:
+    lower = question.lower()
+    if any(token in lower for token in ("overall", "aggregate", "整体", "汇总")):
+        return []
+    explicit = _explicit_dimensions(question)
     if explicit:
-        return explicit[:2]
+        return explicit
     return list(context.dimensions) if context is not None else []
 
 
+def _localized_metric_name(question: str, result: dict[str, Any]) -> str:
+    if _is_chinese(question):
+        return str(result.get("metric_name_zh") or result.get("metric_name") or result["metric_code"])
+    return str(result.get("metric_name_en") or result.get("metric_name") or result["metric_code"])
+
+
+def _format_metric_value(value: Any, unit: str, *, chinese: bool) -> str:
+    if isinstance(value, (int, float, Decimal)) and not isinstance(value, bool):
+        number = float(value)
+        if abs(number - round(number)) < 1e-9:
+            formatted = f"{int(round(number)):,}"
+        else:
+            formatted = f"{number:,.2f}".rstrip("0").rstrip(".")
+    else:
+        formatted = str(value)
+    normalized_unit = unit.upper()
+    if normalized_unit == "PERCENT":
+        return f"{formatted}%"
+    labels = {
+        "HKD_MN": " 百万港元" if chinese else " million HKD",
+        "MILLISECOND": " 毫秒" if chinese else " ms",
+        "MILLISECONDS": " 毫秒" if chinese else " ms",
+        "SHARE": " 股" if chinese else " shares",
+    }
+    return formatted + labels.get(normalized_unit, f" {unit}" if unit else "")
+
+
+def _localized_limitations(question: str, result: dict[str, Any]) -> str:
+    limitations = result.get("limitations") or []
+    if not limitations:
+        return ""
+    chinese = _is_chinese(question)
+    code = result.get("metric_code")
+    if chinese and code in {"M-02", "M-05"}:
+        return "当前样例的 EXECUTE 事件无法可靠关联到 NEW 订单生命周期，因此该结果受输入关系缺口影响，不能解释为市场没有成交。"
+    if chinese and code == "M-08":
+        return "该结果只表示潜在自成交排查候选，不是违规或市场操纵结论。"
+    if chinese:
+        return "该结果存在已登记的口径限制，请查看下方计算证据。"
+    return " ".join(str(item) for item in limitations)
+
+
 def _fallback_answer(question: str, result: dict[str, Any]) -> str:
-    chinese = bool(re.search(r"[\u3400-\u9fff]", question))
+    chinese = _is_chinese(question)
     rows = result["rows"]
     if not rows:
         return "所选范围没有可计算记录。" if chinese else "No calculable records were found in the selected range."
-    name = result["metric_name"]
+    name = _localized_metric_name(question, result)
     period = result["period"]
+    unit = str(result.get("unit") or "")
+    synthetic = "数据为构造型样例。" if chinese else "The data is constructed-synthetic."
+    limitation = _localized_limitations(question, result)
+    ending = " ".join(item for item in (synthetic, limitation) if item)
     if result["dimensions"]:
-        prefix = (
-            f"{period['start']} 至 {period['end']} 的{name}如下："
-            if chinese
-            else f"{name} from {period['start']} to {period['end']}:"
-        )
-        return prefix + "\n" + "\n".join(
-            "- " + ", ".join(f"{key}: {value}" for key, value in row.items())
-            for row in rows
-        )
-    row = rows[0]
-    details = ", ".join(f"{key}: {value}" for key, value in row.items())
-    limitation_text = ""
-    if result.get("limitations"):
-        if chinese and result.get("metric_code") in {"M-02", "M-05"}:
-            limitation_text = " 当前样例的 EXECUTE 事件无法可靠关联到 NEW 订单生命周期，因此该零值受输入关系缺口影响，不能解释为市场没有成交。"
-        elif chinese and result.get("metric_code") == "M-08":
-            limitation_text = " 该结果只表示潜在自成交排查候选，不是违规或市场操纵结论。"
+        values = [row.get("value") for row in rows]
+        numeric_values = [
+            float(value)
+            for value in values
+            if isinstance(value, (int, float, Decimal)) and not isinstance(value, bool)
+        ]
+        is_daily = "dimension.business_date" in result["dimensions"]
+        if is_daily and len(numeric_values) == len(rows):
+            first = _format_metric_value(numeric_values[0], unit, chinese=chinese)
+            last = _format_metric_value(numeric_values[-1], unit, chinese=chinese)
+            if max(numeric_values) - min(numeric_values) < 1e-9:
+                summary = (
+                    f"{period['start']} 至 {period['end']} 的 {len(rows)} 个交易日内，{name}保持在 {first}。"
+                    if chinese
+                    else f"{name} remained flat at {first} across {len(rows)} trading days from {period['start']} to {period['end']}."
+                )
+            else:
+                delta = numeric_values[-1] - numeric_values[0]
+                delta_value = _format_metric_value(abs(delta), unit, chinese=chinese)
+                direction = ("上升" if delta > 0 else "下降") if chinese else ("increased" if delta > 0 else "decreased")
+                summary = (
+                    f"{period['start']} 至 {period['end']}，{name}从 {first} {direction}至 {last}，变动 {delta_value}。"
+                    if chinese
+                    else f"{name} {direction} from {first} to {last} between {period['start']} and {period['end']}, a change of {delta_value}."
+                )
         else:
-            limitation_text = " " + " ".join(str(item) for item in result["limitations"])
-    suffix = "数据为构造型样例。" if chinese else "The data is constructed-synthetic."
+            summary = (
+                f"{period['start']} 至 {period['end']}，{name}返回 {len(rows)} 条分组结果；明细见下方受治理结果表。"
+                if chinese
+                else f"{name} returned {len(rows)} grouped results from {period['start']} to {period['end']}; the governed result table below contains the breakdown."
+            )
+        return f"{summary} {ending}".strip()
+    row = rows[0]
+    value = _format_metric_value(row.get("value"), unit, chinese=chinese)
     return (
-        f"{period['start']} 至 {period['end']}，{name}为 {row.get('value')} {result['unit']}（{details}）。{suffix}{limitation_text}"
+        f"{period['start']} 至 {period['end']}，{name}为 {value}。{ending}"
         if chinese
-        else f"From {period['start']} to {period['end']}, {name} was {row.get('value')} {result['unit']} ({details}). {suffix}{limitation_text}"
+        else f"From {period['start']} to {period['end']}, {name} was {value}. {ending}"
     )
 
 
@@ -1142,6 +1236,127 @@ def _answer_matches_question_language(question: str, answer: str) -> bool:
         return False
     answer_has_chinese = _is_chinese(answer)
     return answer_has_chinese if _is_chinese(question) else not answer_has_chinese
+
+
+def _requires_interpretation(question: str) -> bool:
+    lower = question.lower()
+    return any(
+        token in lower
+        for token in (
+            "trend",
+            "compare",
+            "comparison",
+            "change",
+            "increase",
+            "decrease",
+            "why",
+            "explain",
+            "analy",
+            "explore",
+            "insight",
+            "anomal",
+            "summar",
+            "趋势",
+            "走势",
+            "比较",
+            "对比",
+            "变化",
+            "上升",
+            "下降",
+            "为什么",
+            "解释",
+            "分析",
+            "探索",
+            "洞察",
+            "异常",
+            "总结",
+        )
+    )
+
+
+def _strip_markdown_result_tables(answer: str) -> str:
+    """Remove model-rendered row tables; governed rows render separately in the UI."""
+
+    lines = answer.splitlines()
+    kept: list[str] = []
+    index = 0
+    separator = re.compile(
+        r"^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$"
+    )
+    while index < len(lines):
+        if (
+            index + 1 < len(lines)
+            and "|" in lines[index]
+            and separator.match(lines[index + 1])
+        ):
+            index += 2
+            while index < len(lines) and "|" in lines[index]:
+                index += 1
+            while index < len(lines) and not lines[index].strip():
+                index += 1
+            continue
+        kept.append(lines[index])
+        index += 1
+    return "\n".join(kept).strip()
+
+
+def _has_unresolved_grouping_request(question: str) -> bool:
+    lower = question.lower()
+    grouping_cue = any(
+        token in lower
+        for token in (" by ", " per ", "each ", "break down", "breakdown", "按", "分组", "拆分")
+    )
+    return grouping_cue and not _explicit_dimensions(question)
+
+
+def _normalize_single_metric_trace(
+    engine: CashTradingSemanticEngine,
+    question: str,
+    context: AnalyticConversationContextV1 | None,
+) -> bool:
+    """Reconcile one model-selected query with the explicit conversational contract.
+
+    The model remains free to understand intent and choose tools.  Once a metric,
+    period and supported grain are explicit, those parameters are deterministic and
+    cannot vary between provider attempts.
+    """
+
+    if len(engine.traces) != 1 or _has_unresolved_grouping_request(question):
+        return False
+    current = engine.traces[0]
+    metric_id = _fallback_metric(question, context)
+    if metric_id is None:
+        return False
+    start, end = _dates_from_question(question, context)
+    group_by = _fallback_dimensions(question, context)
+    expected_dimensions = tuple(_DIMENSIONS[item].dimension_id for item in group_by)
+    if (
+        current.metric_id == metric_id
+        and current.start_date == start
+        and current.end_date == end
+        and current.dimensions == expected_dimensions
+    ):
+        return False
+    filters = dict(current.filters)
+    engine.traces.clear()
+    engine.query_metric(metric_id, start, end, group_by, filters)
+    return True
+
+
+def _present_metric_answer(
+    *,
+    question: str,
+    result: dict[str, Any],
+    model_answer: str,
+    model_error: str | None,
+    trace_normalized: bool,
+) -> str:
+    if model_error is not None or trace_normalized or not _requires_interpretation(question):
+        return _fallback_answer(question, result)
+    concise_answer = _strip_markdown_result_tables(model_answer)
+    if not _answer_matches_question_language(question, concise_answer):
+        return _fallback_answer(question, result)
+    return concise_answer
 
 
 def _capability_question(question: str) -> bool:
@@ -1190,6 +1405,26 @@ def _definition_question(question: str) -> bool:
     )
 
 
+def _semantic_comparison_question(question: str) -> bool:
+    lower = question.lower()
+    return any(
+        token in lower
+        for token in (
+            "compare",
+            "comparison",
+            "different",
+            "difference",
+            "versus",
+            " vs ",
+            "区别",
+            "差异",
+            "不同",
+            "对比",
+            "比较",
+        )
+    )
+
+
 def _evidence_question(question: str) -> bool:
     lower = question.lower()
     return any(
@@ -1208,6 +1443,103 @@ def _evidence_question(question: str) -> bool:
             "为什么这样定义",
         )
     )
+
+
+def _mentioned_metric_ids(
+    engine: CashTradingSemanticEngine, question: str
+) -> tuple[str, ...]:
+    """Return every explicitly named governed metric in textual order."""
+
+    lower = question.lower()
+    positions: dict[str, int] = {}
+
+    def register(term: str, metric_id: str) -> None:
+        position = lower.find(term.lower())
+        if position >= 0:
+            positions[metric_id] = min(position, positions.get(metric_id, position))
+
+    for alias, metric_id in _METRIC_ALIASES.items():
+        register(alias, metric_id)
+    keyword_terms = {
+        _PRIMARY_METRICS["M-01"]: ("reject", "拒绝"),
+        _PRIMARY_METRICS["M-02"]: ("fill rate", "成交率"),
+        _PRIMARY_METRICS["M-03"]: ("latency", "延迟"),
+        _PRIMARY_METRICS["M-04"]: ("active client", "活跃客户"),
+        _PRIMARY_METRICS["M-05"]: ("completion", "完成率", "完全成交"),
+        _PRIMARY_METRICS["M-06"]: ("cancel", "撤单"),
+        _PRIMARY_METRICS["M-07"]: ("order to trade", "order-to-trade", "订单成交比"),
+        _PRIMARY_METRICS["M-08"]: ("self-trade", "self trade", "自成交"),
+    }
+    for metric_id, terms in keyword_terms.items():
+        for term in terms:
+            register(term, metric_id)
+    for metric in engine.package.metrics:
+        for term in (metric.id, metric.name.en, metric.name.zh or ""):
+            if term:
+                register(term, metric.id)
+    return tuple(metric_id for metric_id, _ in sorted(positions.items(), key=lambda item: item[1]))
+
+
+def _record_metric_semantic_trace(
+    engine: CashTradingSemanticEngine,
+    question: str,
+    metric_ids: Sequence[str],
+) -> SemanticTrace:
+    metrics_by_id = {item.id: item for item in engine.package.metrics}
+    metrics = [metrics_by_id[item] for item in metric_ids if item in metrics_by_id]
+    assets = [
+        {
+            "id": item.id,
+            "name": {"en": item.name.en, "zh": item.name.zh},
+            "definition": item.definition,
+            "status": item.status,
+            "sources": list(item.sources),
+            "decisions": list(item.decisions),
+        }
+        for item in metrics
+    ]
+    engine._record_semantic(
+        operation="inspect_ontology",
+        topic=question,
+        result={
+            "package_id": engine.package.package_id,
+            "version": engine.package.version,
+            "assets": {
+                "entities": [],
+                "relationships": [],
+                "metrics": assets,
+                "dimensions": [],
+                "rules": [],
+            },
+        },
+        source_ids=[source for item in metrics for source in item.sources],
+        decision_ids=[decision for item in metrics for decision in item.decisions],
+        metric_ids=[item.id for item in metrics],
+    )
+    return engine.semantic_traces[-1]
+
+
+def _semantic_answer_covers_metrics(
+    answer: str,
+    trace: SemanticTrace,
+    metric_ids: Sequence[str],
+) -> bool:
+    lower = answer.lower()
+    assets = trace.result.get("assets", {}).get("metrics", [])
+    by_id = {str(item.get("id")): item for item in assets}
+    for metric_id in metric_ids:
+        asset = by_id.get(metric_id)
+        if asset is None:
+            return False
+        names = asset.get("name") or {}
+        identifiers = (
+            metric_id,
+            str(names.get("en") or ""),
+            str(names.get("zh") or ""),
+        )
+        if not any(identifier and identifier.lower() in lower for identifier in identifiers):
+            return False
+    return True
 
 
 def _semantic_topic(engine: CashTradingSemanticEngine, question: str) -> str:
@@ -1296,6 +1628,25 @@ def _semantic_fallback_answer(question: str, trace: SemanticTrace) -> str:
                 else asset["name"].get("en") or asset["name"].get("zh")
             )
             lines.append(f"- {name} (`{asset['id']}`): {asset['definition']}")
+        metric_ids = {str(asset.get("id")) for asset in asset_groups.get("metrics", [])}
+        if len(metric_ids) >= 2 and _semantic_comparison_question(question):
+            if {
+                _PRIMARY_METRICS["M-01"],
+                _PRIMARY_METRICS["M-02"],
+            }.issubset(metric_ids):
+                distinction = (
+                    "关键区别：订单成交率是基于成交数量与提交数量的数量口径；订单拒绝率是基于被拒绝与已提交的不同订单生命周期数量的事件口径。二者衡量不同阶段，并非互补指标。"
+                    if chinese
+                    else "Key difference: Order Fill Rate is quantity-based, using executed versus submitted quantity; Order Rejection Rate is lifecycle-count-based, using rejected versus submitted distinct order lifecycles. They measure different stages and are not complementary metrics."
+                )
+            else:
+                distinction = (
+                    "关键区别在于各自受治理定义中的业务事件、分子与分母；除非 Ontology 明确定义关系，否则不能从其中一个指标推导另一个。"
+                    if chinese
+                    else "The distinction lies in the governed business event, numerator and denominator defined for each metric; one must not be inferred from another unless the ontology explicitly defines that relationship."
+                )
+            introduction = "当前生效 Ontology 中的指标定义：" if chinese else "Metric definitions in the active ontology:"
+            return introduction + "\n" + "\n".join(lines) + "\n\n" + distinction
         introduction = "当前生效 Ontology 中的匹配定义：" if chinese else "Matching definitions in the active ontology:"
         return introduction + "\n" + "\n".join(lines)
     if trace.operation == "retrieve_evidence":
@@ -1766,10 +2117,46 @@ def analyze_cash_deepagent_snapshot(
         model_calls=model_calls,
         model_error=model_error,
     )
+    mentioned_metric_ids = _mentioned_metric_ids(engine, question)
+    if len(mentioned_metric_ids) >= 2 and _semantic_comparison_question(question):
+        trace = _record_metric_semantic_trace(
+            engine,
+            question,
+            mentioned_metric_ids,
+        )
+        if (
+            model_error is not None
+            or not _answer_matches_question_language(question, answer)
+            or not _semantic_answer_covers_metrics(answer, trace, mentioned_metric_ids)
+        ):
+            answer = _semantic_fallback_answer(question, trace)
+        return _build_semantic_response(
+            snapshot=snapshot,
+            trace=trace,
+            question=question,
+            role=role,
+            answer=answer,
+            execution_dir=execution_dir,
+            agent_execution=agent_execution,
+            turn=turn,
+        )
     if engine.traces:
+        try:
+            trace_normalized = _normalize_single_metric_trace(
+                engine,
+                question,
+                turn.context_before if turn is not None else None,
+            )
+        except CashTradingQueryBoundary as exc:
+            return _boundary_response(snapshot, question, exc.boundary, turn)
         result = engine.traces[-1].public_result()
-        if not _answer_matches_question_language(question, answer):
-            answer = _fallback_answer(question, result)
+        answer = _present_metric_answer(
+            question=question,
+            result=result,
+            model_answer=answer,
+            model_error=model_error,
+            trace_normalized=trace_normalized,
+        )
         return _build_response(
             snapshot=snapshot,
             engine=engine,

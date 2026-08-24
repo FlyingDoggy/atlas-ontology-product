@@ -471,6 +471,99 @@ def test_cash_model_failure_falls_back_to_the_same_semantic_metric_engine(
     assert payload["plan"]["intent"] == "cash_metric_analysis"
 
 
+def test_direct_metric_answer_is_stable_when_the_model_selects_wrong_grain_then_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+    question = "What was the order rejection rate from 2026-08-03 to 2026-08-07?"
+
+    def failing_after_daily_query(*, engine, **_: object):
+        engine.query_metric(
+            "M-01", "2026-08-03", "2026-08-07", ["business_date"], None
+        )
+        raise OSError("synthetic failure after tool execution")
+
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", failing_after_daily_query)
+    normalized_response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={"question": question, "role": "MarketSurveillanceDemo"},
+    )
+
+    def failing_before_query(**_: object):
+        raise OSError("synthetic failure before tool execution")
+
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", failing_before_query)
+    clean_fallback_response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={"question": question, "role": "MarketSurveillanceDemo"},
+    )
+
+    assert normalized_response.status_code == 200
+    assert clean_fallback_response.status_code == 200
+    normalized = normalized_response.json()
+    clean = clean_fallback_response.json()
+    assert normalized["answer"] == clean["answer"]
+    assert normalized["facts"]["queries"][0]["rows"] == clean["facts"]["queries"][0]["rows"]
+    assert normalized["facts"]["queries"][0]["dimensions"] == []
+    assert normalized["facts"]["queries"][0]["metric_name_en"] == "Order Rejection Rate"
+    assert normalized["facts"]["queries"][0]["metric_name_zh"] == "订单拒绝率"
+    assert "订单" not in normalized["answer"]
+    assert "16.67%" in normalized["answer"]
+    assert "\n- " not in normalized["answer"]
+
+
+def test_failed_trend_run_is_reconciled_to_daily_grain_and_one_concise_narrative(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+
+    def failing_after_aggregate_query(*, engine, **_: object):
+        engine.query_metric("M-01", "2026-08-03", "2026-08-07", [], None)
+        raise OSError("synthetic failure after aggregate query")
+
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", failing_after_aggregate_query)
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "What was the trend in order rejection rate from 2026-08-03 to 2026-08-07?",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    query = payload["facts"]["queries"][0]
+    assert query["dimensions"] == ["dimension.business_date"]
+    assert len(query["rows"]) == 4
+    assert "remained flat at 16.67%" in payload["answer"]
+    assert "|" not in payload["answer"]
+    assert "\n- " not in payload["answer"]
+
+
+def test_chinese_direct_metric_fallback_uses_the_chinese_metric_name(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: None)
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "2026-08-03到2026-08-07的订单拒绝率是多少？",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    answer = response.json()["answer"]
+    assert "订单拒绝率为 16.67%" in answer
+    assert "Order Rejection Rate" not in answer
+
+
 def test_cash_follow_up_inherits_governed_context_and_keeps_independent_lineage(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -621,6 +714,47 @@ def test_cash_agent_accepts_a_grounded_ontology_definition_answer(
     assert payload["facts"]["semantic"]["operation"] == "inspect_ontology"
     assert payload["llm"]["status"] == "GROUNDED"
     assert payload["evidence"][0]["source_ids"]
+
+
+def test_cash_agent_does_not_accept_a_partial_multi_metric_definition_comparison(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+
+    def fake_agent_run(*, engine, **_: object):
+        engine.ontology_catalog("order fill rate")
+        return (
+            "Matching definitions in the active ontology:\n"
+            "- Order Fill Rate: Final cumulative executed quantity divided by submitted quantity.",
+            1,
+        )
+
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", fake_agent_run)
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": (
+                "What is order fill rate and what is order reject rate, "
+                "what's different between these 2 KPIs?"
+            ),
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    semantic = payload["facts"]["semantic"]
+    assert semantic["operation"] == "inspect_ontology"
+    assert [
+        item["id"] for item in semantic["result"]["assets"]["metrics"]
+    ] == ["metric.order_fill_rate", "metric.order_rejection_rate"]
+    assert "Order Fill Rate" in payload["answer"]
+    assert "Order Rejection Rate" in payload["answer"]
+    assert "quantity-based" in payload["answer"]
+    assert "lifecycle-count-based" in payload["answer"]
+    assert "订单" not in payload["answer"]
 
 
 def test_cash_agent_refuses_misconduct_conclusions_before_calling_the_model(

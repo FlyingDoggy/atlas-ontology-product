@@ -1508,7 +1508,7 @@ function stringArray(value: unknown): string[] {
 }
 
 function AgentQueryResults({ result }: { result: SolutionAnalysis }) {
-  const { t } = useUiLocale();
+  const { locale, t } = useUiLocale();
   const rawQueries = Array.isArray(result.facts.queries) ? result.facts.queries : [];
   const queries = rawQueries.map(objectValue).filter((item): item is Record<string, unknown> => item !== null);
   if (queries.length === 0) return null;
@@ -1518,7 +1518,12 @@ function AgentQueryResults({ result }: { result: SolutionAnalysis }) {
         const period = objectValue(query.period);
         const evidence = objectValue(query.evidence);
         const rows = Array.isArray(query.rows) ? query.rows : [];
-        const metricName = typeof query.metric_name === "string" ? query.metric_name : `指标 ${index + 1}`;
+        const localizedMetricName = locale === "zh" ? query.metric_name_zh : query.metric_name_en;
+        const metricName = typeof localizedMetricName === "string"
+          ? localizedMetricName
+          : typeof query.metric_name === "string"
+            ? query.metric_name
+            : t(`指标 ${index + 1}`, `Metric ${index + 1}`);
         const metricCode = typeof query.metric_code === "string" ? query.metric_code : "METRIC";
         const queryHash = typeof evidence?.query_hash === "string" ? evidence.query_hash : null;
         return (
@@ -1532,10 +1537,10 @@ function AgentQueryResults({ result }: { result: SolutionAnalysis }) {
               <summary>{t("查看计算口径与证据", "View calculation semantics and evidence")}</summary>
               <dl>
                 <div><dt>Ontology metric</dt><dd><code>{String(query.metric_id ?? "—")}</code></dd></div>
-                <div><dt>分析期间</dt><dd>{period ? `${String(period.start ?? "—")} — ${String(period.end ?? "—")}` : "—"}</dd></div>
-                <div><dt>维度</dt><dd>{stringArray(query.dimensions).join(" · ") || "整体"}</dd></div>
-                <div><dt>来源</dt><dd>{stringArray(evidence?.sources).join(" · ") || "—"}</dd></div>
-                <div><dt>口径决策</dt><dd>{stringArray(evidence?.decisions).join(" · ") || "—"}</dd></div>
+                <div><dt>{t("分析期间", "Analysis period")}</dt><dd>{period ? `${String(period.start ?? "—")} — ${String(period.end ?? "—")}` : "—"}</dd></div>
+                <div><dt>{t("维度", "Dimensions")}</dt><dd>{stringArray(query.dimensions).join(" · ") || t("整体", "Overall")}</dd></div>
+                <div><dt>{t("来源", "Sources")}</dt><dd>{stringArray(evidence?.sources).join(" · ") || "—"}</dd></div>
+                <div><dt>{t("口径决策", "Decisions")}</dt><dd>{stringArray(evidence?.decisions).join(" · ") || "—"}</dd></div>
                 <div><dt>Query hash</dt><dd><code>{queryHash ? shortDigest(queryHash) : "—"}</code></dd></div>
               </dl>
             </details>
@@ -1689,10 +1694,10 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
           <p>{locale === "en" ? solution.solution_id : solution.display_name.en}</p>
         </div>
         <div className="agent-context-strip" aria-label={t("当前分析语境", "Current analysis context")}>
-          <div><span>Ontology</span><strong>v{ontology.data.version}</strong></div>
-          <div><span>{t("数据期间", "Data period")}</span><strong>{samplePeriod}</strong></div>
-          <div><span>Runtime</span><strong><i /> Active</strong></div>
-          <label><span>{t("分析角色", "Analysis role")}</span><select value={role || runtime.data.default_role} onChange={(event) => setRole(event.target.value)}>
+          <div title={`Ontology: v${ontology.data.version}`}><span className="visually-hidden">Ontology</span><strong><span>v{ontology.data.version}</span></strong></div>
+          <div title={`${t("数据期间", "Data period")}: ${samplePeriod}`}><span className="visually-hidden">{t("数据期间", "Data period")}</span><strong><span>{samplePeriod}</span></strong></div>
+          <div title="Runtime: Active"><span className="visually-hidden">Runtime</span><strong><i /><span>Active</span></strong></div>
+          <label><span className="visually-hidden">{t("分析角色", "Analysis role")}</span><select aria-label={t("分析角色", "Analysis role")} value={role || runtime.data.default_role} onChange={(event) => setRole(event.target.value)}>
             {runtime.data.roles.filter((item) => item.access === "ALLOWED").map((item) => (
               <option key={item.role_id} value={item.role_id}>{name(item.name)}</option>
             ))}

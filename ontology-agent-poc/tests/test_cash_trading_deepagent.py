@@ -254,3 +254,4 @@ def test_deepagent_uses_conversation_id_as_its_checkpoint_thread(
     kwargs = captured["kwargs"]
     assert kwargs["checkpointer"] is not None
     assert "metric.order_rejection_rate" in kwargs["system_prompt"]
+    assert "Do not repeat those rows as a Markdown table" in kwargs["system_prompt"]
