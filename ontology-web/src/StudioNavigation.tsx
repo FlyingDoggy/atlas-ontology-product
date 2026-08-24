@@ -255,10 +255,6 @@ export function StudioNavigation({
           <span className="studio-nav-icon"><StudioNavIcon page="solutions" /></span>
           <div><strong>解决方案目录</strong><small>切换、新建与管理</small></div>
         </Link>
-        <Link className="studio-product-home" to="/ontology-studio/tasks/">
-          <span className="studio-nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg></span>
-          <div><strong>任务中心</strong><small>跨方案进度与待处理</small></div>
-        </Link>
       </nav>
       <div className="studio-sidebar-context">
         <span>当前解决方案</span>

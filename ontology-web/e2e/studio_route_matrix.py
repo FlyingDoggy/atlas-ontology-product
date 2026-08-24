@@ -35,7 +35,6 @@ ROUTES = (
 
 GLOBAL_ROUTES = (
     ("/ontology-studio/solutions/", "全部解决方案"),
-    ("/ontology-studio/tasks/", "构建任务"),
 )
 
 
@@ -83,6 +82,16 @@ with sync_playwright() as playwright:
         overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth + 1")
         assert not overflow, f"horizontal overflow: {path}"
         checked.append(path)
+
+    page.goto(
+        f"{BASE_URL}/ontology-studio/tasks/legacy-task-id/",
+        wait_until="domcontentloaded",
+        timeout=60_000,
+    )
+    page.wait_for_url(f"{BASE_URL}/ontology-studio/solutions/")
+    page.get_by_role("heading", name="全部解决方案", exact=True, level=1).wait_for()
+    assert page.get_by_role("link", name=re.compile("任务中心")).count() == 0
+    checked.append("task-center-redirect")
 
     for suffix, page_title, subpage_title in ROUTES:
         page.goto(

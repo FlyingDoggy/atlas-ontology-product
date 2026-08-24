@@ -1949,7 +1949,7 @@ export function App() {
       <Route path="/" element={<Navigate to="/ontology-agent/" replace />} />
       <Route path="/ontology-agent/*" element={<GenericSolutionView kind="agent" solutionId={selectedSolution} />} />
       <Route path="/ontology-studio" element={<Navigate to="/ontology-studio/solutions/" replace />} />
-      <Route path="/ontology-studio/tasks/*" element={<TaskCenterRoute />} />
+      <Route path="/ontology-studio/tasks/*" element={<Navigate to="/ontology-studio/solutions/" replace />} />
       <Route path="/ontology-studio/*" element={<GenericSolutionView kind="studio" solutionId={selectedSolution} />} />
       <Route path="*" element={<Navigate to="/ontology-agent/" replace />} />
     </Routes></>
