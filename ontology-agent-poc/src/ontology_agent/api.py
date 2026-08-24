@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import uuid
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal
@@ -1392,6 +1393,68 @@ def solution_questions(solution_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Solution question family not found") from exc
 
 
+def _restored_conversation_response(record: Any) -> dict[str, Any] | None:
+    if isinstance(record.response_payload, dict):
+        return dict(record.response_payload)
+    if record.execution_id is None:
+        return None
+    try:
+        payload = _runtime_payload(
+            load_execution(record.execution_id, DEFAULT_EXECUTION_DIR)
+        )
+    except (FileNotFoundError, OSError, ValueError, json.JSONDecodeError):
+        return None
+    facts = payload.get("facts")
+    execution = None
+    if isinstance(facts, dict):
+        execution = facts.pop("_agent_execution", None)
+        facts.pop("_conversation_context", None)
+    payload["llm"] = execution or deterministic_only(
+        "HISTORICAL_EXECUTION_METADATA_UNAVAILABLE"
+    ).model_dump(mode="json")
+    return payload
+
+
+@app.get("/api/solutions/{solution_id}/conversations/{conversation_id}")
+def analytic_conversation(
+    solution_id: str, conversation_id: str
+) -> dict[str, Any]:
+    if re.fullmatch(r"conversation\.[0-9a-f]{32}", conversation_id) is None:
+        raise HTTPException(status_code=422, detail="Invalid analytic conversation ID")
+    try:
+        _runtime_configuration(solution_id)
+        turns = _analytic_conversation_store().turns(
+            conversation_id, solution_id=solution_id
+        )
+    except PublicationError as exc:
+        raise HTTPException(status_code=404, detail="Solution runtime not found") from exc
+    except AnalyticConversationConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Conversation belongs to a different ontology solution",
+        ) from exc
+    except AnalyticConversationError as exc:
+        raise HTTPException(
+            status_code=503, detail="Analytic conversation is unavailable"
+        ) from exc
+    return {
+        "contract": "analytic-conversation-transcript/v1",
+        "conversation_id": conversation_id,
+        "solution_id": solution_id,
+        "turns": [
+            {
+                "turn_id": turn.turn_id,
+                "turn_index": turn.turn_index,
+                "question": turn.question,
+                "status": turn.status,
+                "completed_at": turn.completed_at.isoformat(),
+                "analysis": _restored_conversation_response(turn),
+            }
+            for turn in turns
+        ],
+    }
+
+
 @app.post("/api/solutions/{solution_id}/analyze")
 def analyze_solution(
     solution_id: str, request: SolutionAnalyzeRequest
@@ -1465,20 +1528,21 @@ def analyze_solution(
                     status_code=500,
                     detail="Analytic runtime returned invalid conversation context",
                 ) from exc
+        payload["llm"] = execution or deterministic_only(
+            "DEEPAGENT_EXECUTION_METADATA_UNAVAILABLE"
+        ).model_dump(mode="json")
         try:
             conversation_store.complete_turn(
                 turn,
                 status=response.status,
                 execution_id=response.execution_id,
                 context_after=context_after,
+                response_payload=payload,
             )
         except AnalyticConversationError as exc:
             raise HTTPException(
                 status_code=503, detail="Analytic conversation could not be committed"
             ) from exc
-        payload["llm"] = execution or deterministic_only(
-            "DEEPAGENT_EXECUTION_METADATA_UNAVAILABLE"
-        ).model_dump(mode="json")
         return payload
     if config.get("generic") is True:
         bound_goal = generic_bound_goal(

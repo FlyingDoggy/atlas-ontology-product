@@ -37,6 +37,7 @@ def test_conversation_carries_only_governed_analysis_parameters_between_turns() 
         status="ANSWERED",
         execution_id=first_context.last_execution_id,
         context_after=first_context,
+        response_payload={"status": "ANSWERED", "answer": "42"},
     )
 
     second = store.begin_turn(
@@ -59,6 +60,13 @@ def test_conversation_carries_only_governed_analysis_parameters_between_turns() 
         "filters",
         "role",
         "last_execution_id",
+    }
+    transcript = store.turns(first.conversation_id, solution_id=first.solution_id)
+    assert len(transcript) == 1
+    assert transcript[0].question == first.question
+    assert transcript[0].response_payload == {
+        "status": "ANSWERED",
+        "answer": "42",
     }
 
 
@@ -83,3 +91,17 @@ def test_conversation_id_cannot_cross_solution_boundaries() -> None:
             snapshot_checksum=CHECKSUM,
             question="Second question",
         )
+
+    with pytest.raises(
+        AnalyticConversationConflict, match="different ontology solution"
+    ):
+        store.turns(conversation_id, solution_id="ontology.solution.two")
+
+
+def test_unknown_conversation_has_an_empty_transcript() -> None:
+    store = InMemoryAnalyticConversationStore()
+
+    assert store.turns(
+        "conversation." + "9" * 32,
+        solution_id="ontology.solution.one",
+    ) == ()

@@ -10,6 +10,7 @@ import {
   fetchAgentRuntimeStatus,
   fetchAgentSolutionCatalog,
   fetchSolutionCatalog,
+  fetchAnalyticConversation,
   fetchSolutionOntology,
   fetchSolutionQuestions,
   fetchSolutionRuntime,
@@ -1547,6 +1548,7 @@ function AgentQueryResults({ result }: { result: SolutionAnalysis }) {
 
 export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }) {
   const { locale, name, t } = useUiLocale();
+  const queryClient = useQueryClient();
   const questions = useQuery({
     queryKey: ["solution-questions", solution.solution_id],
     queryFn: () => fetchSolutionQuestions(solution.solution_id),
@@ -1562,16 +1564,24 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
   const [question, setQuestion] = useState("");
   const [selectedQuestionCaseId, setSelectedQuestionCaseId] = useState<string | null>(null);
   const [role, setRole] = useState("");
-  const [result, setResult] = useState<SolutionAnalysis | null>(null);
-  const [submittedQuestion, setSubmittedQuestion] = useState("");
-  const conversationId = useMemo(() => {
+  const createConversationId = () => {
     const randomUuid = globalThis.crypto?.randomUUID?.().replaceAll("-", "").toLowerCase();
     if (randomUuid && /^[0-9a-f]{32}$/.test(randomUuid)) return `conversation.${randomUuid}`;
     const bytes = new Uint8Array(16);
     if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
     else for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
     return `conversation.${Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("")}`;
-  }, [solution.solution_id]);
+  };
+  const conversationStorageKey = `atlas-agent-conversation:${solution.solution_id}`;
+  const [conversationId, setConversationId] = useState(() => {
+    const stored = globalThis.sessionStorage?.getItem(conversationStorageKey);
+    return stored && /^conversation\.[0-9a-f]{32}$/.test(stored) ? stored : createConversationId();
+  });
+  const [pendingQuestion, setPendingQuestion] = useState("");
+  const conversation = useQuery({
+    queryKey: ["analytic-conversation", solution.solution_id, conversationId],
+    queryFn: () => fetchAnalyticConversation(solution.solution_id, conversationId),
+  });
   const selectedQuestionCase = questions.data?.cases.find((item) => item.case_id === selectedQuestionCaseId);
   const exactQuestionCaseId = selectedQuestionCase?.question === question.trim()
     ? selectedQuestionCase.case_id
@@ -1584,8 +1594,30 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
       questionCaseId,
       conversationId,
     ),
-    onSuccess: (payload) => {
-      setResult(payload);
+    onSuccess: (payload, variables) => {
+      queryClient.setQueryData(
+        ["analytic-conversation", solution.solution_id, conversationId],
+        (current: Awaited<ReturnType<typeof fetchAnalyticConversation>> | undefined) => {
+          const priorTurns = current?.turns ?? [];
+          const nextTurn = {
+              turn_id: payload.turn_id!,
+              turn_index: payload.turn_index!,
+              question: variables.submitted,
+              status: payload.status,
+              completed_at: new Date().toISOString(),
+              analysis: payload,
+          };
+          return {
+            contract: "analytic-conversation-transcript/v1" as const,
+            conversation_id: conversationId,
+            solution_id: solution.solution_id,
+            turns: priorTurns.some((turn) => turn.turn_id === nextTurn.turn_id)
+              ? priorTurns
+              : [...priorTurns, nextTurn].sort((left, right) => left.turn_index - right.turn_index),
+          };
+        },
+      );
+      setPendingQuestion("");
     },
   });
 
@@ -1593,16 +1625,17 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
     const first = questions.data?.cases[0];
     setQuestion(first?.question ?? "");
     setSelectedQuestionCaseId(first?.case_id ?? null);
-    setSubmittedQuestion("");
-    setResult(null);
   }, [solution.solution_id, questions.data?.family_id]);
 
   useEffect(() => {
     if (runtime.data) {
       setRole(runtime.data.default_role);
-      setResult(null);
     }
   }, [runtime.data]);
+
+  useEffect(() => {
+    globalThis.sessionStorage?.setItem(conversationStorageKey, conversationId);
+  }, [conversationId, conversationStorageKey]);
 
   if (questions.isPending || runtime.isPending || ontology.isPending) {
     return <section className="catalog-state">正在加载分析语境…</section>;
@@ -1619,17 +1652,33 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
     const submitted = question.trim();
     if (!submitted || analysis.isPending) return;
     const questionCaseId = exactQuestionCaseId;
-    setSubmittedQuestion(submitted);
+    setPendingQuestion(submitted);
     setQuestion("");
     setSelectedQuestionCaseId(null);
-    setResult(null);
     analysis.mutate({ submitted, questionCaseId });
   };
-  const modelLabel = result?.llm.status === "GROUNDED"
+  const modelLabel = (result: SolutionAnalysis) => result.llm.status === "GROUNDED"
     ? "DeepAgent · Qwen 3.8 Max"
-    : result?.llm.status === "FALLBACK"
+    : result.llm.status === "FALLBACK"
       ? "DeepAgent fallback"
-      : result ? "Ontology runtime" : "DeepAgent · Qwen 3.8 Max";
+      : "Ontology runtime";
+  const startNewConversation = () => {
+    const nextConversationId = createConversationId();
+    globalThis.sessionStorage?.setItem(conversationStorageKey, nextConversationId);
+    queryClient.setQueryData(
+      ["analytic-conversation", solution.solution_id, nextConversationId],
+      {
+        contract: "analytic-conversation-transcript/v1",
+        conversation_id: nextConversationId,
+        solution_id: solution.solution_id,
+        turns: [],
+      },
+    );
+    setConversationId(nextConversationId);
+    setPendingQuestion("");
+    analysis.reset();
+  };
+  const turns = conversation.data?.turns ?? [];
 
   return (
     <section className="agent-console">
@@ -1639,11 +1688,11 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
           <h1>{name(solution.display_name)}</h1>
           <p>{locale === "en" ? solution.solution_id : solution.display_name.en}</p>
         </div>
-        <div className="agent-context-strip" aria-label="当前分析语境">
+        <div className="agent-context-strip" aria-label={t("当前分析语境", "Current analysis context")}>
           <div><span>Ontology</span><strong>v{ontology.data.version}</strong></div>
-          <div><span>数据期间</span><strong>{samplePeriod}</strong></div>
+          <div><span>{t("数据期间", "Data period")}</span><strong>{samplePeriod}</strong></div>
           <div><span>Runtime</span><strong><i /> Active</strong></div>
-          <label><span>分析角色</span><select value={role || runtime.data.default_role} onChange={(event) => setRole(event.target.value)}>
+          <label><span>{t("分析角色", "Analysis role")}</span><select value={role || runtime.data.default_role} onChange={(event) => setRole(event.target.value)}>
             {runtime.data.roles.filter((item) => item.access === "ALLOWED").map((item) => (
               <option key={item.role_id} value={item.role_id}>{name(item.name)}</option>
             ))}
@@ -1652,8 +1701,8 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
       </header>
 
       <div className="agent-console-layout">
-        <aside className="agent-starters" aria-label="示例问题">
-          <header><h2>示例问题</h2><span>{questions.data.cases.length}</span></header>
+        <aside className="agent-starters" aria-label={t("示例问题", "Suggested questions")}>
+          <header><h2>{t("示例问题", "Suggested questions")}</h2><span>{questions.data.cases.length}</span></header>
           <div>
             {questions.data.cases.map((item, index) => (
               <button
@@ -1663,8 +1712,6 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
                 onClick={() => {
                   setQuestion(item.question);
                   setSelectedQuestionCaseId(item.case_id);
-                  setResult(null);
-                  setSubmittedQuestion("");
                 }}
               ><span>{String(index + 1).padStart(2, "0")}</span>{item.question}</button>
             ))}
@@ -1672,35 +1719,55 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
         </aside>
 
         <section className="agent-conversation" aria-live="polite">
-          {!submittedQuestion && !analysis.isPending && !result ? (
+          <header className="agent-conversation-toolbar">
+            <div>
+              <strong>{t("当前对话", "Current conversation")}</strong>
+              <span>{t(`${turns.length} 轮`, `${turns.length} turn${turns.length === 1 ? "" : "s"}`)}</span>
+            </div>
+            <button type="button" onClick={startNewConversation}>{t("新建对话", "New conversation")}</button>
+          </header>
+          {conversation.isPending ? (
+            <article className="agent-message is-assistant is-loading"><span>Agent</span><p>{t("正在恢复当前对话…", "Restoring this conversation…")}</p></article>
+          ) : null}
+          {conversation.isError ? (
+            <article className="agent-message is-assistant is-error"><span>Agent</span><p>{t("当前对话无法恢复。你可以新建对话后继续。", "This conversation could not be restored. Start a new conversation to continue.")}</p></article>
+          ) : null}
+          {!conversation.isPending && !conversation.isError && turns.length === 0 && !pendingQuestion && !analysis.isPending ? (
             <div className="agent-empty-state"><h2>{t("询问 Cash Trading 数据", "Ask about Cash Trading data")}</h2><p>{t("可以直接输入问题，或从左侧选择一个示例。", "Enter a question directly or choose a suggested question on the left.")}</p></div>
           ) : null}
-          {submittedQuestion ? <article className="agent-message is-user"><span>{t("你", "You")}</span><p data-no-ui-translate>{submittedQuestion}</p></article> : null}
+          {turns.map((turn) => (
+            <div className="agent-turn" key={turn.turn_id}>
+              <article className="agent-message is-user"><span>{t("你", "You")}</span><p data-no-ui-translate>{turn.question}</p></article>
+              {turn.analysis ? (
+                <article className={`agent-message is-assistant is-${turn.analysis.status.toLowerCase()}`}>
+                  <div className="agent-message-heading"><span>Agent</span><small>{modelLabel(turn.analysis)}</small></div>
+                  <div className="agent-answer-copy" data-no-ui-translate>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{turn.analysis.answer}</ReactMarkdown>
+                  </div>
+                  {turn.analysis.status === "ANSWERED" ? <AgentQueryResults result={turn.analysis} /> : null}
+                  {turn.analysis.boundary_code ? <code className="agent-boundary-code">{turn.analysis.boundary_code}</code> : null}
+                  {turn.analysis.status === "ANSWERED" ? (
+                    <details className="agent-run-identity"><summary>{t("本次运行信息", "Run details")}</summary><dl>
+                      <div><dt>Package</dt><dd><code>{ontology.data.package_id}@{ontology.data.version}</code></dd></div>
+                      <div><dt>Snapshot</dt><dd><code>{turn.analysis.snapshot_checksum ? shortDigest(turn.analysis.snapshot_checksum) : "—"}</code></dd></div>
+                      <div><dt>Execution</dt><dd><code>{turn.analysis.execution_id ?? "—"}</code></dd></div>
+                      <div><dt>Model</dt><dd>{modelLabel(turn.analysis)}</dd></div>
+                    </dl></details>
+                  ) : null}
+                </article>
+              ) : (
+                <article className="agent-message is-assistant is-failed"><span>Agent</span><p>{t("这条早期回答无法恢复。", "This earlier response could not be restored.")}</p></article>
+              )}
+            </div>
+          ))}
+          {pendingQuestion ? <article className="agent-message is-user"><span>{t("你", "You")}</span><p data-no-ui-translate>{pendingQuestion}</p></article> : null}
           {analysis.isPending ? <article className="agent-message is-assistant is-loading"><span>Agent</span><p>{t("正在分析 Ontology 与样例数据…", "Analyzing the ontology and sample data…")}</p></article> : null}
           {analysis.isError ? <article className="agent-message is-assistant is-error"><span>Agent</span><p data-no-ui-translate>{(analysis.error as Error).message}</p></article> : null}
-          {result ? (
-            <article className={`agent-message is-assistant is-${result.status.toLowerCase()}`}>
-              <div className="agent-message-heading"><span>Agent</span><small>{modelLabel}</small></div>
-              <div className="agent-answer-copy" data-no-ui-translate>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.answer}</ReactMarkdown>
-              </div>
-              {result.status === "ANSWERED" ? <AgentQueryResults result={result} /> : null}
-              {result.boundary_code ? <code className="agent-boundary-code">{result.boundary_code}</code> : null}
-              {result.status === "ANSWERED" ? (
-                <details className="agent-run-identity"><summary>本次运行信息</summary><dl>
-                  <div><dt>Package</dt><dd><code>{ontology.data.package_id}@{ontology.data.version}</code></dd></div>
-                  <div><dt>Snapshot</dt><dd><code>{result.snapshot_checksum ? shortDigest(result.snapshot_checksum) : "—"}</code></dd></div>
-                  <div><dt>Execution</dt><dd><code>{result.execution_id ?? "—"}</code></dd></div>
-                  <div><dt>Model</dt><dd>{modelLabel}</dd></div>
-                </dl></details>
-              ) : null}
-            </article>
-          ) : null}
         </section>
       </div>
 
       <form className="agent-composer" onSubmit={(event) => { event.preventDefault(); runAnalysis(); }}>
-        <label htmlFor="agent-question">输入分析问题</label>
+        <label htmlFor="agent-question">{t("输入分析问题", "Enter an analysis question")}</label>
         <div><textarea id="agent-question" value={question} onChange={(event) => {
           setQuestion(event.target.value);
           if (selectedQuestionCase?.question !== event.target.value) setSelectedQuestionCaseId(null);
@@ -1708,7 +1775,7 @@ export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }
           "例如：展示样例期间每日潜在自成交率。",
           "For example: Show the daily potential self-trade rate for the sample period.",
         )} />
-        <button type="submit" disabled={!question.trim() || analysis.isPending}>{analysis.isPending ? "分析中…" : "发送"}</button></div>
+        <button type="submit" disabled={!question.trim() || analysis.isPending}>{analysis.isPending ? t("分析中…", "Analyzing…") : t("发送", "Send")}</button></div>
       </form>
     </section>
   );
@@ -1840,7 +1907,7 @@ function GenericSolutionView({ kind, solutionId }: { kind: ProductKind; solution
     <div className="product-shell">
       <Header kind={kind} solutionId={solution.solution_id} session={authSession.data ?? null} directoryHome={directoryHome} />
       {kind === "agent" ? (
-        <main className="agent-main"><AgentSolutionWorkspace solution={selectedSolution!} /></main>
+        <main className="agent-main"><AgentSolutionWorkspace key={selectedSolution!.solution_id} solution={selectedSolution!} /></main>
       ) : (
         <main className="studio-main"><StudioApplication solution={solution} runtime={studioRuntime.data ?? null} catalog={studioCatalog.data!} canOperate={authSession.data?.authenticated === true && authSession.data.role === "operator"} reviewer={authSession.data?.authenticated ? authSession.data.username : "unknown"} /></main>
       )}

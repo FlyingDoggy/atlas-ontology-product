@@ -5,7 +5,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import Field, model_validator
 from sqlalchemy import (
@@ -112,6 +112,7 @@ class AnalyticTurnRecordV1(StrictModel):
     )
     context_before: AnalyticConversationContextV1
     context_after: AnalyticConversationContextV1
+    response_payload: dict[str, Any] | None = None
     completed_at: datetime
 
 
@@ -133,7 +134,12 @@ class AnalyticConversationStore(Protocol):
         status: Literal["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"],
         execution_id: str | None,
         context_after: AnalyticConversationContextV1,
+        response_payload: dict[str, Any],
     ) -> AnalyticTurnRecordV1: ...
+
+    def turns(
+        self, conversation_id: str, *, solution_id: str
+    ) -> tuple[AnalyticTurnRecordV1, ...]: ...
 
 
 @dataclass
@@ -206,6 +212,7 @@ class InMemoryAnalyticConversationStore:
         status: Literal["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"],
         execution_id: str | None,
         context_after: AnalyticConversationContextV1,
+        response_payload: dict[str, Any],
     ) -> AnalyticTurnRecordV1:
         with self._lock:
             stored = self._leases.get(lease.turn_id)
@@ -228,6 +235,7 @@ class InMemoryAnalyticConversationStore:
                 parent_execution_id=lease.parent_execution_id,
                 context_before=lease.context_before,
                 context_after=context_after,
+                response_payload=response_payload,
                 completed_at=completed_at,
             )
             self._turns[lease.turn_id] = record
@@ -240,7 +248,16 @@ class InMemoryAnalyticConversationStore:
         current = self._conversations.get(conversation_id)
         return current.context if current is not None else None
 
-    def turns(self, conversation_id: str) -> tuple[AnalyticTurnRecordV1, ...]:
+    def turns(
+        self, conversation_id: str, *, solution_id: str
+    ) -> tuple[AnalyticTurnRecordV1, ...]:
+        current = self._conversations.get(conversation_id)
+        if current is None:
+            return ()
+        if current.solution_id != solution_id:
+            raise AnalyticConversationConflict(
+                "Conversation belongs to a different ontology solution"
+            )
         return tuple(
             sorted(
                 (
@@ -302,6 +319,9 @@ class AnalyticConversationTurnRow(Base):
     parent_execution_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     context_before: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
     context_after: Mapped[dict[str, object] | None] = mapped_column(
+        JSONB, nullable=True
+    )
+    response_payload: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -419,6 +439,7 @@ class PostgresAnalyticConversationStore:
         status: Literal["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"],
         execution_id: str | None,
         context_after: AnalyticConversationContextV1,
+        response_payload: dict[str, Any],
     ) -> AnalyticTurnRecordV1:
         completed_at = datetime.now(timezone.utc)
         try:
@@ -449,6 +470,7 @@ class PostgresAnalyticConversationStore:
                 turn.status = status
                 turn.execution_id = execution_id
                 turn.context_after = context_after.model_dump(mode="json")
+                turn.response_payload = response_payload
                 turn.completed_at = completed_at
                 if lease.turn_index >= conversation.completed_turn_count:
                     conversation.completed_turn_count = lease.turn_index
@@ -474,5 +496,57 @@ class PostgresAnalyticConversationStore:
             parent_execution_id=lease.parent_execution_id,
             context_before=lease.context_before,
             context_after=context_after,
+            response_payload=response_payload,
             completed_at=completed_at,
         )
+
+    def turns(
+        self, conversation_id: str, *, solution_id: str
+    ) -> tuple[AnalyticTurnRecordV1, ...]:
+        try:
+            with Session(self.engine) as session:
+                conversation = session.scalar(
+                    select(AnalyticConversationRow).where(
+                        AnalyticConversationRow.conversation_id == conversation_id
+                    )
+                )
+                if conversation is None:
+                    return ()
+                if conversation.solution_id != solution_id:
+                    raise AnalyticConversationConflict(
+                        "Conversation belongs to a different ontology solution"
+                    )
+                rows = session.scalars(
+                    select(AnalyticConversationTurnRow)
+                    .where(
+                        AnalyticConversationTurnRow.conversation_id == conversation_id,
+                        AnalyticConversationTurnRow.completed_at.is_not(None),
+                        AnalyticConversationTurnRow.context_after.is_not(None),
+                    )
+                    .order_by(AnalyticConversationTurnRow.turn_index)
+                ).all()
+                return tuple(
+                    AnalyticTurnRecordV1(
+                        conversation_id=row.conversation_id,
+                        turn_id=row.turn_id,
+                        turn_index=row.turn_index,
+                        solution_id=row.solution_id,
+                        role=row.role,
+                        snapshot_checksum=row.snapshot_checksum,
+                        question=row.question,
+                        status=row.status,
+                        execution_id=row.execution_id,
+                        parent_execution_id=row.parent_execution_id,
+                        context_before=self._context(row.context_before),
+                        context_after=self._context(row.context_after or {}),
+                        response_payload=row.response_payload,
+                        completed_at=row.completed_at,
+                    )
+                    for row in rows
+                )
+        except AnalyticConversationError:
+            raise
+        except SQLAlchemyError as exc:
+            raise AnalyticConversationError(
+                "Analytic conversation transcript could not be read"
+            ) from exc

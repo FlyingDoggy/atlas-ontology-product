@@ -7,10 +7,15 @@ import { AgentSolutionWorkspace } from "./App";
 import { LegacyUiLocalizer, UiLocaleProvider } from "./i18n";
 
 const analyzeSolutionMock = vi.hoisted(() => vi.fn());
+const fetchAnalyticConversationMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./api")>();
-  return { ...actual, analyzeSolution: analyzeSolutionMock };
+  return {
+    ...actual,
+    analyzeSolution: analyzeSolutionMock,
+    fetchAnalyticConversation: fetchAnalyticConversationMock,
+  };
 });
 
 const digest = "a".repeat(64);
@@ -96,7 +101,15 @@ function renderWorkspace() {
 
 beforeEach(() => {
   window.localStorage.setItem("atlas-ui-locale", "en");
+  window.sessionStorage.clear();
   analyzeSolutionMock.mockReset();
+  fetchAnalyticConversationMock.mockReset();
+  fetchAnalyticConversationMock.mockImplementation((_solutionId: string, conversationId: string) => Promise.resolve({
+    contract: "analytic-conversation-transcript/v1",
+    conversation_id: conversationId,
+    solution_id: solution.solution_id,
+    turns: [],
+  }));
   analyzeSolutionMock.mockResolvedValue({
     status: "CLARIFY",
     answer: "请说明要查看的指标或 Ontology 定义。",
@@ -130,6 +143,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  window.sessionStorage.clear();
   document.getElementById("root")?.remove();
 });
 
@@ -156,6 +170,15 @@ describe("AgentSolutionWorkspace", () => {
     expect(await screen.findByText("请说明要查看的指标或 Ontology 定义。")).toBeTruthy();
     expect(screen.queryByText(/You都能回答什么questions/)).toBeNull();
 
+    const firstResponse = await analyzeSolutionMock.mock.results[0].value;
+    analyzeSolutionMock.mockResolvedValueOnce({
+      ...firstResponse,
+      status: "CLARIFY",
+      answer: "请说明参与者维度的时间范围。",
+      conversation_id: firstConversationId,
+      turn_id: "turn." + "3".repeat(32),
+      turn_index: 2,
+    });
     fireEvent.change(input, { target: { value: "按参与者拆开" } });
     fireEvent.click(screen.getByRole("button", { name: /发送|Send/ }));
     await waitFor(() => expect(analyzeSolutionMock).toHaveBeenLastCalledWith(
@@ -165,5 +188,45 @@ describe("AgentSolutionWorkspace", () => {
       undefined,
       firstConversationId,
     ));
+    expect(await screen.findByText("按参与者拆开")).toBeTruthy();
+    expect(await screen.findByText("请说明参与者维度的时间范围。")).toBeTruthy();
+    expect(screen.getByText("你都能回答什么问题")).toBeTruthy();
+    expect(screen.getByText("请说明要查看的指标或 Ontology 定义。")).toBeTruthy();
+    expect(screen.getByText("2 turns")).toBeTruthy();
+  });
+
+  it("restores the complete current conversation after a reload and starts a clean session only on request", async () => {
+    const conversationId = "conversation." + "7".repeat(32);
+    window.sessionStorage.setItem(`atlas-agent-conversation:${solution.solution_id}`, conversationId);
+    const analysis = await analyzeSolutionMock();
+    fetchAnalyticConversationMock.mockResolvedValue({
+      contract: "analytic-conversation-transcript/v1",
+      conversation_id: conversationId,
+      solution_id: solution.solution_id,
+      turns: [
+        {
+          turn_id: analysis.turn_id,
+          turn_index: 1,
+          question: "What can you answer?",
+          status: analysis.status,
+          completed_at: "2026-08-25T09:00:00Z",
+          analysis: { ...analysis, conversation_id: conversationId },
+        },
+      ],
+    });
+
+    renderWorkspace();
+
+    expect(await screen.findByText("What can you answer?")).toBeTruthy();
+    expect(await screen.findByText("请说明要查看的指标或 Ontology 定义。")).toBeTruthy();
+    expect(fetchAnalyticConversationMock).toHaveBeenCalledWith(solution.solution_id, conversationId);
+
+    fireEvent.click(screen.getByRole("button", { name: "New conversation" }));
+    expect(await screen.findByText("Ask about Cash Trading data")).toBeTruthy();
+    expect(screen.queryByText("What can you answer?")).toBeNull();
+    expect(window.sessionStorage.getItem(`atlas-agent-conversation:${solution.solution_id}`)).toMatch(
+      /^conversation\.[0-9a-f]{32}$/,
+    );
+    expect(window.sessionStorage.getItem(`atlas-agent-conversation:${solution.solution_id}`)).not.toBe(conversationId);
   });
 });

@@ -296,6 +296,10 @@ def test_cash_solution_is_reachable_through_the_common_agent_api(
             "role": "MarketSurveillanceDemo",
         },
     )
+    transcript = agent_client.get(
+        "/api/solutions/ontology.exchange_analytics.cash_trading/conversations/"
+        + response.json()["conversation_id"]
+    )
     ontology = agent_client.get(
         "/api/solutions/ontology.exchange_analytics.cash_trading/ontology"
     )
@@ -327,6 +331,18 @@ def test_cash_solution_is_reachable_through_the_common_agent_api(
         "profile_checksum": None,
         "activation_id": None,
     }
+    assert transcript.status_code == 200
+    assert transcript.json()["contract"] == "analytic-conversation-transcript/v1"
+    assert transcript.json()["turns"] == [
+        {
+            "turn_id": response.json()["turn_id"],
+            "turn_index": 1,
+            "question": "Analyze potential self-trades for 2026-08-03 to 2026-08-07.",
+            "status": "ANSWERED",
+            "completed_at": transcript.json()["turns"][0]["completed_at"],
+            "analysis": response.json(),
+        }
+    ]
     assert ontology.status_code == 200
     assert ontology.json()["package_id"] == package.package_id
     assert questions.status_code == 200

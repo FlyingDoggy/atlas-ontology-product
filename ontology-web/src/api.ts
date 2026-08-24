@@ -361,6 +361,39 @@ export const solutionAnalysisSchema = z.object({
 
 export type SolutionAnalysis = z.infer<typeof solutionAnalysisSchema>;
 
+export const analyticConversationTranscriptSchema = z.object({
+  contract: z.literal("analytic-conversation-transcript/v1"),
+  conversation_id: z.string().regex(/^conversation\.[0-9a-f]{32}$/),
+  solution_id: z.string().min(1),
+  turns: z.array(z.object({
+    turn_id: z.string().regex(/^turn\.[0-9a-f]{32}$/),
+    turn_index: z.number().int().min(1),
+    question: z.string().min(1),
+    status: z.enum(["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"]),
+    completed_at: z.string().min(1),
+    analysis: solutionAnalysisSchema.nullable(),
+  }).strict()),
+}).strict().superRefine((value, context) => {
+  value.turns.forEach((turn, index) => {
+    if (turn.turn_index !== index + 1) {
+      context.addIssue({
+        code: "custom",
+        message: "Conversation turns are not contiguous",
+        path: ["turns", index, "turn_index"],
+      });
+    }
+    if (turn.analysis && turn.analysis.turn_id !== turn.turn_id) {
+      context.addIssue({
+        code: "custom",
+        message: "Conversation turn and analysis identities do not match",
+        path: ["turns", index, "analysis", "turn_id"],
+      });
+    }
+  });
+});
+
+export type AnalyticConversationTranscript = z.infer<typeof analyticConversationTranscriptSchema>;
+
 const editorDescriptorSchema = z
   .object({
     contract: z.literal("studio-editor-descriptor/v1"),
@@ -1712,6 +1745,20 @@ export async function analyzeSolution(
   const parsed = solutionAnalysisSchema.safeParse(payload);
   if (!parsed.success) {
     throw new ProductApiError("分析结果未通过客户端合同校验。", 0);
+  }
+  return parsed.data;
+}
+
+export async function fetchAnalyticConversation(
+  solutionId: string,
+  conversationId: string,
+): Promise<AnalyticConversationTranscript> {
+  const payload = await requestAgentJson(
+    `/api/solutions/${encodeURIComponent(solutionId)}/conversations/${encodeURIComponent(conversationId)}`,
+  );
+  const parsed = analyticConversationTranscriptSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new ProductApiError("当前对话未通过客户端合同校验。", 0);
   }
   return parsed.data;
 }

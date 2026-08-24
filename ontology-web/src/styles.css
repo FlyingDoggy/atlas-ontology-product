@@ -361,6 +361,13 @@ a:focus-visible, button:focus-visible {
 .agent-starters button.is-selected { color: #074e80; background: var(--semantic-action-hover); border-color: #c8ddeb; }
 
 .agent-conversation { min-width: 0; display: grid; align-content: start; gap: var(--semantic-space-4); padding: var(--semantic-space-8); background: var(--semantic-surface-paper); }
+.agent-conversation-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--semantic-space-4); padding-bottom: var(--semantic-space-4); border-bottom: 1px solid var(--semantic-border-subtle); }
+.agent-conversation-toolbar > div { display: flex; align-items: baseline; gap: var(--semantic-space-3); }
+.agent-conversation-toolbar strong { color: var(--semantic-text-primary); font-size: var(--semantic-type-body); }
+.agent-conversation-toolbar span { color: var(--semantic-text-tertiary); font-size: var(--semantic-type-meta); }
+.agent-conversation-toolbar button { min-height: 36px; padding: 0 14px; color: #245d80; background: var(--semantic-surface-paper); border: 1px solid var(--semantic-border-strong); border-radius: var(--semantic-radius-control); cursor: pointer; font-size: var(--semantic-type-control); font-weight: 650; }
+.agent-conversation-toolbar button:hover { background: var(--semantic-action-hover); border-color: #9ab9cb; }
+.agent-turn { display: grid; gap: var(--semantic-space-4); }
 .agent-empty-state { max-width: 560px; align-self: center; justify-self: center; padding: 120px 24px 24px; text-align: center; }
 .agent-empty-state h2 { margin: 0; font-size: var(--component-type-heading-sm); }
 .agent-empty-state p { margin: 9px 0 0; color: var(--semantic-text-secondary); font-size: var(--semantic-type-supporting); }
