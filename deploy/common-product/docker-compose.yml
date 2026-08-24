@@ -11,6 +11,9 @@ x-backend-env: &backend-env
   ONTOLOGY_S3_REGION: us-east-1
   ONTOLOGY_S3_BUCKET: ${ONTOLOGY_S3_BUCKET:-ontology-artifacts}
   ONTOLOGY_S3_MANAGE_BUCKET: "true"
+  ONTOLOGY_BUILDER_MAX_INPUT_TOKENS: ${ONTOLOGY_BUILDER_MAX_INPUT_TOKENS:-3000000}
+  ONTOLOGY_AGENTIC_GATEWAY_MAX_ATTEMPTS: ${ONTOLOGY_AGENTIC_GATEWAY_MAX_ATTEMPTS:-5}
+  ONTOLOGY_AGENTIC_GATEWAY_RETRY_BACKOFF_SECONDS: ${ONTOLOGY_AGENTIC_GATEWAY_RETRY_BACKOFF_SECONDS:-1}
   AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
   AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
 
@@ -105,9 +108,13 @@ services:
     command: ["uvicorn", "ontology_agent.api:app", "--host", "0.0.0.0", "--port", "8790"]
     restart: unless-stopped
     read_only: true
+    env_file:
+      - ${ONTOLOGY_QWEN_ENV_FILE:-../adt-demo/secrets/llm/qwen.env}
     environment:
       <<: *backend-env
       ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_ANALYTIC_AGENT_MODEL: qwen3.8-max
+      ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
       ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
     volumes:
       - published:/app/published:ro
@@ -139,6 +146,7 @@ services:
       ONTOLOGY_AGENT_PROJECT_ROOT: /app
       ONTOLOGY_QWEN_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
       ONTOLOGY_BUILDER_LLM_ENABLED: "true"
+      ONTOLOGY_AGENTIC_BUILDER_ENABLED: "true"
       ONTOLOGY_BUILDER_MODEL: qwen3.8-max
       ONTOLOGY_BUILDER_MAX_OUTPUT_TOKENS: "24000"
       ONTOLOGY_BUILDER_PROVIDER_TIMEOUT_SECONDS: "180"
@@ -199,6 +207,12 @@ services:
       ONTOLOGY_STUDIO_LLM_ROLLOUT_PATH: /run/ontology-llm/studio-rollout.json
       ONTOLOGY_STUDIO_LLM_EVALUATION_MANIFEST_PATH: /run/ontology-llm/studio-evaluation-manifest.json
       ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_AGENTIC_BUILDER_ENABLED: "true"
+      ONTOLOGY_BUILD_SKILL_VERSION: "2.0.10"
+      ONTOLOGY_REVIEW_SKILL_VERSION: "2.0.3"
+      ONTOLOGY_BUILDER_PROVIDER: qwen
+      ONTOLOGY_BUILDER_MODEL: qwen3.8-max
+      ONTOLOGY_AGENTIC_MODEL_TIMEOUT_SECONDS: "180"
       ONTOLOGY_BUILDER_TIMEOUT_SECONDS: "195"
       ONTOLOGY_REVIEWER_TIMEOUT_SECONDS: "195"
       ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795
@@ -233,6 +247,12 @@ services:
     environment:
       <<: *backend-env
       ONTOLOGY_MODEL_GATEWAY_URL: http://model-gateway:8794
+      ONTOLOGY_AGENTIC_BUILDER_ENABLED: "true"
+      ONTOLOGY_BUILD_SKILL_VERSION: "2.0.10"
+      ONTOLOGY_REVIEW_SKILL_VERSION: "2.0.3"
+      ONTOLOGY_BUILDER_PROVIDER: qwen
+      ONTOLOGY_BUILDER_MODEL: qwen3.8-max
+      ONTOLOGY_AGENTIC_MODEL_TIMEOUT_SECONDS: "180"
       ONTOLOGY_BUILDER_TIMEOUT_SECONDS: "195"
       ONTOLOGY_REVIEWER_TIMEOUT_SECONDS: "195"
       ONTOLOGY_SEMANTICA_WORKER_URL: http://semantica-worker:8795

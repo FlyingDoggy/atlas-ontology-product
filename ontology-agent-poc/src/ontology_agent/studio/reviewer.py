@@ -38,6 +38,8 @@ ReviewerFindingType = Literal[
     "RELEASE_BLOCKER",
 ]
 
+ReviewerFindingAuthority = Literal["DETERMINISTIC", "ADVISORY"]
+
 
 class ReviewerError(RuntimeError):
     """A Reviewer result cannot cross the machine-finding boundary."""
@@ -77,6 +79,7 @@ class ReviewerFindingV1(StrictModel):
     detail: str = Field(min_length=1, max_length=3000)
     candidate_ids: tuple[str, ...] = Field(min_length=1, max_length=32)
     evidence_fragment_ids: tuple[str, ...] = Field(max_length=32)
+    finding_authority: ReviewerFindingAuthority = "DETERMINISTIC"
     blocks_release: bool
     recommendation: str = Field(min_length=1, max_length=1000)
 
@@ -84,6 +87,8 @@ class ReviewerFindingV1(StrictModel):
     def blocking_findings_are_visible(self) -> ReviewerFindingV1:
         if self.blocks_release and self.severity == "INFO":
             raise ValueError("A release-blocking finding cannot be informational")
+        if self.finding_authority == "ADVISORY" and self.blocks_release:
+            raise ValueError("An advisory Reviewer finding cannot block release")
         if len(self.candidate_ids) != len(set(self.candidate_ids)):
             raise ValueError("Reviewer finding candidate IDs must be unique")
         if len(self.evidence_fragment_ids) != len(set(self.evidence_fragment_ids)):
@@ -292,7 +297,18 @@ def deterministic_candidate_findings(
         operation = candidate.proposed_operation
         if operation is not None:
             by_target[(operation.collection, operation.object_id)].append(candidate)
-        if candidate.support_class == "MODEL_INFERRED" and not candidate.source_anchors:
+        agentic_receipts = (
+            candidate.proposal.get("evidence_receipts", ())
+            if isinstance(candidate.proposal, dict)
+            and candidate.proposal.get("contract")
+            == "agentic-candidate-projection/v1"
+            else ()
+        )
+        if (
+            candidate.support_class == "MODEL_INFERRED"
+            and not candidate.source_anchors
+            and not agentic_receipts
+        ):
             detail = "Model-inferred candidate has no exact source anchor."
             findings.append(
                 ReviewerFindingV1(
@@ -309,7 +325,10 @@ def deterministic_candidate_findings(
                     recommendation="补充可引用证据，或拒绝该候选。",
                 )
             )
-        if not candidate.compile_eligible:
+        # An explicit GAP is a governed disposition, not an incomplete typed
+        # mutation.  GAP candidates must remain non-compilable by design and
+        # should be reviewed as accepted boundaries or requests for evidence.
+        if not candidate.compile_eligible and candidate.candidate_type != "GAP":
             detail = "Candidate has no typed Draft operation and cannot be applied."
             findings.append(
                 ReviewerFindingV1(
@@ -452,10 +471,24 @@ def deterministic_candidate_findings(
                 )
             elif binding.column not in fields:
                 defects.append(f"unknown physical column {binding.column}")
-            elif fields[binding.column] != binding.data_type:
+            elif (
+                binding.transformation == "identity"
+                and fields[binding.column] != binding.data_type
+            ):
                 defects.append(
                     f"physical type {fields[binding.column]} does not match "
                     f"binding type {binding.data_type}"
+                )
+            elif binding.transformation in {
+                "yn_to_boolean",
+                "yn_to_boolean_not",
+            } and not (
+                fields[binding.column] == "string"
+                and binding.data_type == "boolean"
+            ):
+                defects.append(
+                    f"{binding.transformation} requires string physical input and "
+                    "boolean logical output"
                 )
             if binding.logical_target not in known_properties:
                 defects.append(
@@ -517,8 +550,13 @@ def deterministic_candidate_findings(
                         metric.query.date_property,
                         metric.query.population_property,
                     )
-                    if item not in known_properties
+                    if item is not None and item not in known_properties
                 )
+                if (
+                    metric.query.population_rule is not None
+                    and metric.query.population_rule not in known_rules
+                ):
+                    missing.add(metric.query.population_rule)
                 if metric.query.base_source not in data_sources:
                     missing.add(str(metric.query.base_source))
             if missing:
@@ -547,6 +585,7 @@ def deterministic_candidate_findings(
                 metric.query.period_property,
                 metric.query.date_property,
                 metric.query.population_property,
+                metric.query.population_rule,
                 metric.query.required_joins,
                 metric.query.filters,
             )
@@ -556,8 +595,14 @@ def deterministic_candidate_findings(
                     metric.formula, "field_ref"
                 ):
                     query_defects.append("query measure is not referenced by formula")
-                if not metric.query.period_property:
-                    query_defects.append("period property is missing")
+                if not metric.query.date_property:
+                    query_defects.append("date property is missing")
+                if bool(metric.query.population_property) == bool(
+                    metric.query.population_rule
+                ):
+                    query_defects.append(
+                        "exactly one population property or population rule is required"
+                    )
             elif any(physical_query_values):
                 query_defects.append(
                     "derived metric unexpectedly contains a physical query contract"
@@ -772,7 +817,12 @@ class BoundedReviewerOrchestrator:
         for finding in output.findings:
             if finding.finding_id in findings_by_id:
                 raise ReviewerError("Reviewer collided with a deterministic finding")
-            findings_by_id[finding.finding_id] = finding
+            findings_by_id[finding.finding_id] = finding.model_copy(
+                update={
+                    "finding_authority": "ADVISORY",
+                    "blocks_release": False,
+                }
+            )
         findings = tuple(findings_by_id.values())
         receipt = ReviewerReceiptV1(
             request_digest=request.request_digest,

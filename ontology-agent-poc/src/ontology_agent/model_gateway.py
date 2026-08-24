@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -45,6 +46,12 @@ from .studio.builder import (
     BuilderPhaseRequestV1,
     BuilderPhaseResponseV1,
 )
+from .studio.agentic_contracts import (
+    AgentToolCallV1,
+    AgentTokenUsageV1,
+    AgentTurnRequestV1,
+    AgentTurnResultV1,
+)
 from .studio.reviewer import (
     ReviewerOutputV1,
     ReviewerRequestV1,
@@ -63,6 +70,48 @@ from .solution_llm import (
 
 
 logger = logging.getLogger(__name__)
+
+
+def _agent_provider_transport(
+    url: str,
+    headers: dict[str, str],
+    body: dict[str, object],
+    timeout: float,
+) -> dict[str, object]:
+    """Retry only transport failures before a model turn is journaled.
+
+    The request is side-effect free from Studio's point of view: the provider may
+    compute the same assistant turn more than once, but no tool is executed and no
+    Candidate Workspace mutation is committed until one valid response returns.
+    Provider/schema/protocol errors remain fail-closed and are never retried here.
+    """
+
+    attempts = max(
+        1,
+        min(
+            int(os.environ.get("ONTOLOGY_BUILDER_PROVIDER_RETRY_ATTEMPTS", "3")),
+            5,
+        ),
+    )
+    base_delay = max(
+        0.0,
+        min(
+            float(os.environ.get("ONTOLOGY_BUILDER_PROVIDER_RETRY_DELAY_SECONDS", "0.5")),
+            5.0,
+        ),
+    )
+    for attempt in range(1, attempts + 1):
+        try:
+            return _provider_transport(url, headers, body, timeout)
+        except OSError:
+            if attempt >= attempts:
+                raise
+            logger.warning(
+                "Agentic Builder provider transport failed; retrying",
+                extra={"attempt": attempt, "max_attempts": attempts},
+            )
+            time.sleep(base_delay * attempt)
+    raise RuntimeError("unreachable")
 
 
 def _canonicalize_formula_node(raw: Any) -> Any:
@@ -172,6 +221,196 @@ def health() -> dict[str, str]:
         "provider": DEMO_PROVIDER,
         "requested_model": DEMO_REQUESTED_MODEL,
     }
+
+
+@app.post("/model/v1/agent-turn", response_model=AgentTurnResultV1)
+def agent_turn(request: AgentTurnRequestV1) -> AgentTurnResultV1:
+    """Transport one provider-neutral structured-tool turn to Qwen.
+
+    The endpoint owns the provider secret. It does not execute tools, accept run
+    authority from the model, or interpret plain content as an action.
+    """
+
+    if os.environ.get("ONTOLOGY_AGENTIC_BUILDER_ENABLED", "").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+    }:
+        raise HTTPException(status_code=503, detail="Agentic Builder is disabled")
+    key = os.environ.get("ONTOLOGY_QWEN_API_KEY")
+    base_url = os.environ.get("ONTOLOGY_QWEN_BASE_URL")
+    configured_model = os.environ.get(
+        "ONTOLOGY_BUILDER_MODEL", "qwen3.8-max"
+    ).strip()
+    configured_provider = os.environ.get(
+        "ONTOLOGY_BUILDER_PROVIDER", "qwen"
+    ).strip()
+    if not key or not base_url or not configured_model or not configured_provider:
+        raise HTTPException(
+            status_code=503, detail="Agentic Builder model is not configured"
+        )
+    if (
+        request.requested_model != configured_model
+        or request.provider != configured_provider
+    ):
+        raise HTTPException(
+            status_code=409, detail="Agent turn escaped its frozen model contract"
+        )
+
+    provider_messages: list[dict[str, object]] = []
+    for message in request.messages:
+        if message.role in {"system", "user"}:
+            provider_messages.append(
+                {"role": message.role, "content": message.content or ""}
+            )
+        elif message.role == "assistant":
+            provider_message: dict[str, object] = {
+                "role": "assistant",
+                "content": message.content,
+            }
+            if message.tool_calls:
+                provider_message["tool_calls"] = [
+                    {
+                        "id": item.tool_call_id,
+                        "type": "function",
+                        "function": {
+                            "name": item.name,
+                            "arguments": json.dumps(
+                                item.arguments,
+                                ensure_ascii=False,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ),
+                        },
+                    }
+                    for item in message.tool_calls
+                ]
+            provider_messages.append(provider_message)
+        else:
+            provider_messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": message.tool_call_id or "",
+                    "content": message.content or "",
+                }
+            )
+    provider_tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": item.name,
+                "description": item.description,
+                "parameters": item.input_schema,
+            },
+        }
+        for item in request.tools
+    ]
+    allowed_tools = {item.name for item in request.tools}
+    provider_body: dict[str, object] = {
+        "model": configured_model,
+        "messages": provider_messages,
+        "tools": provider_tools,
+        "tool_choice": "auto",
+        "parallel_tool_calls": False,
+        "temperature": 0,
+        "max_tokens": min(
+            request.remaining_output_tokens,
+            int(os.environ.get("ONTOLOGY_BUILDER_MAX_OUTPUT_TOKENS", "8000")),
+        ),
+        "enable_thinking": False,
+        "stream": False,
+    }
+    timeout = float(
+        os.environ.get("ONTOLOGY_BUILDER_PROVIDER_TIMEOUT_SECONDS", "90")
+    )
+    try:
+        raw = _agent_provider_transport(
+            str(base_url).rstrip("/") + "/chat/completions",
+            {
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            provider_body,
+            timeout,
+        )
+        response_model = raw["model"]
+        provider_request_id = raw["id"]
+        choice = raw["choices"][0]
+        provider_message = choice["message"]
+        finish_reason = choice.get("finish_reason") or "unknown"
+        if (
+            not isinstance(response_model, str)
+            or not response_model
+            or not isinstance(provider_request_id, str)
+            or not provider_request_id
+            or not isinstance(provider_message, dict)
+            or not isinstance(finish_reason, str)
+        ):
+            raise ValueError("Provider response identity is invalid")
+        content = provider_message.get("content")
+        if content is not None and not isinstance(content, str):
+            raise ValueError("Provider assistant content is invalid")
+        tool_calls: list[AgentToolCallV1] = []
+        for raw_call in provider_message.get("tool_calls") or []:
+            if not isinstance(raw_call, dict):
+                raise ValueError("Provider tool call is invalid")
+            function = raw_call.get("function")
+            if not isinstance(function, dict):
+                raise ValueError("Provider function call is invalid")
+            call_id = raw_call.get("id")
+            name = function.get("name")
+            raw_arguments = function.get("arguments")
+            if (
+                not isinstance(call_id, str)
+                or not call_id
+                or not isinstance(name, str)
+                or name not in allowed_tools
+                or not isinstance(raw_arguments, str)
+            ):
+                raise ValueError("Provider tool call escaped the registry")
+            arguments = json.loads(raw_arguments)
+            if not isinstance(arguments, dict):
+                raise ValueError("Provider tool arguments must be an object")
+            tool_calls.append(
+                AgentToolCallV1(
+                    tool_call_id=call_id,
+                    name=name,
+                    arguments=arguments,
+                )
+            )
+        if len(tool_calls) > 1:
+            raise ValueError("Provider returned parallel or batched tool calls")
+        usage_raw = raw.get("usage") or {}
+        if not isinstance(usage_raw, dict):
+            raise ValueError("Provider usage is invalid")
+        input_tokens = int(usage_raw.get("prompt_tokens", 0))
+        output_tokens = int(usage_raw.get("completion_tokens", 0))
+        usage = AgentTokenUsageV1(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+        )
+        unsigned: dict[str, object] = {
+            "contract": "studio-agent-turn-result/v1",
+            "requested_model": request.requested_model,
+            "response_model": response_model,
+            "provider_request_id": provider_request_id,
+            "assistant_content": content,
+            "tool_calls": [item.model_dump(mode="json") for item in tool_calls],
+            "finish_reason": finish_reason,
+            "usage": usage.model_dump(mode="json"),
+            "request_digest": request.request_digest,
+        }
+        unsigned["result_digest"] = sha256_value(unsigned)
+        return AgentTurnResultV1.model_validate(unsigned)
+    except (KeyError, IndexError, TypeError, ValueError, OSError) as exc:
+        logger.exception(
+            "Agentic Builder provider turn failed",
+            extra={"failure_type": type(exc).__name__},
+        )
+        raise HTTPException(
+            status_code=502, detail="Agentic Builder provider turn failed"
+        ) from exc
 
 
 @app.post("/model/v1/ontology-build", response_model=BuilderPhaseResponseV1)
@@ -505,11 +744,16 @@ def solution_ground(request: SolutionModelGroundingRequest) -> dict[str, Any]:
     ).issubset(set(allowed_fields)):
         raise HTTPException(status_code=409, detail="Solution model projection is not allowed")
     try:
-        prompt = next(
-            item["text"]
-            for item in prompt_manifest["prompts"]
-            if item["task"] == "goal_grounding"
-        )
+        prompts_by_task = {
+            item["task"]: item["text"] for item in prompt_manifest["prompts"]
+        }
+        # v1 profiles used a dedicated goal-grounding prompt. The DeepAgent v2
+        # profile uses one analytic-reasoning system prompt for the same closed
+        # projection boundary, so the compatibility endpoint can consume either
+        # immutable prompt manifest without inventing a second configuration.
+        prompt = prompts_by_task.get("goal_grounding") or prompts_by_task[
+            "analytic_reasoning"
+        ]
     except (KeyError, StopIteration, TypeError) as exc:
         raise HTTPException(status_code=503, detail="Solution model profile is not ready") from exc
 

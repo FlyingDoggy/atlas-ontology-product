@@ -21,6 +21,7 @@ from .cash_trading_scenario import (
     cash_trading_golden_certification,
     cash_trading_synthetic_binding,
 )
+from .cash_trading_deepagent import analyze_cash_deepagent_snapshot
 from .contracts import ReleaseRef, RuntimeSnapshotRef
 from .generic_scenario import (
     generic_bound_goal,
@@ -98,13 +99,29 @@ from .studio.construction import (
     PostgresConstructionRunStore,
     StudioConstructionService,
 )
+from .studio.agentic_construction import (
+    AgenticConstructionRuntime,
+    AgenticConstructionPlanError,
+    continuation_engine_contract,
+    freeze_agentic_build_plan,
+)
+from .studio.agentic_runtime import HttpModelToolGateway
+from .studio.agentic_store import (
+    InMemoryAgentCheckpointStore,
+    PostgresAgentCheckpointStore,
+    AgenticStoreError,
+)
 from .studio.builder import BoundedBuilderOrchestrator, BuilderError, HttpBuilderModel
 from .studio.reviewer import (
     BoundedReviewerOrchestrator,
     HttpReviewerModel,
     ReviewerError,
 )
-from .studio.skill_packages import SkillPackageError, load_skill_package
+from .studio.skill_packages import (
+    LoadedSkillPackageV2,
+    SkillPackageError,
+    load_skill_package,
+)
 from .studio.construction_jobs import (
     ConstructionJobConflict,
     ConstructionJobError,
@@ -176,6 +193,15 @@ from .validation import validate_semantic_package
 
 
 PACKAGE_ID = "ontology.exchange_analytics.adt"
+DEFAULT_RUNTIME_PACKAGE_ID = os.environ.get(
+    "ONTOLOGY_DEFAULT_SOLUTION_ID", PACKAGE_ID
+).strip()
+DEFAULT_RUNTIME_ENVIRONMENT_ID = os.environ.get(
+    "ONTOLOGY_DEFAULT_ENVIRONMENT_ID", "adt-poc"
+).strip()
+DEFAULT_STUDIO_WORKSPACE_ID = os.environ.get(
+    "ONTOLOGY_DEFAULT_WORKSPACE_ID", "workspace.adt.reference"
+).strip()
 DEMO_PRINCIPAL_ROLE = "MarketAnalyst"
 DEMO_VERSION = os.environ.get("ONTOLOGY_DEMO_VERSION", "0.1.0-demo.2")
 
@@ -806,6 +832,8 @@ def _studio_intake_payload(
 def _studio_construction(
     workspace_id: str,
     selected_source_version_ids: tuple[str, ...] = (),
+    *,
+    prepare_build_runtime: bool = True,
 ) -> StudioConstructionService:
     adapter = _studio_adapter(workspace_id)
     workspace = adapter.workspace
@@ -815,10 +843,28 @@ def _studio_construction(
         workspace,
         include_parsed_attachments=True,
     )
+    source_library = _studio_source_library()
+    current_source_versions = source_library.list_current(workspace_id)
+    agentic_enabled = os.environ.get(
+        "ONTOLOGY_AGENTIC_BUILDER_ENABLED", "false"
+    ).strip().lower() in {"1", "true", "yes"}
     selection = tuple(sorted(selected_source_version_ids))
     if len(selection) != len(set(selection)):
         raise ConstructionError("Selected source versions must be unique")
+    if prepare_build_runtime and agentic_enabled and not selection:
+        selection = tuple(
+            sorted(item.source_version_id for item in current_source_versions)
+        )
     if selection:
+        current_by_id = {
+            item.source_version_id: item for item in current_source_versions
+        }
+        missing_exact = sorted(set(selection) - set(current_by_id))
+        if missing_exact:
+            raise ConstructionError(
+                "Selected source version is not a current exact workspace source: "
+                + ", ".join(missing_exact)
+            )
         assets = tuple(
             item
             for item in intake.get("assets", ())
@@ -845,7 +891,7 @@ def _studio_construction(
                 os.environ.get("ONTOLOGY_SEMANTICA_TIMEOUT_SECONDS", "20")
             ),
         )
-        if worker_url
+        if prepare_build_runtime and worker_url
         else None
     )
     model_gateway_url = os.environ.get("ONTOLOGY_MODEL_GATEWAY_URL", "").strip()
@@ -873,7 +919,12 @@ def _studio_construction(
                     ),
                 ),
             )
-            if builder_enabled and model_gateway_url
+            if (
+                prepare_build_runtime
+                and builder_enabled
+                and not agentic_enabled
+                and model_gateway_url
+            )
             else None
         )
     except (BuilderError, SkillPackageError, ValueError) as exc:
@@ -900,7 +951,12 @@ def _studio_construction(
                     ),
                 ),
             )
-            if reviewer_enabled and model_gateway_url
+            if (
+                prepare_build_runtime
+                and reviewer_enabled
+                and not agentic_enabled
+                and model_gateway_url
+            )
             else None
         )
     except (ReviewerError, SkillPackageError, ValueError) as exc:
@@ -912,16 +968,117 @@ def _studio_construction(
         raise ConstructionError(
             "Construction durable settings are unavailable"
         ) from exc
+    authoring = build_authoring_projection(
+        package=package,
+        intake=intake,
+        scenario_dir=workspace.scenario_dir,
+    )
+    agentic: AgenticConstructionRuntime | None = None
+    if prepare_build_runtime and agentic_enabled:
+        if not model_gateway_url:
+            raise ConstructionError(
+                "Agentic Ontology Builder requires the internal model gateway"
+            )
+        if not selection:
+            raise ConstructionError(
+                "Agentic Ontology Builder requires at least one exact source version"
+            )
+        output_language = (
+            package.authoring_policy.authoring_language
+            if package.authoring_policy is not None
+            else None
+        )
+        if output_language is None:
+            raise ConstructionError(
+                "Ontology output language must be selected before construction"
+            )
+        try:
+            skill = load_skill_package(
+                "ontology-build",
+                os.environ.get("ONTOLOGY_BUILD_SKILL_VERSION", "2.0.10"),
+                root=(
+                    Path(os.environ["ONTOLOGY_SKILL_ROOT"])
+                    if os.environ.get("ONTOLOGY_SKILL_ROOT")
+                    else None
+                ),
+            )
+            if not isinstance(skill, LoadedSkillPackageV2):
+                raise ConstructionError(
+                    "Agentic Ontology Builder requires Build Skill contract v2"
+                )
+            review_skill = None
+            if reviewer_enabled:
+                review_skill = load_skill_package(
+                    "ontology-review",
+                    os.environ.get("ONTOLOGY_REVIEW_SKILL_VERSION", "2.0.3"),
+                    root=(
+                        Path(os.environ["ONTOLOGY_SKILL_ROOT"])
+                        if os.environ.get("ONTOLOGY_SKILL_ROOT")
+                        else None
+                    ),
+                )
+                if not isinstance(review_skill, LoadedSkillPackageV2):
+                    raise ConstructionError(
+                        "Agentic Ontology Reviewer requires Review Skill contract v2"
+                    )
+            exact_versions = tuple(
+                sorted(
+                    (
+                        item
+                        for item in current_source_versions
+                        if item.source_version_id in set(selection)
+                    ),
+                    key=lambda item: item.source_version_id,
+                )
+            )
+            plan = freeze_agentic_build_plan(
+                solution_id=package.package_id,
+                workspace_id=workspace_id,
+                versions=exact_versions,
+                authoring=authoring,
+                output_language=output_language,
+                skill=skill,
+                provider=os.environ.get(
+                    "ONTOLOGY_BUILDER_PROVIDER", "qwen"
+                ).strip(),
+                requested_model=os.environ.get(
+                    "ONTOLOGY_BUILDER_MODEL", "qwen3.8-max"
+                ).strip(),
+            )
+            checkpoint_store = (
+                PostgresAgentCheckpointStore.from_settings(settings)
+                if settings.mode == "postgresql-s3"
+                else _LOCAL_AGENT_CHECKPOINTS
+            )
+            agentic = AgenticConstructionRuntime(
+                plan=plan,
+                checkpoint_store=checkpoint_store,
+                source_store=source_library.store,
+                gateway=HttpModelToolGateway(
+                    model_gateway_url,
+                    timeout_seconds=float(
+                        os.environ.get(
+                            "ONTOLOGY_AGENTIC_MODEL_TIMEOUT_SECONDS", "120"
+                        )
+                    ),
+                ),
+                reviewer_skill=review_skill,
+            )
+        except (
+            AgenticConstructionPlanError,
+            AgenticStoreError,
+            SkillPackageError,
+            ValueError,
+        ) as exc:
+            raise ConstructionError(
+                "Agentic Ontology Builder configuration is unavailable"
+            ) from exc
     return StudioConstructionService(
         store=run_store,
         workspace=workspace,
         package=package,
         intake=intake,
-        authoring=build_authoring_projection(
-            package=package,
-            intake=intake,
-            scenario_dir=workspace.scenario_dir,
-        ),
+        authoring=authoring,
         builder=builder,
         reviewer=reviewer,
         engine=engine,
@@ -930,6 +1087,7 @@ def _studio_construction(
         ),
         selected_source_version_ids=selection,
         workspace_id=workspace_id,
+        agentic=agentic,
     )
 
 
@@ -946,6 +1104,7 @@ def _studio_source_library() -> StudioSourceLibraryService:
 
 _LOCAL_CONSTRUCTION_JOBS = InMemoryConstructionJobStore()
 _LOCAL_REVIEW_DRAFTS = InMemoryReviewDraftStore()
+_LOCAL_AGENT_CHECKPOINTS = InMemoryAgentCheckpointStore()
 
 
 def _construction_run_store(
@@ -978,6 +1137,16 @@ def _construction_job_store() -> Any:
         raise ConstructionJobError(
             "Construction job authority is unavailable"
         ) from exc
+
+
+def _agent_checkpoint_store() -> Any:
+    try:
+        settings = ProductInfrastructureSettings.from_env()
+        if settings.mode == "postgresql-s3":
+            return PostgresAgentCheckpointStore.from_settings(settings)
+        return _LOCAL_AGENT_CHECKPOINTS
+    except (ProductInfrastructureError, AgenticStoreError) as exc:
+        raise AgenticStoreError("Agent checkpoint activity is unavailable") from exc
 
 
 def _construction_revision_with_language(
@@ -1111,11 +1280,10 @@ def health() -> dict[str, str]:
 @app.get("/api/readyz")
 def readiness() -> dict[str, str]:
     try:
-        snapshot = load_verified_snapshot(
-            PACKAGE_ID,
-            scenario_dir=DEFAULT_SCENARIO_DIR,
-            published_root=DEFAULT_PUBLISHED_DIR,
-        )
+        config = _runtime_configuration(DEFAULT_RUNTIME_PACKAGE_ID)
+        snapshot = _agent_runtime(config).open_active(
+            DEFAULT_RUNTIME_ENVIRONMENT_ID, DEFAULT_RUNTIME_PACKAGE_ID
+        ).snapshot
         output_parent = DEFAULT_EXECUTION_DIR.parent
         if not output_parent.exists() or not os.access(output_parent, os.W_OK):
             raise PublicationError("Execution output is not writable")
@@ -1224,6 +1392,22 @@ def analyze_solution(
         role in policy.allowed_roles and role not in policy.denied_roles
         for policy in snapshot.package.policies
     )
+    if solution_id == CASH_PACKAGE_ID:
+        response = analyze_cash_deepagent_snapshot(
+            snapshot,
+            question=request.question,
+            role=role,
+            execution_dir=DEFAULT_EXECUTION_DIR,
+        )
+        payload = _runtime_payload(response.model_dump(mode="json"))
+        facts = payload.get("facts")
+        execution = None
+        if isinstance(facts, dict):
+            execution = facts.pop("_agent_execution", None)
+        payload["llm"] = execution or deterministic_only(
+            "DEEPAGENT_EXECUTION_METADATA_UNAVAILABLE"
+        ).model_dump(mode="json")
+        return payload
     if config.get("generic") is True:
         bound_goal = generic_bound_goal(
             snapshot.package,
@@ -1674,7 +1858,10 @@ def snapshots() -> dict[str, Any]:
 @app.get("/api/runtime/active")
 def active_runtime() -> dict[str, Any]:
     try:
-        snapshot = _agent_runtime().open_active("adt-poc", PACKAGE_ID).snapshot
+        config = _runtime_configuration(DEFAULT_RUNTIME_PACKAGE_ID)
+        snapshot = _agent_runtime(config).open_active(
+            DEFAULT_RUNTIME_ENVIRONMENT_ID, DEFAULT_RUNTIME_PACKAGE_ID
+        ).snapshot
     except PublicationError as exc:
         raise HTTPException(status_code=404, detail="No active runtime snapshot") from exc
     return {
@@ -1692,7 +1879,10 @@ def active_runtime() -> dict[str, Any]:
 @app.get("/api/product/context", response_model=ProductContextV1)
 def product_context() -> ProductContextV1:
     try:
-        snapshot = _agent_runtime().open_active("adt-poc", PACKAGE_ID).snapshot
+        config = _runtime_configuration(DEFAULT_RUNTIME_PACKAGE_ID)
+        snapshot = _agent_runtime(config).open_active(
+            DEFAULT_RUNTIME_ENVIRONMENT_ID, DEFAULT_RUNTIME_PACKAGE_ID
+        ).snapshot
         settings = ProductInfrastructureSettings.from_env()
         if settings.mode == "legacy-compatibility":
             return legacy_product_context(snapshot)
@@ -1721,7 +1911,7 @@ def control_health() -> dict[str, str]:
 @control_app.get("/control/readyz")
 def control_readiness() -> dict[str, str]:
     try:
-        registration = _registration_for_workspace("workspace.adt.reference")
+        registration = _registration_for_workspace(DEFAULT_STUDIO_WORKSPACE_ID)
         workspace = _draft_workspaces(registration.subject.workspace_id).get(
             registration.subject.workspace_id
         )
@@ -2213,7 +2403,13 @@ def preview_workspace_source(
 @control_app.get("/control/workspaces/{workspace_id}/construction-runs")
 def list_workspace_construction_runs(workspace_id: str) -> dict[str, Any]:
     try:
-        service = _studio_construction(workspace_id)
+        # Listing immutable history is a read operation.  It must not initialize
+        # a Builder runtime or require current authoring configuration: older
+        # runs remain readable after runtime contracts evolve.
+        service = _studio_construction(
+            workspace_id,
+            prepare_build_runtime=False,
+        )
         records = service.list()
     except (
         ConstructionError,
@@ -2280,11 +2476,20 @@ def _build_task_summary(
         pass
     if run is not None:
         decision = durable_runs.get_decision(run.run_id)
+    activity = None
+    if job.attempt_id is not None:
+        try:
+            activity = _agent_checkpoint_store().activity(job.attempt_id)
+        except AgenticStoreError:
+            # A queued legacy task or a pre-agentic task legitimately has no
+            # Agent journal.  The durable job/run projection remains valid.
+            activity = None
     return project_build_task(
         job=job,
         solution_name=solution_name,
         run=run,
         decision=decision,
+        activity=activity,
     )
 
 
@@ -2422,7 +2627,14 @@ def retry_workspace_construction_job(
             raise ConstructionJobConflict(
                 "Retry input is stale; enqueue a new run from the current Draft"
             )
-        job = _construction_job_store().retry(job_id)
+        job = _construction_job_store().retry(
+            job_id,
+            engine_contract=(
+                continuation_engine_contract(previous.engine_contract)
+                if previous.engine_contract is not None
+                else None
+            ),
+        )
     except (
         ConstructionJobError,
         ConstructionJobConflict,
@@ -2476,7 +2688,10 @@ def review_workspace_construction_run(
         authoritative_request = request.model_copy(
             update={"reviewer": principal or request.reviewer}
         )
-        service = _studio_construction(workspace_id)
+        service = _studio_construction(
+            workspace_id,
+            prepare_build_runtime=False,
+        )
         result = service.review(run_id, authoritative_request)
         if result.decision.workspace_id != workspace_id:
             raise ConstructionConflict("Construction decision workspace mismatch")
@@ -2503,7 +2718,10 @@ def get_workspace_construction_decision(
     decision_id: str,
 ) -> dict[str, Any]:
     try:
-        records = _studio_construction(workspace_id).list()
+        records = _studio_construction(
+            workspace_id,
+            prepare_build_runtime=False,
+        ).list()
         decision = next(
             (
                 current_decision
@@ -2535,7 +2753,10 @@ def get_workspace_construction_review_draft(
     workspace_id: str, run_id: str
 ) -> dict[str, Any]:
     try:
-        run = _studio_construction(workspace_id).get(run_id)
+        run = _studio_construction(
+            workspace_id,
+            prepare_build_runtime=False,
+        ).get(run_id)
         if run.workspace_id != workspace_id:
             raise ReviewDraftError("Review draft workspace mismatch")
         draft = _review_draft_store().get(run_id)
@@ -2563,7 +2784,10 @@ def save_workspace_construction_review_draft(
     request: ReviewDraftSaveV1,
 ) -> dict[str, Any]:
     try:
-        run = _studio_construction(workspace_id).get(run_id)
+        run = _studio_construction(
+            workspace_id,
+            prepare_build_runtime=False,
+        ).get(run_id)
         if run.workspace_id != workspace_id:
             raise ReviewDraftError("Review draft workspace mismatch")
         draft = _review_draft_store().save(run, request)
@@ -2824,7 +3048,10 @@ def agent_control_health() -> dict[str, str]:
 @agent_control_app.get("/agent-control/readyz")
 def agent_control_readiness() -> dict[str, str]:
     try:
-        snapshot = _agent_runtime().open_active("adt-poc", PACKAGE_ID).snapshot
+        config = _runtime_configuration(DEFAULT_RUNTIME_PACKAGE_ID)
+        snapshot = _agent_runtime(config).open_active(
+            DEFAULT_RUNTIME_ENVIRONMENT_ID, DEFAULT_RUNTIME_PACKAGE_ID
+        ).snapshot
     except PublicationError as exc:
         raise HTTPException(status_code=503, detail="Agent runtime is not ready") from exc
     return {

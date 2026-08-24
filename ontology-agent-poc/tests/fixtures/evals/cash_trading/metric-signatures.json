@@ -1,0 +1,14 @@
+{
+  "contract": "semantic-acceptance-profile/v1",
+  "profile_id": "cash-trading-deloitte-hk-eight-metrics-v1",
+  "metrics": [
+    {"metric_ids": ["metric.order_rejection_rate"], "metric_type": "derived", "value_type": "percentage", "unit": "PERCENT", "formula_root": "multiply", "required_operations": ["multiply", "divide"], "required_literals": [100]},
+    {"metric_ids": ["metric.order_fill_rate"], "metric_type": "derived", "value_type": "percentage", "unit": "PERCENT", "formula_root": "multiply", "required_operations": ["multiply", "divide"], "required_literals": [100]},
+    {"metric_ids": ["metric.trade_capture_latency_ms", "metric.trade_capture_latency"], "value_type": "integer", "unit": "MILLISECOND"},
+    {"metric_ids": ["metric.active_client_trading_volume"], "metric_type": "derived", "value_type": "decimal", "unit": "HKD_MN", "formula_root": "divide", "required_operations": ["divide", "sum"], "required_literals": [1000000], "required_referenced_units": ["HKD"], "forbidden_referenced_units": ["USD"]},
+    {"metric_ids": ["metric.client_order_completion_rate"], "metric_type": "derived", "value_type": "percentage", "unit": "PERCENT", "formula_root": "multiply", "required_operations": ["multiply", "divide"], "required_literals": [100]},
+    {"metric_ids": ["metric.cancel_to_trade_ratio"], "metric_type": "derived", "value_type": "percentage", "unit": "PERCENT", "formula_root": "multiply", "required_operations": ["multiply", "divide"], "required_literals": [100]},
+    {"metric_ids": ["metric.order_to_trade_ratio"], "metric_type": "derived", "value_type": "percentage", "unit": "PERCENT", "formula_root": "multiply", "required_operations": ["divide", "multiply"], "required_literals": [2, 100]},
+    {"metric_ids": ["metric.potential_self_trade_rate"], "metric_type": "derived", "value_type": "percentage", "unit": "PERCENT", "formula_root": "multiply", "required_operations": ["multiply", "divide"], "required_literals": [100]}
+  ]
+}

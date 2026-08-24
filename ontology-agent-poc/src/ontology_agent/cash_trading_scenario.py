@@ -86,6 +86,7 @@ _EXPECTED_METRICS = {
     "metric.eligible_trade_count",
     "metric.active_client_trade_quantity",
     "metric.active_client_trade_notional_hkd",
+    "metric.active_client_trade_notional_usd_pre_haircut",
     "metric.active_client_trading_volume",
     "metric.eligible_client_order_count",
     "metric.fully_filled_client_order_count",
@@ -100,6 +101,7 @@ _EXPECTED_METRICS = {
     "metric.trade_capture_latency_ms",
 }
 _EXPECTED_OPERATIONS = {
+    "cash.query_metric",
     "cash.self_trade_summary",
     "cash.self_trade_daily_trend",
     "cash.self_trade_timeline",
@@ -107,6 +109,7 @@ _EXPECTED_OPERATIONS = {
     "cash.evidence_audit",
 }
 _IMPLEMENTATION_FILES = (
+    "cash_trading_deepagent.py",
     "cash_trading_runtime.py",
     "cash_trading_scenario.py",
     "contracts.py",
@@ -212,16 +215,36 @@ def _capability_check(package: OntologyPackage) -> ValidationCheck:
         (item for item in package.metrics if item.id == "metric.potential_self_trade_rate"),
         None,
     )
+    rate_division = (
+        rate.formula.args[0]
+        if rate is not None
+        and rate.formula.op == "multiply"
+        and len(rate.formula.args) == 2
+        else None
+    )
+    rate_scale = (
+        rate.formula.args[1]
+        if rate is not None
+        and rate.formula.op == "multiply"
+        and len(rate.formula.args) == 2
+        else None
+    )
     if (
         rate is None
-        or rate.formula.op != "divide"
-        or tuple(child.ref for child in rate.formula.args)
+        or rate_division is None
+        or rate_division.op != "divide"
+        or tuple(child.ref for child in rate_division.args)
         != (
             "metric.potential_self_trade_count",
             "metric.self_trade_eligible_trade_count",
         )
+        or rate_scale is None
+        or rate_scale.op != "literal"
+        or rate_scale.value != Decimal("100")
     ):
-        defects.append("self-trade rate numerator/denominator contract differs")
+        defects.append(
+            "self-trade percentage numerator/denominator/scale contract differs"
+        )
     return _check(
         "CASH_CAPABILITY_CONTRACT",
         "semantic",

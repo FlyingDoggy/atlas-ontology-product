@@ -1,5 +1,5 @@
 {
-  "manifest_version": "1.0",
+  "manifest_version": "1.1",
   "case_id": "cash-trading",
   "case_name": "现金市场订单与成交活动监控",
   "prepared_on": "2026-08-23",
@@ -61,6 +61,18 @@
       ],
       "sha256": "32457c30e9853c48ccea851322e7892e74e7a074ba2d45af80650741d6bcfdd5",
       "notes": "产品团队根据已登记指标与字段编写的演示补充，不代表 Deloitte HK/HKEX 现有 SQL。"
+    },
+    {
+      "path": "03_Review_Reference/HKEX_Cash_Trading_Review_Pack_v0.2_EN_v20250823.xlsx",
+      "display_name": "Cash Trading Ontology 内部复核包",
+      "provenance": "Atlas internal review pack derived from Deloitte HK provided materials",
+      "content_mutated": false,
+      "logical_roles": [
+        "ontology_review_reference",
+        "assumption_register"
+      ],
+      "sha256": "c696db6e872e514135887a22f167fc49e0d687abb5af7eed7325b8d6a95980d6",
+      "notes": "用于核对八项指标、八个维度、八个核心实体、八条关系和 39 项字段映射。Review Conclusion 与 Comments 尚为空，因此它不是 Build 入口的客户原始输入，也不能表述为 Deloitte HK 或 HKEX 已确认。"
     }
   ]
 }

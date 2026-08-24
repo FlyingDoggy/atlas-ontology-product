@@ -23,7 +23,7 @@ def evaluate_scalar_formula(
         if node.value is None:
             raise FormulaEvaluationError("Literal has no value")
         return node.value
-    if node.op in {"field_ref", "sum", "count_distinct"}:
+    if node.op in {"field_ref", "sum", "count_distinct", "duration_ms"}:
         raise FormulaEvaluationError(f"Aggregate operation {node.op} cannot run in the scalar evaluator")
     left = evaluate_scalar_formula(
         node.args[0], metric_values, zero_denominator_policy=zero_denominator_policy

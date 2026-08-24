@@ -8,6 +8,7 @@ import type {
   StudioWorkbench,
 } from "./api";
 import { studioPageHref } from "./StudioNavigation";
+import { useUiLocale } from "./i18n";
 
 type OntologyPackage = StudioWorkbench["package"];
 type Collection = PackageDraftOperation["collection"];
@@ -337,7 +338,7 @@ function TypeFields({
   return <section className="asset-editor-section">
     <header><span>02</span><div><h3>{collectionConfig[collection].singular}语义</h3><p>{collectionConfig[collection].description}。</p></div></header>
     <div className="asset-form-grid">
-      {collection === "entities" ? <><label>主键属性<input required value={stringValue(payload.primary_key)} onChange={(event) => update("primary_key", event.target.value)} list="asset-property-options" /></label><label>业务粒度<input required value={stringValue(payload.grain)} onChange={(event) => update("grain", event.target.value)} placeholder="例如：每笔成交事件" /></label><label className="is-wide">生命周期<input required value={stringValue(payload.lifecycle)} onChange={(event) => update("lifecycle", event.target.value)} placeholder="说明创建、修正、终止与保留方式" /></label></> : null}
+      {collection === "entities" ? <><label>主键属性（每行一个）<textarea required rows={3} value={lines(Array.isArray(payload.primary_key) ? payload.primary_key : [payload.primary_key])} onChange={(event) => update("primary_key", parseLines(event.target.value))} /></label><label>业务粒度<input required value={stringValue(payload.grain)} onChange={(event) => update("grain", event.target.value)} placeholder="例如：每笔成交事件" /></label><label className="is-wide">生命周期<input required value={stringValue(payload.lifecycle)} onChange={(event) => update("lifecycle", event.target.value)} placeholder="说明创建、修正、终止与保留方式" /></label></> : null}
       {collection === "properties" ? <><label>所属对象<select required value={stringValue(payload.entity)} onChange={(event) => update("entity", event.target.value)}>{entityOptions}</select></label><label>数据类型<select value={stringValue(payload.data_type, "string")} onChange={(event) => update("data_type", event.target.value)}>{["string", "integer", "decimal", "boolean", "date", "datetime", "enum"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="asset-checkbox"><input type="checkbox" checked={Boolean(payload.required)} onChange={(event) => update("required", event.target.checked)} />必填字段</label><label>单位<input value={stringValue(payload.unit)} onChange={(event) => update("unit", event.target.value || null)} placeholder="无单位可留空" /></label><label>空值含义<input required value={stringValue(payload.null_meaning, "not_allowed")} onChange={(event) => update("null_meaning", event.target.value)} /></label><label className="is-wide">枚举值（每行一个）<textarea rows={5} value={lines(payload.enum_values)} onChange={(event) => update("enum_values", parseLines(event.target.value))} /></label></> : null}
       {collection === "relationships" ? <><label>起点对象<select required value={stringValue(payload.from_entity)} onChange={(event) => update("from_entity", event.target.value)}>{entityOptions}</select></label><label>终点对象<select required value={stringValue(payload.to_entity)} onChange={(event) => update("to_entity", event.target.value)}>{entityOptions}</select></label><label>谓词<input required value={stringValue(payload.predicate)} onChange={(event) => update("predicate", event.target.value)} placeholder="例如 belongsTo" /></label><label>基数<select value={stringValue(payload.cardinality, "N:1")} onChange={(event) => update("cardinality", event.target.value)}>{["1:1", "1:N", "N:1", "N:N"].map((item) => <option key={item}>{item}</option>)}</select></label></> : null}
       {collection === "actors" ? <label className="is-wide">业务角色（每行一个）<textarea required rows={6} value={lines(payload.roles)} onChange={(event) => update("roles", parseLines(event.target.value))} /></label> : null}
@@ -454,6 +455,7 @@ export function SemanticAssetCatalog({
   reviewer: string;
   readOnly?: boolean;
 }) {
+  const { name: displayName } = useUiLocale();
   const allowedCollections = modeCollections[mode];
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedCollection = searchParams.get("assetType") as SemanticCollection | null;
@@ -526,11 +528,11 @@ export function SemanticAssetCatalog({
     <nav className="asset-category-nav" aria-label={`${title}资产类型`}>{allowedCollections.map((collection) => <button type="button" className={selectedCollection === collection ? "is-active" : ""} key={collection} onClick={() => { const next = new URLSearchParams(searchParams); next.set("assetType", collection); next.delete("assetId"); setSearchParams(next); setSelectedId(""); }}><strong>{collectionConfig[collection].label}</strong><span>{recordsFor(ontologyPackage, collection).length}</span><small>{collectionConfig[collection].description}</small></button>)}</nav>
     <div className="asset-catalog-toolbar"><label><span>搜索当前类型</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="名称、ID 或定义" /></label><label><span>治理状态</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">全部状态</option><option value="proposed">Proposed</option><option value="needs_clarification">Needs clarification</option><option value="confirmed">Confirmed</option></select></label>{!readOnly ? <Link className="context-create-action" to={semanticAssetHref(solutionId, selectedCollection)}>＋ 新增{collectionConfig[selectedCollection].singular}</Link> : null}</div>
     <div className="asset-catalog-layout">
-      <div className="asset-list" role="list" aria-label={`${collectionConfig[selectedCollection].label}目录`}><header><span>资产</span><span>状态</span><span>责任 / 来源</span></header>{visible.map((item) => { const name = localizedName(item); return <button type="button" role="listitem" className={selected?.id === item.id ? "is-selected" : ""} key={stringValue(item.id)} onClick={() => { setSelectedId(stringValue(item.id)); setDeprecating(null); setDeprecationAcknowledged(false); }}><span><strong>{name.zh || name.en}</strong><small>{name.en}</small><code>{stringValue(item.id)}</code></span><em className={`is-${stringValue(item.status)}`}>{stringValue(item.status)}</em><span><strong>{stringValue(item.owner)}</strong><small>{stringList(item.sources).length} 项证据</small></span></button>; })}{visible.length === 0 ? <div className="asset-empty"><h3>没有匹配资产</h3><p>调整搜索或状态筛选；也可以创建第一项。</p></div> : null}</div>
+      <div className="asset-list" role="list" aria-label={`${collectionConfig[selectedCollection].label}目录`}><header><span>资产</span><span>状态</span><span>责任 / 来源</span></header>{visible.map((item) => { const name = localizedName(item); return <button type="button" role="listitem" className={selected?.id === item.id ? "is-selected" : ""} key={stringValue(item.id)} onClick={() => { setSelectedId(stringValue(item.id)); setDeprecating(null); setDeprecationAcknowledged(false); }}><span><strong>{displayName(name)}</strong><small>{stringValue(item.id)}</small><code>{stringValue(item.id)}</code></span><em className={`is-${stringValue(item.status)}`}>{stringValue(item.status)}</em><span><strong>{stringValue(item.owner)}</strong><small>{stringList(item.sources).length} 项证据</small></span></button>; })}{visible.length === 0 ? <div className="asset-empty"><h3>没有匹配资产</h3><p>调整搜索或状态筛选；也可以创建第一项。</p></div> : null}</div>
       <aside className="asset-inspector">
         {selected ? <>
           <span>{collectionConfig[selectedCollection].singular.toUpperCase()} DETAIL</span>
-          <h3>{localizedName(selected).zh || localizedName(selected).en}</h3>
+          <h3>{displayName(localizedName(selected))}</h3>
           <p>{stringValue(selected.definition)}</p>
           <code>{stringValue(selected.id)}</code>
           <dl>

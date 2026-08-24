@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 
@@ -8,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ontology_agent import api as api_module
-from ontology_agent import solution_llm as solution_llm_module
+from ontology_agent import cash_trading_deepagent as cash_deepagent_module
 from ontology_agent.api import app
 from ontology_agent.cash_trading_scenario import (
     CASH_CERTIFICATION_PROFILE,
@@ -19,7 +18,7 @@ from ontology_agent.cash_trading_scenario import (
 )
 from ontology_agent.cash_trading_runtime import CashTradingDuckDB
 from ontology_agent.contracts import RuntimePreparationError
-from ontology_agent.io import file_checksum, load_package, sha256_value
+from ontology_agent.io import load_package
 from ontology_agent.lifecycle import AgentRuntime, FileResourceResolver
 from ontology_agent.release import StudioReleases
 from ontology_agent.runtime import analyze_snapshot
@@ -80,38 +79,6 @@ def _activate_cash_common_api(
     return package
 
 
-def _install_cash_llm_activation(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    solution_id: str,
-) -> dict[str, object]:
-    llm_root = CASH_SCENARIO / "llm"
-    activation_dir = tmp_path / "activations"
-    activation_dir.mkdir()
-    activation: dict[str, object] = {
-        "contract": "solution-llm-activation/v1",
-        "activation_id": "activation.cash-trading.qwen.v1",
-        "solution_id": solution_id,
-        "mode": "ACTIVE",
-        "decision": "ALLOW",
-        "provider": "qwen",
-        "requested_model": "qwen3.8-max",
-        "profile_checksum": file_checksum(llm_root / "engineering-profile.json"),
-        "question_family_checksum": file_checksum(llm_root / "question-family.json"),
-        "prompt_manifest_checksum": file_checksum(llm_root / "prompts.json"),
-        "projection_policy_checksum": file_checksum(llm_root / "projection-policy.json"),
-        "issued_at": "2026-08-01T00:00:00Z",
-        "expires_at": "2027-08-01T00:00:00Z",
-        "approved_by": "PoC Product & Delivery DRI",
-    }
-    (activation_dir / f"{solution_id}.json").write_text(
-        json.dumps(activation), encoding="utf-8"
-    )
-    monkeypatch.setenv("ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR", str(activation_dir))
-    monkeypatch.setenv("ONTOLOGY_MODEL_GATEWAY_URL", "http://model-gateway:8794")
-    return activation
-
-
 def test_cash_package_matches_the_installed_adapter_contract() -> None:
     package = load_package(CASH_SCENARIO / "ontology" / "package.yaml")
     adapter = default_scenario_adapters().resolve("cash-trading-reference", "1.0.0")
@@ -136,16 +103,9 @@ def test_cash_reviewed_package_covers_all_eight_source_metrics_without_overclaim
         for metric_id in pattern.required_metrics
     }
 
-    assert package.version == "0.2.0"
+    assert package.version == "0.2.1"
     assert set(source_metrics) == {f"M-{index:02d}" for index in range(1, 9)}
-    assert {
-        source_metrics["M-03"].id,
-        source_metrics["M-08"].id,
-    } <= runtime_metrics
-    assert all(
-        source_metrics[source_id].id not in runtime_metrics
-        for source_id in ("M-01", "M-02", "M-04", "M-05", "M-06", "M-07")
-    )
+    assert {metric.id for metric in source_metrics.values()} <= runtime_metrics
 
 
 def test_cash_runtime_materializes_trade_and_order_lifecycle_views() -> None:
@@ -348,7 +308,12 @@ def test_cash_solution_is_reachable_through_the_common_agent_api(
 
     assert response.status_code == 200
     assert response.json()["status"] == "ANSWERED"
-    assert response.json()["facts"]["summary"]["candidate_trade_count"] == 20
+    assert response.json()["facts"]["queries"][0]["metric_code"] == "M-08"
+    assert response.json()["facts"]["queries"][0]["rows"][0] == {
+        "potential_self_trade_count": 20,
+        "self_trade_eligible_trade_count": 200,
+        "value": 10.0,
+    }
     assert response.json()["llm"] == {
         "contract": "solution-llm-execution/v1",
         "mode": "OFF",
@@ -358,15 +323,15 @@ def test_cash_solution_is_reachable_through_the_common_agent_api(
         "model_called": False,
         "provider_call_count": 0,
         "fallback_used": False,
-        "reason_code": "ACTIVATION_NOT_AVAILABLE",
+        "reason_code": "MODEL_NOT_CONFIGURED",
         "profile_checksum": None,
         "activation_id": None,
     }
     assert ontology.status_code == 200
     assert ontology.json()["package_id"] == package.package_id
     assert questions.status_code == 200
-    assert questions.json()["family_id"] == "cash-trading.synthetic.analysis.v1"
-    assert len(questions.json()["cases"]) == 4
+    assert questions.json()["family_id"] == "cash-trading.demo.analysis.v2"
+    assert len(questions.json()["cases"]) == 8
     assert runtime.status_code == 200
     assert runtime.json()["default_role"] == "MarketSurveillanceDemo"
     assert runtime.json()["roles"] == [
@@ -419,92 +384,27 @@ def test_cash_solution_is_reachable_through_the_common_agent_api(
     )
 
 
-def test_registered_cash_question_is_grounded_by_the_solution_model_profile(
+def test_cash_question_uses_deepagent_and_governed_metric_tool(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    package = load_package(CASH_SCENARIO / "ontology" / "package.yaml")
-    published_root = tmp_path / "published"
-    studio = StudioReleases(published_root / "releases")
-    agent = AgentRuntime(
-        release_root=published_root / "releases",
-        runtime_root=published_root / "runtime",
-        resources=FileResourceResolver(
-            {"cash-trading-scenario": CASH_SCENARIO}
-        ),
-    )
-    release = studio.publish(package)
-    prepared = agent.prepare(
-        release.ref,
-        binding=cash_trading_synthetic_binding(
-            resource_root_id="cash-trading-scenario"
-        ),
-        certification=cash_trading_golden_certification(
-            resource_root_id="cash-trading-scenario"
-        ),
-    )
-    agent.activate(prepared.ref, require_certification=CASH_CERTIFICATION_PROFILE)
-    monkeypatch.delenv("ONTOLOGY_PRODUCT_STATE_MODE", raising=False)
-    monkeypatch.setattr(api_module, "DEFAULT_PUBLISHED_DIR", published_root)
-    monkeypatch.setattr(
-        api_module, "DEFAULT_CASH_TRADING_SCENARIO_DIR", CASH_SCENARIO
-    )
-    monkeypatch.setattr(
-        api_module, "DEFAULT_EXECUTION_DIR", tmp_path / "executions"
-    )
-
-    llm_root = CASH_SCENARIO / "llm"
-    activation_dir = tmp_path / "activations"
-    activation_dir.mkdir()
-    activation = {
-        "contract": "solution-llm-activation/v1",
-        "activation_id": "activation.cash-trading.qwen.v1",
-        "solution_id": package.package_id,
-        "mode": "ACTIVE",
-        "decision": "ALLOW",
-        "provider": "qwen",
-        "requested_model": "qwen3.8-max",
-        "profile_checksum": file_checksum(llm_root / "engineering-profile.json"),
-        "question_family_checksum": file_checksum(llm_root / "question-family.json"),
-        "prompt_manifest_checksum": file_checksum(llm_root / "prompts.json"),
-        "projection_policy_checksum": file_checksum(llm_root / "projection-policy.json"),
-        "issued_at": "2026-08-01T00:00:00Z",
-        "expires_at": "2027-08-01T00:00:00Z",
-        "approved_by": "PoC Product & Delivery DRI",
-    }
-    activation_path = activation_dir / f"{package.package_id}.json"
-    activation_path.write_text(json.dumps(activation), encoding="utf-8")
-    monkeypatch.setenv("ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR", str(activation_dir))
-    monkeypatch.setenv("ONTOLOGY_MODEL_GATEWAY_URL", "http://model-gateway:8794")
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    sentinel_model = object()
     captured: dict[str, object] = {}
 
-    def fake_gateway(
-        url: str, body: dict[str, object], timeout: float
-    ) -> dict[str, object]:
-        captured.update(url=url, body=body, timeout=timeout)
-        candidate = {
-            "contract": "solution-bound-goal/v1",
-            "intent": "anomaly_triage",
-            "tool_ids": ["self_trade_summary"],
-            "language": "en",
-        }
-        return {
-            "contract": "solution-model-grounding-response/v1",
-            "solution_id": package.package_id,
-            "snapshot_checksum": body["snapshot_checksum"],
-            "requested_model": "qwen3.8-max",
-            "response_model": "qwen3.8-max",
-            "provider_request_id": "provider.cash.synthetic.1",
-            "candidate": candidate,
-            "candidate_checksum": sha256_value(candidate),
-        }
+    def fake_agent_run(*, engine, question: str, model):
+        captured.update(question=question, model=model)
+        result = engine.query_metric(
+            "M-08", "2026-08-03", "2026-08-07", ["business_date"], None
+        )
+        return f"Potential self-trade trend has {len(result['rows'])} days.", 2
 
-    monkeypatch.setattr(solution_llm_module, "_gateway_transport", fake_gateway)
-    question = "Analyze potential self-trades for 2026-08-03 to 2026-08-07."
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: sentinel_model)
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", fake_agent_run)
+    question = "Show me the daily potential self-trade trend for the sample week."
     response = agent_client.post(
         f"/api/solutions/{package.package_id}/analyze",
         json={
-            "question_case_id": "cash.self-trade.summary.en.v1",
             "question": question,
             "role": "MarketSurveillanceDemo",
         },
@@ -513,37 +413,31 @@ def test_registered_cash_question_is_grounded_by_the_solution_model_profile(
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ANSWERED"
-    assert payload["facts"]["summary"]["candidate_trade_count"] == 20
+    assert payload["facts"]["queries"][0]["metric_code"] == "M-08"
+    assert len(payload["facts"]["queries"][0]["rows"]) == 4
     assert payload["llm"]["mode"] == "ACTIVE"
     assert payload["llm"]["status"] == "GROUNDED"
     assert payload["llm"]["model_called"] is True
-    assert payload["llm"]["provider_call_count"] == 1
+    assert payload["llm"]["provider_call_count"] == 2
     assert payload["llm"]["fallback_used"] is False
-    assert payload["llm"]["activation_id"] == activation["activation_id"]
-    assert str(captured["url"]).endswith("/model/v1/solution-ground")
-    serialized = json.dumps(captured["body"]).lower()
-    assert question.lower() in serialized
-    for denied in ("trading_activity", "filesystem", "select ", "api_key"):
-        assert denied not in serialized
+    assert payload["llm"]["activation_id"] == "cash-trading.deepagent.v1"
+    assert captured == {"question": question, "model": sentinel_model}
 
 
-def test_cash_model_failure_restarts_the_original_trusted_request_without_partial_output(
+def test_cash_model_failure_falls_back_to_the_same_semantic_metric_engine(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     package = _activate_cash_common_api(monkeypatch, tmp_path)
-    _install_cash_llm_activation(monkeypatch, tmp_path, package.package_id)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
 
-    def failing_gateway(
-        url: str, body: dict[str, object], timeout: float
-    ) -> dict[str, object]:
+    def failing_agent_run(**_: object):
         raise OSError("synthetic provider outage")
 
-    monkeypatch.setattr(solution_llm_module, "_gateway_transport", failing_gateway)
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", failing_agent_run)
     response = agent_client.post(
         f"/api/solutions/{package.package_id}/analyze",
         json={
-            "question_case_id": "cash.self-trade.summary.en.v1",
             "question": "Analyze potential self-trades for 2026-08-03 to 2026-08-07.",
             "role": "MarketSurveillanceDemo",
         },
@@ -552,35 +446,34 @@ def test_cash_model_failure_restarts_the_original_trusted_request_without_partia
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ANSWERED"
-    assert payload["facts"]["summary"]["candidate_trade_count"] == 20
+    assert payload["facts"]["queries"][0]["rows"][0]["potential_self_trade_count"] == 20
     assert payload["llm"]["status"] == "FALLBACK"
     assert payload["llm"]["model_called"] is True
     assert payload["llm"]["provider_call_count"] == 1
     assert payload["llm"]["fallback_used"] is True
-    assert payload["llm"]["reason_code"] == "MODEL_GROUNDING_FAILED"
-    assert payload["plan"]["intent"] == "anomaly_triage"
+    assert payload["llm"]["reason_code"] == "DEEPAGENT_OSERROR"
+    assert payload["plan"]["intent"] == "cash_metric_analysis"
 
 
-def test_modified_cash_question_never_leaves_the_service_for_model_grounding(
+def test_open_cash_question_is_available_to_deepagent_without_registration_gate(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     package = _activate_cash_common_api(monkeypatch, tmp_path)
-    _install_cash_llm_activation(monkeypatch, tmp_path, package.package_id)
-    calls: list[object] = []
+    seen: list[str] = []
 
-    def forbidden_gateway(
-        url: str, body: dict[str, object], timeout: float
-    ) -> dict[str, object]:
-        calls.append(body)
-        raise AssertionError("unregistered text must not reach the model gateway")
+    def fake_agent_run(*, engine, question: str, model):
+        seen.append(question)
+        engine.query_metric("M-06")
+        return "The cancel-to-trade ratio is 150% for the sample period.", 1
 
-    monkeypatch.setattr(solution_llm_module, "_gateway_transport", forbidden_gateway)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", fake_agent_run)
+    question = "Please compare how many cancellation events we saw for each execution."
     response = agent_client.post(
         f"/api/solutions/{package.package_id}/analyze",
         json={
-            "question_case_id": "cash.self-trade.summary.en.v1",
-            "question": "Please analyze potential self-trades for 2026-08-03 to 2026-08-07.",
+            "question": question,
             "role": "MarketSurveillanceDemo",
         },
     )
@@ -588,8 +481,132 @@ def test_modified_cash_question_never_leaves_the_service_for_model_grounding(
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ANSWERED"
-    assert payload["llm"]["status"] == "DETERMINISTIC_ONLY"
-    assert payload["llm"]["reason_code"] == "QUESTION_NOT_REGISTERED"
-    assert payload["llm"]["model_called"] is False
-    assert payload["llm"]["provider_call_count"] == 0
-    assert calls == []
+    assert payload["facts"]["queries"][0]["metric_code"] == "M-06"
+    assert payload["llm"]["status"] == "GROUNDED"
+    assert payload["llm"]["model_called"] is True
+    assert payload["llm"]["provider_call_count"] == 1
+    assert seen == [question]
+
+
+def test_cash_agent_can_explain_its_package_derived_capabilities_without_a_model(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: None)
+
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "What questions can you answer?",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ANSWERED"
+    assert payload["plan"]["intent"] == "ontology_assistance"
+    assert payload["facts"]["semantic"]["operation"] == "describe_capabilities"
+    assert len(payload["facts"]["semantic"]["result"]["metrics"]) == 8
+    assert "M-01" in payload["answer"]
+    assert payload["evidence"][0]["claim_type"] == "definition"
+
+
+def test_cash_agent_accepts_a_grounded_ontology_definition_answer(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+
+    def fake_agent_run(*, engine, question: str, model):
+        catalog = engine.ontology_catalog("order rejection rate")
+        assert catalog["assets"]["metrics"]
+        return "Order rejection rate is defined by the active ontology package.", 1
+
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", fake_agent_run)
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "How is the order rejection rate defined?",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ANSWERED"
+    assert payload["facts"]["semantic"]["operation"] == "inspect_ontology"
+    assert payload["llm"]["status"] == "GROUNDED"
+    assert payload["evidence"][0]["source_ids"]
+
+
+def test_cash_agent_refuses_misconduct_conclusions_before_calling_the_model(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+
+    def should_not_run(**_: object):
+        raise AssertionError("the model must not receive a prohibited conclusion request")
+
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", should_not_run)
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "Prove that PART001 committed market manipulation.",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "REFUSED"
+    assert response.json()["boundary_code"] == "UNSUPPORTED_MISCONDUCT_CONCLUSION"
+
+
+def test_cash_agent_clarifies_dates_outside_the_bound_sample_period(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: None)
+
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "What was the order rejection rate on 2026-07-31?",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "CLARIFY"
+    assert response.json()["boundary_code"] == "DATE_OUT_OF_RANGE"
+    assert "2026-08-03" in response.json()["answer"]
+
+
+def test_cash_agent_uses_no_data_instead_of_returning_a_null_metric(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    package = _activate_cash_common_api(monkeypatch, tmp_path)
+
+    def fake_agent_run(*, engine, question: str, model):
+        engine.query_metric("M-01", filters={"venue": "NOT_A_VENUE"})
+        return "There is no matching data.", 1
+
+    monkeypatch.setattr(cash_deepagent_module, "_configured_model", lambda: object())
+    monkeypatch.setattr(cash_deepagent_module, "_agent_run", fake_agent_run)
+    response = agent_client.post(
+        f"/api/solutions/{package.package_id}/analyze",
+        json={
+            "question": "What was the rejection rate for the unavailable venue?",
+            "role": "MarketSurveillanceDemo",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "NO_DATA"
+    assert response.json()["boundary_code"] == "NO_MATCHING_DATA"

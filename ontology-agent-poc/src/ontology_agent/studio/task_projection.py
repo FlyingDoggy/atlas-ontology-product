@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import Field
 
 from ..models import AuthoringLanguage, StrictModel
+from .agentic_store import AgentAttemptActivityV1
 from .construction import ConstructionReviewDecisionV1, ConstructionRunV1
 from .construction_jobs import ConstructionJobV1
 
@@ -55,6 +56,7 @@ class StudioBuildTaskSummaryV1(StrictModel):
     candidate_count: int = Field(ge=0)
     compilable_count: int = Field(ge=0)
     blocker_count: int = Field(ge=0)
+    activity: AgentAttemptActivityV1 | None = None
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None = None
@@ -114,6 +116,7 @@ def project_build_task(
     solution_name: str,
     run: ConstructionRunV1 | None,
     decision: ConstructionReviewDecisionV1 | None,
+    activity: AgentAttemptActivityV1 | None = None,
 ) -> StudioBuildTaskSummaryV1:
     outcome, reasons = _outcome(job, run)
     candidate_count = len(run.candidates) if run is not None else 0
@@ -168,6 +171,7 @@ def project_build_task(
         candidate_count=candidate_count,
         compilable_count=compilable_count,
         blocker_count=blocker_count,
+        activity=activity,
         created_at=job.created_at,
         updated_at=job.updated_at,
         completed_at=job.completed_at,

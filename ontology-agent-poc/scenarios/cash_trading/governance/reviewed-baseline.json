@@ -1,8 +1,8 @@
 {
   "contract": "ontology-reviewed-baseline/v1",
-  "baseline_id": "cash-trading.internal-reviewed.0.2.0",
+  "baseline_id": "cash-trading.internal-reviewed.0.2.1",
   "package_id": "ontology.exchange_analytics.cash_trading",
-  "semantic_version": "0.2.0",
+  "semantic_version": "0.2.1",
   "review_status": "INTERNAL_REVIEWED_WITH_PROVISIONAL_ASSUMPTIONS",
   "reviewed_on": "2026-08-21",
   "reviewed_by": [
@@ -21,7 +21,7 @@
       "canonical_metric_id": "metric.order_rejection_rate",
       "formula_summary": "rejected submitted lifecycle count / submitted lifecycle count × 100",
       "ontology_status": "REVIEWED",
-      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "agent_runtime_status": "SUPPORTED",
       "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-011", "CT-ASM-012"]
     },
     {
@@ -30,7 +30,7 @@
       "canonical_metric_id": "metric.order_fill_rate",
       "formula_summary": "sum(final cumulative executed quantity) / sum(final order quantity) × 100",
       "ontology_status": "REVIEWED",
-      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "agent_runtime_status": "SUPPORTED",
       "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-011"]
     },
     {
@@ -48,7 +48,7 @@
       "canonical_metric_id": "metric.active_client_trading_volume",
       "formula_summary": "eligible effective-CLIENT trade notional in native HKD / 1,000,000; quantity retained as companion measure",
       "ontology_status": "REVIEWED",
-      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "agent_runtime_status": "SUPPORTED",
       "assumption_ids": ["CT-ASM-007", "CT-ASM-009", "CT-ASM-010"]
     },
     {
@@ -57,7 +57,7 @@
       "canonical_metric_id": "metric.client_order_completion_rate",
       "formula_summary": "fully filled eligible client lifecycle count / eligible client submitted lifecycle count × 100",
       "ontology_status": "REVIEWED",
-      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "agent_runtime_status": "SUPPORTED",
       "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-009", "CT-ASM-011", "CT-ASM-012"]
     },
     {
@@ -66,7 +66,7 @@
       "canonical_metric_id": "metric.cancel_to_trade_ratio",
       "formula_summary": "distinct observed lifecycles containing an eligible cancel / distinct eligible active trades × 100",
       "ontology_status": "REVIEWED",
-      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "agent_runtime_status": "SUPPORTED",
       "assumption_ids": ["CT-ASM-002", "CT-ASM-004", "CT-ASM-007", "CT-ASM-013"]
     },
     {
@@ -75,7 +75,7 @@
       "canonical_metric_id": "metric.order_to_trade_ratio",
       "formula_summary": "submitted lifecycle count / (2 × distinct eligible active trades) × 100",
       "ontology_status": "REVIEWED",
-      "agent_runtime_status": "NOT_YET_SUPPORTED",
+      "agent_runtime_status": "SUPPORTED",
       "assumption_ids": ["CT-ASM-003", "CT-ASM-004", "CT-ASM-007", "CT-ASM-011", "CT-ASM-014"]
     },
     {
@@ -95,7 +95,7 @@
     "formula_and_sql_traceability": "PASS_INTERNAL_CONTROL_ONLY",
     "human_review": "PASS_WITH_PROVISIONAL_ASSUMPTIONS",
     "external_hkex_validation": "NOT_PERFORMED",
-    "agent_runtime_coverage": "PARTIAL_2_OF_8"
+    "agent_runtime_coverage": "PASS_8_OF_8"
   },
   "external_confirmations": {
     "requested": 12,
@@ -104,7 +104,7 @@
   },
   "limitations": [
     "Reviewed means internally coherent and traceable for this constructed-synthetic case; it does not mean HKEX-approved.",
-    "Ontology review and Agent runtime support are independent states and must never be collapsed into one executable label.",
-    "The six ontology-reviewed metrics not listed as runtime-supported are unavailable to the current Agent until deterministic tools and evaluation cases are added."
+    "Ontology review and Agent runtime support are independent states and remain separately recorded.",
+    "All eight reviewed metrics have deterministic runtime tools; the supplied sample has no linkable execution lifecycle for M-02 and M-05, so zero-valued results must disclose that source-data limitation."
   ]
 }

@@ -132,6 +132,7 @@ function runList(): ConstructionRunList {
           detail: "候选没有可编译公式。",
           candidate_ids: [`candidate.${"e".repeat(32)}`],
           evidence_fragment_ids: [],
+          finding_authority: "DETERMINISTIC",
           blocks_release: true,
           recommendation: "补齐公式后重新构建。",
         }],
@@ -158,6 +159,23 @@ afterEach(cleanup);
 describe("Studio construction product views", () => {
   it("accepts the backend run contract without duplicating job-only source version ids", () => {
     expect(constructionRunListSchema.safeParse(runList()).success).toBe(true);
+  });
+
+  it("accepts scenario candidates and explicit Reviewer authority from agentic runs", () => {
+    const payload = runList();
+    payload.runs[0].run.candidates[0] = {
+      ...payload.runs[0].run.candidates[0],
+      candidate_type: "SCENARIO",
+      canonical_target: "scenario.cash_trading",
+      proposed_operation: {
+        action: "UPSERT",
+        collection: "scenario",
+        object_id: "scenario.cash_trading",
+        payload: { id: "scenario.cash_trading" },
+      },
+    };
+
+    expect(constructionRunListSchema.safeParse(payload).success).toBe(true);
   });
 
   it("never disguises a construction contract failure as an empty result", () => {

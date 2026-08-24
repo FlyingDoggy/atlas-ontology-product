@@ -1,0 +1,71 @@
+{
+  "contract": "ontology-demo-source-manifest/v1",
+  "solution": {
+    "display_name": {
+      "zh": "证券交收失败监控",
+      "en": "Securities Settlement Failure Monitoring"
+    },
+    "description": "使用构造型交收指令、参考数据、指标口径和 SQL 构建的通用 Ontology Studio E2E 演示场景。",
+    "owner": "Ontology Product Demo Team",
+    "authoring_language": "zh"
+  },
+  "files": [
+    {
+      "path": "01_业务需求与流程.md",
+      "media_type": "text/markdown",
+      "registrations": [
+        {
+          "kind": "requirement_transcription",
+          "title": "证券交收失败监控业务需求与端到端流程"
+        }
+      ]
+    },
+    {
+      "path": "02_指标逻辑.md",
+      "media_type": "text/markdown",
+      "registrations": [
+        {
+          "kind": "metric_transcription",
+          "title": "证券交收失败监控七项指标逻辑"
+        }
+      ]
+    },
+    {
+      "path": "03_数据模型_数据字典_样例数据.xlsx",
+      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "registrations": [
+        {
+          "kind": "data_model",
+          "title": "证券交收失败监控逻辑数据模型"
+        },
+        {
+          "kind": "data_dictionary",
+          "title": "证券交收失败监控字段字典与构造型样例数据"
+        }
+      ]
+    },
+    {
+      "path": "04_现有计算逻辑.sql",
+      "media_type": "text/plain",
+      "registrations": [
+        {
+          "kind": "sql",
+          "title": "证券交收失败监控现有参考 SQL"
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "minimum_metric_or_gap_count": 7,
+    "required_compilable_types": [
+      "OBJECT",
+      "PROPERTY",
+      "LINK",
+      "METRIC",
+      "DATA_SOURCE",
+      "MAPPING"
+    ],
+    "expected_physical_file_count": 4,
+    "expected_logical_source_count": 5
+  }
+}

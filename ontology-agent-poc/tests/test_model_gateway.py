@@ -44,6 +44,7 @@ from ontology_agent.studio.llm import (
 from ontology_agent.studio.workspace import DraftWorkspaceService
 from ontology_agent.models import OntologyPackage
 from ontology_agent.studio.builder import _phase_request
+from ontology_agent.studio.agentic_contracts import AgentTurnRequestV1
 from ontology_agent.studio.construction import (
     CandidateDraftDiffV1,
     ConstructionCandidateV1,
@@ -54,6 +55,207 @@ from ontology_agent.studio.skill_packages import load_skill_package
 
 
 client = TestClient(app)
+
+
+def _agent_turn_request() -> AgentTurnRequestV1:
+    raw: dict[str, object] = {
+        "contract": "studio-agent-turn-request/v1",
+        "engine_checksum": "1" * 64,
+        "provider": "qwen",
+        "requested_model": "qwen3.8-max",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Use structured tools.",
+                "tool_calls": [],
+                "tool_call_id": None,
+                "name": None,
+            },
+            {
+                "role": "user",
+                "content": "Inspect the frozen evidence.",
+                "tool_calls": [],
+                "tool_call_id": None,
+                "name": None,
+            },
+        ],
+        "tools": [
+            {
+                "name": "evidence.search",
+                "description": "Search exact evidence.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+                "mutating": False,
+            }
+        ],
+        "remaining_output_tokens": 1000,
+    }
+    raw["request_digest"] = sha256_value(raw)
+    return AgentTurnRequestV1.model_validate(raw)
+
+
+def test_agent_turn_gateway_preserves_structured_tool_calls_and_serial_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = _agent_turn_request()
+    captured: dict[str, object] = {}
+
+    def fake_transport(
+        url: str, headers: dict[str, str], body: dict[str, object], timeout: float
+    ) -> dict[str, object]:
+        captured.update(url=url, headers=headers, body=body, timeout=timeout)
+        return {
+            "id": "provider-request.agent-turn-1",
+            "model": "qwen3.8-max",
+            "choices": [
+                {
+                    "finish_reason": "tool_calls",
+                    "message": {
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call-search-1",
+                                "type": "function",
+                                "function": {
+                                    "name": "evidence.search",
+                                    "arguments": json.dumps({"query": "service request"}),
+                                },
+                            }
+                        ],
+                    },
+                }
+            ],
+            "usage": {"prompt_tokens": 120, "completion_tokens": 20},
+        }
+
+    monkeypatch.setattr(gateway_module, "_provider_transport", fake_transport)
+    monkeypatch.setenv("ONTOLOGY_AGENTIC_BUILDER_ENABLED", "true")
+    monkeypatch.setenv("ONTOLOGY_QWEN_API_KEY", "test-only-agent-secret")
+    monkeypatch.setenv("ONTOLOGY_QWEN_BASE_URL", "https://provider.example/v1")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_PROVIDER", "qwen")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_MODEL", "qwen3.8-max")
+
+    response = client.post(
+        "/model/v1/agent-turn", json=request.model_dump(mode="json")
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool_calls"] == [
+        {
+            "tool_call_id": "call-search-1",
+            "name": "evidence.search",
+            "arguments": {"query": "service request"},
+        }
+    ]
+    assert payload["request_digest"] == request.request_digest
+    provider_body = captured["body"]
+    assert provider_body["parallel_tool_calls"] is False
+    assert provider_body["tool_choice"] == "auto"
+    assert "test-only-agent-secret" not in json.dumps(provider_body)
+
+
+def test_agent_turn_gateway_retries_transport_without_replaying_a_tool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = _agent_turn_request()
+    calls = 0
+
+    def flaky_transport(*_args: object, **_kwargs: object) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            raise OSError("temporary provider transport failure")
+        return {
+            "id": "provider-request.agent-turn-after-retry",
+            "model": "qwen3.8-max",
+            "choices": [
+                {
+                    "finish_reason": "tool_calls",
+                    "message": {
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call-search-after-retry",
+                                "type": "function",
+                                "function": {
+                                    "name": "evidence.search",
+                                    "arguments": json.dumps({"query": "cash trade"}),
+                                },
+                            }
+                        ],
+                    },
+                }
+            ],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 4},
+        }
+
+    monkeypatch.setattr(gateway_module, "_provider_transport", flaky_transport)
+    monkeypatch.setattr(gateway_module.time, "sleep", lambda _seconds: None)
+    monkeypatch.setenv("ONTOLOGY_AGENTIC_BUILDER_ENABLED", "true")
+    monkeypatch.setenv("ONTOLOGY_QWEN_API_KEY", "test-only-agent-secret")
+    monkeypatch.setenv("ONTOLOGY_QWEN_BASE_URL", "https://provider.example/v1")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_PROVIDER", "qwen")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_MODEL", "qwen3.8-max")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_PROVIDER_RETRY_ATTEMPTS", "3")
+
+    response = client.post(
+        "/model/v1/agent-turn", json=request.model_dump(mode="json")
+    )
+
+    assert response.status_code == 200
+    assert calls == 3
+    assert response.json()["tool_calls"][0]["tool_call_id"] == (
+        "call-search-after-retry"
+    )
+
+
+def test_agent_turn_gateway_rejects_provider_tool_registry_escape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = _agent_turn_request()
+
+    def fake_transport(*_args: object, **_kwargs: object) -> dict[str, object]:
+        return {
+            "id": "provider-request.agent-turn-escape",
+            "model": "qwen3.8-max",
+            "choices": [
+                {
+                    "finish_reason": "tool_calls",
+                    "message": {
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call-escape",
+                                "type": "function",
+                                "function": {
+                                    "name": "draft.publish",
+                                    "arguments": "{}",
+                                },
+                            }
+                        ],
+                    },
+                }
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        }
+
+    monkeypatch.setattr(gateway_module, "_provider_transport", fake_transport)
+    monkeypatch.setenv("ONTOLOGY_AGENTIC_BUILDER_ENABLED", "true")
+    monkeypatch.setenv("ONTOLOGY_QWEN_API_KEY", "test-only-agent-secret")
+    monkeypatch.setenv("ONTOLOGY_QWEN_BASE_URL", "https://provider.example/v1")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_PROVIDER", "qwen")
+    monkeypatch.setenv("ONTOLOGY_BUILDER_MODEL", "qwen3.8-max")
+
+    response = client.post(
+        "/model/v1/agent-turn", json=request.model_dump(mode="json")
+    )
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Agentic Builder provider turn failed"
 
 
 def test_ontology_builder_gateway_executes_one_closed_versioned_skill_phase(
@@ -711,9 +913,9 @@ def test_solution_gateway_independently_verifies_cash_activation_and_projection(
                         "content": json.dumps(
                             {
                                 "contract": "solution-bound-goal/v1",
-                                "intent": "anomaly_triage",
-                                "tool_ids": ["self_trade_summary"],
-                                "language": "en",
+                                "intent": case["expected_intent"],
+                                "tool_ids": case["required_tools"],
+                                "language": case["language"],
                             }
                         )
                     }
@@ -738,9 +940,9 @@ def test_solution_gateway_independently_verifies_cash_activation_and_projection(
     assert payload["snapshot_checksum"] == "1" * 64
     assert payload["candidate"] == {
         "contract": "solution-bound-goal/v1",
-        "intent": "anomaly_triage",
-        "tool_ids": ["self_trade_summary"],
-        "language": "en",
+        "intent": case["expected_intent"],
+        "tool_ids": case["required_tools"],
+        "language": case["language"],
     }
     assert len(payload["candidate_checksum"]) == 64
     provider_body = captured["body"]

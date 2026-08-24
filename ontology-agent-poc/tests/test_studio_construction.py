@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from io import BytesIO
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -19,14 +19,19 @@ from ontology_agent.language_policy import (
 )
 from ontology_agent.release import StudioReleases
 from ontology_agent.studio.construction import (
+    ConstructionError,
     ConstructionDispositionV1,
+    ConstructionRunV1,
     ConstructionReviewDecisionV1,
     ConstructionReviewRequestV1,
     FileConstructionRunStore,
     PostgresConstructionRunStore,
     StudioConstructionService,
 )
-from ontology_agent.studio.construction_jobs import InMemoryConstructionJobStore
+from ontology_agent.studio.construction_jobs import (
+    ConstructionJobConflict,
+    InMemoryConstructionJobStore,
+)
 from ontology_agent.studio.construction_worker import ConstructionWorker
 from ontology_agent.studio.task_projection import project_build_task
 from ontology_agent.studio.cash_workspace import CashTradingDraftWorkspaceService
@@ -566,6 +571,68 @@ def test_durable_worker_executes_planned_run_and_records_terminal_job(
     assert service.get(queued.run_id).attempt_id == completed.attempt_id
 
 
+def test_construction_lease_heartbeat_extends_only_the_current_attempt(
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    service, workspace = _service(tmp_path, scenario_dir)
+    now = [datetime(2026, 8, 23, tzinfo=timezone.utc)]
+    jobs = InMemoryConstructionJobStore(clock=lambda: now[0])
+    jobs.enqueue(service.job_input(expected_revision=workspace.get().revision))
+    claimed = jobs.claim_next("worker.heartbeat", lease_seconds=30)
+    assert claimed is not None
+    original_expiry = claimed.lease_expires_at
+
+    now[0] += timedelta(seconds=20)
+    renewed = jobs.renew_lease(
+        claimed.job_id,
+        "worker.heartbeat",
+        claimed.lease_epoch,
+        lease_seconds=30,
+    )
+
+    assert renewed.lease_expires_at == now[0] + timedelta(seconds=30)
+    assert original_expiry is not None
+    assert renewed.lease_expires_at > original_expiry
+    with pytest.raises(ConstructionJobConflict):
+        # A stale epoch cannot keep another worker's attempt alive.
+        jobs.renew_lease(
+            claimed.job_id,
+            "worker.heartbeat",
+            claimed.lease_epoch - 1,
+            lease_seconds=30,
+        )
+
+
+def test_durable_worker_marks_unexpected_tool_defect_as_retryable_failure(
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    service, workspace = _service(tmp_path, scenario_dir)
+    jobs = InMemoryConstructionJobStore()
+    queued = jobs.enqueue(service.job_input(expected_revision=workspace.get().revision))
+
+    class ExplodingService:
+        def get(self, run_id: str) -> ConstructionRunV1:
+            raise ConstructionError("no committed run")
+
+        def start(self, **kwargs: object) -> ConstructionRunV1:
+            raise RuntimeError("unexpected parser defect")
+
+    worker = ConstructionWorker(
+        jobs=jobs,
+        service_factory=lambda workspace_id, selected_source_version_ids: ExplodingService(),
+        worker_id="worker.failure-test",
+    )
+
+    completed = worker.process_one()
+
+    assert completed is not None
+    assert completed.job_id == queued.job_id
+    assert completed.status == "FAILED"
+    assert completed.error_code == "INTERNAL_ERROR"
+
+
 def test_materially_different_cash_trading_case_uses_the_same_run_candidate_seam(
     tmp_path: Path,
 ) -> None:
@@ -1053,3 +1120,31 @@ def test_control_api_exposes_run_and_review_without_hidden_adt_payload(
     )
     assert retried.status_code == 200
     assert retried.json()["decision"] == decision
+
+
+def test_listing_construction_history_does_not_require_a_live_builder_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    scenario_dir: Path,
+) -> None:
+    """Immutable history remains readable when the current Builder is unavailable.
+
+    Reading an installed or historical Solution must not accidentally execute the
+    new-construction configuration path.  In particular, old packages can predate
+    the authoring-language contract and model gateways can be offline.
+    """
+
+    monkeypatch.delenv("ONTOLOGY_PRODUCT_STATE_MODE", raising=False)
+    monkeypatch.delenv("ONTOLOGY_MODEL_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("ONTOLOGY_SEMANTICA_WORKER_URL", raising=False)
+    monkeypatch.setenv("ONTOLOGY_AGENTIC_BUILDER_ENABLED", "true")
+    monkeypatch.setattr(api_module, "DEFAULT_SCENARIO_DIR", scenario_dir)
+    monkeypatch.setattr(api_module, "DEFAULT_STUDIO_DIR", tmp_path / "studio-history")
+    monkeypatch.setattr(api_module, "DEFAULT_PUBLISHED_DIR", tmp_path / "registry-history")
+
+    listed = control_client.get(
+        "/control/workspaces/workspace.adt.reference/construction-runs"
+    )
+
+    assert listed.status_code == 200
+    assert listed.json()["contract"] == "construction-run-list/v1"

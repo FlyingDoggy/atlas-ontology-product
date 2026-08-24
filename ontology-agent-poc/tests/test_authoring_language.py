@@ -7,7 +7,9 @@ import pytest
 from ontology_agent.language_policy import (
     create_authoring_policy,
     operation_language_violations,
+    package_language_violations,
 )
+from ontology_agent.models import Entity, LocalizedName, Status
 from ontology_agent.release import StudioReleases
 from ontology_agent.studio.generic_workspace import GenericDraftWorkspaceService
 from ontology_agent.studio.package_authoring import PackageDraftOperationsV1
@@ -121,6 +123,20 @@ def test_language_policy_preserves_exact_values_but_blocks_mixed_prose() -> None
     assert violations[0].startswith("definition:")
 
 
+def test_chinese_policy_treats_pipe_delimited_grain_as_technical_contract() -> None:
+    policy = create_authoring_policy("zh")
+
+    assert operation_language_violations(
+        {
+            "id": "entity.order_lifecycle",
+            "name": {"zh": "订单生命周期"},
+            "definition": "订单从提交到最终状态的完整生命周期。",
+            "grain": "venue_code|trading_date|order_id",
+        },
+        policy,
+    ) == ()
+
+
 def test_english_policy_rejects_chinese_primary_text() -> None:
     policy = create_authoring_policy("en")
 
@@ -133,4 +149,43 @@ def test_english_policy_rejects_chinese_primary_text() -> None:
         policy,
     ) == (
         "name.en: contains Chinese text while the Solution authoring language is English",
+    )
+
+
+def test_package_policy_rejects_mixed_language_nested_human_text(
+    tmp_path: Path,
+) -> None:
+    service = _workspace(tmp_path)
+    initial = service.get("workspace.custom.language_case")
+    service.configure_authoring_language(
+        "zh",
+        expected_revision=initial.revision,
+        workspace_id=initial.workspace_id,
+    )
+    package = service.candidate_package(initial.workspace_id)
+    entity = Entity(
+        id="entity.trade",
+        status=Status.PROPOSED,
+        name=LocalizedName(zh="成交活动"),
+        definition="一笔标准化的成交活动。",
+        owner="actor.domain_owner",
+        sources=("source.requirement",),
+        primary_key="property.trade.id",
+        grain="One row per completed trade execution event",
+        lifecycle="Append-only event with correction references",
+    )
+
+    scenario = package.scenario.model_copy(
+        update={
+            "name": LocalizedName(zh="语言案例"),
+            "definition": "依据受控证据构建本体。",
+        }
+    )
+    violations = package_language_violations(
+        package.model_copy(update={"scenario": scenario, "entities": (entity,)})
+    )
+
+    assert violations == (
+        "entity.trade.grain: contains English prose while the Solution authoring language is Chinese",
+        "entity.trade.lifecycle: contains English prose while the Solution authoring language is Chinese",
     )

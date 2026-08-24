@@ -56,7 +56,7 @@ def _condition_sql(
     condition: Condition,
     bindings: dict[str, PhysicalBinding],
     aliases: dict[str, str],
-) -> tuple[str, list[Any], str]:
+) -> tuple[str, list[Any], tuple[str, ...]]:
     binding = bindings.get(condition.property)
     if binding is None:
         raise QueryCompilationError(f"Missing physical binding for rule property {condition.property}")
@@ -65,19 +65,63 @@ def _condition_sql(
         raise QueryCompilationError(
             f"Rule property {condition.property} belongs to source {binding.source}, which is not joined"
         )
-    field = f"{alias}.{quote_identifier(binding.column)}"
+    field = _binding_sql_expression(binding, alias)
     if condition.op == "is_true":
-        return f"{field} = TRUE", [], binding.id
+        return f"{field} = TRUE", [], (binding.id,)
     if condition.op == "is_false":
-        return f"{field} = FALSE", [], binding.id
+        return f"{field} = FALSE", [], (binding.id,)
+    if condition.op == "is_null":
+        return f"{field} IS NULL", [], (binding.id,)
+    if condition.op == "is_not_null":
+        return f"{field} IS NOT NULL", [], (binding.id,)
+    if condition.op in {"eq_property", "neq_property"}:
+        other = bindings.get(str(condition.value))
+        if other is None:
+            raise QueryCompilationError(
+                f"Missing physical binding for rule property {condition.value}"
+            )
+        other_alias = aliases.get(other.source)
+        if other_alias is None:
+            raise QueryCompilationError(
+                f"Rule property {condition.value} belongs to source {other.source}, "
+                "which is not joined"
+            )
+        operator = "=" if condition.op == "eq_property" else "<>"
+        return (
+            f"{field} {operator} {_binding_sql_expression(other, other_alias)}",
+            [],
+            (binding.id, other.id),
+        )
     if condition.op in {"eq", "neq"}:
         operator = "=" if condition.op == "eq" else "<>"
-        return f"{field} {operator} ?", [condition.value], binding.id
+        return f"{field} {operator} ?", [condition.value], (binding.id,)
     values = condition.value
     if not isinstance(values, (list, tuple)) or not values:
         raise QueryCompilationError(f"{condition.op} requires a non-empty list value")
     operator = "IN" if condition.op == "in" else "NOT IN"
-    return f"{field} {operator} ({', '.join('?' for _ in values)})", list(values), binding.id
+    return f"{field} {operator} ({', '.join('?' for _ in values)})", list(values), (binding.id,)
+
+
+def _binding_sql_expression(binding: PhysicalBinding, alias: str) -> str:
+    """Compile the small, governed transformation vocabulary only."""
+
+    field = f"{alias}.{quote_identifier(binding.column)}"
+    if binding.transformation == "identity":
+        return field
+    normalized = f"UPPER(TRIM({field}))"
+    if binding.transformation == "yn_to_boolean":
+        return (
+            f"CASE WHEN {normalized} = 'Y' THEN TRUE "
+            f"WHEN {normalized} = 'N' THEN FALSE ELSE NULL END"
+        )
+    if binding.transformation == "yn_to_boolean_not":
+        return (
+            f"CASE WHEN {normalized} = 'Y' THEN FALSE "
+            f"WHEN {normalized} = 'N' THEN TRUE ELSE NULL END"
+        )
+    raise QueryCompilationError(
+        f"Unsupported governed binding transformation: {binding.transformation}"
+    )
 
 
 def _join_sql(
@@ -103,11 +147,12 @@ def _join_sql(
 
 
 def _rules(package: OntologyPackage, rule_ids: Iterable[str]) -> list[Rule]:
+    requested = tuple(rule_ids)
     by_id = {rule.id: rule for rule in package.rules}
-    missing = [rule_id for rule_id in rule_ids if rule_id not in by_id]
+    missing = [rule_id for rule_id in requested if rule_id not in by_id]
     if missing:
         raise QueryCompilationError(f"Unknown rules: {missing}")
-    return [by_id[rule_id] for rule_id in rule_ids]
+    return [by_id[rule_id] for rule_id in requested]
 
 
 def _query_context(
@@ -135,12 +180,28 @@ def _period_and_population_scope(
     bindings: dict[str, PhysicalBinding],
     aliases: dict[str, str],
 ) -> tuple[str, list[Any], list[str]]:
-    if not query.period_property or not query.date_property or not query.population_property:
-        raise QueryCompilationError("Period, date and population properties are required")
-    period_binding = bindings[query.period_property]
-    date_binding = bindings[query.date_property]
-    population_binding = bindings[query.population_property]
-    for binding in (period_binding, date_binding, population_binding):
+    if not query.date_property:
+        raise QueryCompilationError("A date property is required")
+    if bool(query.population_property) == bool(query.population_rule):
+        raise QueryCompilationError(
+            "Exactly one population property or population rule is required"
+        )
+    date_binding = bindings.get(query.date_property)
+    if date_binding is None:
+        raise QueryCompilationError(
+            f"Missing physical binding for date property {query.date_property}"
+        )
+    period_binding = (
+        bindings.get(query.period_property) if query.period_property else None
+    )
+    if query.period_property and period_binding is None:
+        raise QueryCompilationError(
+            f"Missing physical binding for period property {query.period_property}"
+        )
+    scope_bindings = [date_binding]
+    if period_binding is not None:
+        scope_bindings.append(period_binding)
+    for binding in scope_bindings:
         if binding.source not in aliases:
             raise QueryCompilationError(
                 f"Scope binding {binding.id} belongs to source {binding.source}, which is not joined"
@@ -155,22 +216,78 @@ def _period_and_population_scope(
         definition = definitions[period_id]
         lower = ">=" if definition.inclusive else ">"
         upper = "<=" if definition.inclusive else "<"
-        clauses.append(
-            "(" 
-            f"{aliases[period_binding.source]}.{quote_identifier(period_binding.column)} = ? AND "
-            f"{aliases[date_binding.source]}.{quote_identifier(date_binding.column)} {lower} ? AND "
-            f"{aliases[date_binding.source]}.{quote_identifier(date_binding.column)} {upper} ?"
-            ")"
+        period_clauses: list[str] = []
+        if period_binding is not None:
+            period_clauses.append(
+                f"{aliases[period_binding.source]}."
+                f"{quote_identifier(period_binding.column)} = ?"
+            )
+            params.append(period_id)
+        period_clauses.extend(
+            [
+                f"{aliases[date_binding.source]}.{quote_identifier(date_binding.column)} "
+                f"{lower} ?",
+                f"{aliases[date_binding.source]}.{quote_identifier(date_binding.column)} "
+                f"{upper} ?",
+            ]
         )
-        params.extend([period_id, definition.start, definition.end])
-    population_sql = (
-        f"{aliases[population_binding.source]}.{quote_identifier(population_binding.column)} = ?"
-    )
-    params.append(package.scenario.market_id)
+        params.extend([definition.start, definition.end])
+        clauses.append("(" + " AND ".join(period_clauses) + ")")
+
+    population_clauses: list[str] = []
+    population_mapping_ids: list[str] = []
+    if query.population_property:
+        population_binding = bindings.get(query.population_property)
+        if population_binding is None:
+            raise QueryCompilationError(
+                f"Missing physical binding for population property "
+                f"{query.population_property}"
+            )
+        if population_binding.source not in aliases:
+            raise QueryCompilationError(
+                f"Scope binding {population_binding.id} belongs to source "
+                f"{population_binding.source}, which is not joined"
+            )
+        population_property = next(
+            (
+                item
+                for item in package.properties
+                if item.id == query.population_property
+            ),
+            None,
+        )
+        if population_property is None:
+            raise QueryCompilationError(
+                f"Unknown population property {query.population_property}"
+            )
+        population_clauses.append(
+            f"{_binding_sql_expression(population_binding, aliases[population_binding.source])} = ?"
+        )
+        params.append(
+            True
+            if population_property.data_type == "boolean"
+            else package.scenario.market_id
+        )
+        population_mapping_ids.append(population_binding.id)
+    else:
+        population_rule = _rules(package, (str(query.population_rule),))[0]
+        for condition in population_rule.all:
+            sql, condition_params, binding_ids = _condition_sql(
+                condition, bindings, aliases
+            )
+            population_clauses.append(sql)
+            params.extend(condition_params)
+            population_mapping_ids.extend(binding_ids)
+
+    mapping_ids = [date_binding.id]
+    if period_binding is not None:
+        mapping_ids.insert(0, period_binding.id)
+    mapping_ids.extend(population_mapping_ids)
     return (
-        "(" + " OR ".join(clauses) + ") AND " + population_sql,
+        "(" + " OR ".join(clauses) + ") AND "
+        + " AND ".join(population_clauses),
         params,
-        [period_binding.id, date_binding.id, population_binding.id],
+        list(dict.fromkeys(mapping_ids)),
     )
 
 
@@ -225,25 +342,41 @@ def compile_turnover(
         f"SUM({aliases[measure.source]}.{quote_identifier(measure.column)}) AS turnover_hkd_mn"
     )
     entity = next(item for item in package.entities if item.id == metric.base_entity)
-    primary_key = bindings[entity.primary_key]
-    if primary_key.source not in aliases:
+    primary_keys = [bindings[key_id] for key_id in entity.primary_key_properties()]
+    if any(primary_key.source not in aliases for primary_key in primary_keys):
         raise QueryCompilationError("Base-entity primary key is not reachable for group-size enforcement")
+    key_expressions = [
+        f"{aliases[primary_key.source]}.{quote_identifier(primary_key.column)}"
+        for primary_key in primary_keys
+    ]
+    distinct_key = (
+        key_expressions[0]
+        if len(key_expressions) == 1
+        else "(" + ", ".join(key_expressions) + ")"
+    )
     select.append(
-        f"COUNT(DISTINCT {aliases[primary_key.source]}.{quote_identifier(primary_key.column)}) "
+        f"COUNT(DISTINCT {distinct_key}) "
         "AS contributing_entity_count"
     )
-    mapping_ids.append(primary_key.id)
+    mapping_ids.extend(primary_key.id for primary_key in primary_keys)
 
     source = next(item for item in package.data_sources if item.id == metric.query.base_source)
     table = next(item for item in source.tables if item.name == measure.table)
     join_clauses = [_join_sql(join, metric.query.base_source, aliases) for join in joins]
     where = [scope_sql]
-    for rule in _rules(package, metric.query.filters):
+    for rule in _rules(
+        package,
+        (
+            rule_id
+            for rule_id in metric.query.filters
+            if rule_id != metric.query.population_rule
+        ),
+    ):
         for condition in rule.all:
-            sql, condition_params, binding_id = _condition_sql(condition, bindings, aliases)
+            sql, condition_params, binding_ids = _condition_sql(condition, bindings, aliases)
             where.append(sql)
             params.extend(condition_params)
-            mapping_ids.append(binding_id)
+            mapping_ids.extend(binding_ids)
 
     sql = "\n".join(
         [
@@ -288,12 +421,19 @@ def compile_trading_days(package: OntologyPackage, periods: tuple[str, ...]) -> 
     )
     where = [scope_sql]
     mapping_ids = [measure.id, period.id, *scope_mapping_ids]
-    for rule in _rules(package, metric.query.filters):
+    for rule in _rules(
+        package,
+        (
+            rule_id
+            for rule_id in metric.query.filters
+            if rule_id != metric.query.population_rule
+        ),
+    ):
         for condition in rule.all:
-            sql, condition_params, binding_id = _condition_sql(condition, bindings, aliases)
+            sql, condition_params, binding_ids = _condition_sql(condition, bindings, aliases)
             where.append(sql)
             params.extend(condition_params)
-            mapping_ids.append(binding_id)
+            mapping_ids.extend(binding_ids)
 
     if metric.formula.op != "count_distinct":
         raise QueryCompilationError(

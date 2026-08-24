@@ -75,13 +75,6 @@ class StudioAuthoringProjectionV1(StrictModel):
     source_mode: Literal["EXACT_TRANSCRIPTION", "CANONICAL_FALLBACK"]
 
 
-_CANONICAL_ADT_METRICS = {
-    "M-01": "metric.eligible_turnover",
-    "M-02": "metric.trading_day_count",
-    "M-03": "metric.average_daily_turnover",
-}
-
-
 def _record(value: Any) -> dict[str, Any]:
     if hasattr(value, "model_dump"):
         return value.model_dump(mode="json")
@@ -172,10 +165,6 @@ def _canonical_metric_target(
     metric_key: str,
     name: str,
 ) -> str | None:
-    package_metric_ids = {item.id for item in package.metrics}
-    configured = _CANONICAL_ADT_METRICS.get(metric_key)
-    if configured in package_metric_ids:
-        return configured
     normalized = _normalized_metric_name(name)
     exact_matches = [
         item.id
@@ -188,6 +177,26 @@ def _canonical_metric_target(
     ]
     if len(exact_matches) == 1:
         return exact_matches[0]
+    # A source label may append a well-known acronym or clarification while still
+    # naming the same existing metric (for example, a full name followed by an
+    # acronym in parentheses).  Accept only one unambiguous containment match; this
+    # is generic label reconciliation, not a scenario-specific key map.
+    contained_matches = [
+        item.id
+        for item in package.metrics
+        if len(normalized) >= 4
+        and any(
+            candidate
+            and len(candidate) >= 4
+            and (candidate in normalized or normalized in candidate)
+            for candidate in (
+                _normalized_metric_name(item.name.en),
+                _normalized_metric_name(item.name.zh),
+            )
+        )
+    ]
+    if len(contained_matches) == 1:
+        return contained_matches[0]
     tagged = [
         item.id
         for item in package.metrics

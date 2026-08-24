@@ -37,7 +37,8 @@
   toggle.addEventListener("click", function () {
     const showing = password.type === "text";
     password.type = showing ? "password" : "text";
-    toggle.textContent = showing ? "显示" : "隐藏";
+    toggle.textContent = showing ? "Show" : "Hide";
+    toggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
     password.focus();
   });
 
@@ -45,12 +46,12 @@
     event.preventDefault();
     message.textContent = "";
     if (!username.value.trim() || !password.value) {
-      message.textContent = "请输入用户名和密码。";
+      message.textContent = "Enter your username and password.";
       (!username.value.trim() ? username : password).focus();
       return;
     }
     submit.disabled = true;
-    submit.querySelector("span").textContent = "正在登录…";
+    submit.querySelector("span").textContent = "Signing in…";
     try {
       const response = await fetch("/auth/login", {
         method: "POST",
@@ -59,16 +60,16 @@
         body: JSON.stringify({ username: username.value.trim(), password: password.value }),
       });
       if (!response.ok) {
-        message.textContent = response.status === 401 ? "用户名或密码不正确。" : "登录服务暂不可用。";
+        message.textContent = response.status === 401 ? "Incorrect username or password." : "The sign-in service is temporarily unavailable.";
         password.select();
         return;
       }
       window.location.replace(destination);
     } catch (_) {
-      message.textContent = "无法连接登录网关，请检查网络后重试。";
+      message.textContent = "Unable to reach the sign-in service. Check your connection and try again.";
     } finally {
       submit.disabled = false;
-      submit.querySelector("span").textContent = "继续";
+      submit.querySelector("span").textContent = "Sign in";
     }
   });
 

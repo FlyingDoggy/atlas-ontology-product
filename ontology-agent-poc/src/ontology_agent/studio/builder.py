@@ -41,9 +41,9 @@ PHASE_COLLECTIONS: dict[BuilderPhase, tuple[str, ...]] = {
 }
 
 PHASE_PROPOSAL_LIMITS: dict[BuilderPhase, int] = {
-    "SEMANTIC": 48,
-    "ANALYTICS": 48,
-    "DATA": 48,
+    "SEMANTIC": 128,
+    "ANALYTICS": 128,
+    "DATA": 128,
 }
 
 PHASE_EVIDENCE_KIND_PRIORITY: dict[BuilderPhase, tuple[str, ...]] = {
@@ -138,7 +138,7 @@ class BuilderPhaseOutputV1(StrictModel):
     contract: Literal["builder-phase-output/v1"] = "builder-phase-output/v1"
     phase: BuilderPhase
     request_digest: Sha256
-    proposals: tuple[BuilderProposalV1, ...] = Field(max_length=64)
+    proposals: tuple[BuilderProposalV1, ...] = Field(max_length=128)
     gaps: tuple[BuildGapV1, ...] = Field(max_length=64)
     done: bool
 
@@ -176,7 +176,7 @@ class BuilderPhaseRequestV1(StrictModel):
     prior_operations: tuple[PackageDraftOperation, ...] = Field(max_length=256)
     allowed_collections: tuple[str, ...]
     asset_contract_schemas: dict[str, dict[str, Any]]
-    max_proposals: int = Field(ge=1, le=64)
+    max_proposals: int = Field(ge=1, le=128)
     request_digest: Sha256
 
     @model_validator(mode="after")

@@ -297,13 +297,13 @@ export const solutionLlmExecutionSchema = z.object({
   provider: z.literal("qwen"),
   requested_model: z.literal("qwen3.8-max"),
   model_called: z.boolean(),
-  provider_call_count: z.number().int().min(0).max(1),
+  provider_call_count: z.number().int().min(0).max(12),
   fallback_used: z.boolean(),
   reason_code: z.string().nullable(),
   profile_checksum: sha256.nullable(),
   activation_id: z.string().nullable(),
 }).strict().superRefine((value, context) => {
-  if (value.model_called !== (value.provider_call_count === 1)) {
+  if (value.model_called !== (value.provider_call_count > 0)) {
     context.addIssue({ code: "custom", message: "Model call count is inconsistent" });
   }
   if (value.status === "FALLBACK" && !value.fallback_used) {
@@ -318,7 +318,7 @@ export const solutionLlmExecutionSchema = z.object({
 });
 
 export const solutionAnalysisSchema = z.object({
-  status: z.enum(["ANSWERED", "CLARIFY", "REFUSED", "FAILED"]),
+  status: z.enum(["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"]),
   answer: z.string(),
   execution_id: z.string().nullable(),
   snapshot_checksum: sha256.nullable(),
@@ -392,7 +392,7 @@ const editorDescriptorSchema = z
   .strict();
 
 const packageCollectionSchema = z.enum([
-  "sources", "decisions", "actors", "processes", "entities", "properties", "relationships",
+  "scenario", "sources", "decisions", "actors", "processes", "entities", "properties", "relationships",
   "dimensions", "rules", "metrics", "data_sources", "bindings", "joins",
   "sql_contracts", "analysis_patterns", "policies", "questions",
 ]);
@@ -476,7 +476,7 @@ const governedObjectSchema = z.object({
 });
 
 const entitySchema = governedObjectSchema.extend({
-  primary_key: z.string().min(1),
+  primary_key: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
   grain: z.string().min(1),
   lifecycle: z.string().min(1),
 }).strict();
@@ -909,6 +909,7 @@ const reviewerFindingSchema = z.object({
   detail: z.string().min(1),
   candidate_ids: z.array(z.string().regex(/^candidate\.[0-9a-f]{32}$/)).min(1),
   evidence_fragment_ids: z.array(z.string()),
+  finding_authority: z.enum(["DETERMINISTIC", "ADVISORY"]),
   blocks_release: z.boolean(),
   recommendation: z.string().min(1),
 }).strict();
@@ -919,7 +920,7 @@ export const constructionCandidateSchema = z.object({
   occurrence_key: sha256,
   revision_digest: sha256,
   candidate_type: z.enum([
-    "SOURCE", "GAP", "REQUIREMENT", "ACTOR", "PROCESS", "OBJECT", "LINK", "PROPERTY",
+    "SCENARIO", "SOURCE", "DECISION", "GAP", "REQUIREMENT", "ACTOR", "PROCESS", "OBJECT", "LINK", "PROPERTY",
     "DIMENSION", "METRIC", "RULE", "DATA_SOURCE", "MAPPING", "JOIN", "SQL_CONTRACT",
     "ANALYSIS_PATTERN", "POLICY", "QUESTION",
   ]),
@@ -1044,6 +1045,9 @@ export const constructionJobSchema = z.object({
   authoring_language: z.enum(["en", "zh"]).nullable().optional(),
   language_policy_digest: sha256.nullable().optional(),
   profile_ref: z.string().min(1),
+  engine_contract: z.record(z.string(), z.unknown()).nullable().optional(),
+  build_objective: z.record(z.string(), z.unknown()).nullable().optional(),
+  resume_from_attempt_id: z.string().regex(/^construction-attempt\.[0-9a-f]{32}$/).nullable().optional(),
   status: z.enum(["QUEUED", "RUNNING", "COMMITTING", "CANCEL_REQUESTED", "SUCCEEDED", "FAILED", "CANCELLED", "STALE"]),
   attempt_id: z.string().regex(/^construction-attempt\.[0-9a-f]{32}$/).nullable(),
   lease_epoch: z.number().int().nonnegative(),
@@ -1051,7 +1055,7 @@ export const constructionJobSchema = z.object({
   lease_expires_at: z.string().nullable(),
   result_run_id: z.string().regex(/^construction-run\.[0-9a-f]{32}$/).nullable(),
   error_code: z.string().nullable(),
-  current_stage: z.enum(["QUEUED", "SOURCE_SETTLEMENT", "BUILDING_CANDIDATES", "PERSISTING_RESULT", "COMPLETED", "FAILED", "CANCELLED", "STALE"]).default("QUEUED"),
+  current_stage: z.enum(["QUEUED", "SOURCE_SETTLEMENT", "BUILDING_CANDIDATES", "REVIEWING_CANDIDATES", "PERSISTING_RESULT", "COMPLETED", "FAILED", "CANCELLED", "STALE"]).default("QUEUED"),
   completed_stages: z.number().int().nonnegative().default(0),
   total_stages: z.number().int().positive().default(6),
   progress_message: z.string().min(1).default("JOB_QUEUED"),
@@ -1095,6 +1099,17 @@ export const studioBuildTaskSchema = z.object({
   candidate_count: z.number().int().nonnegative(),
   compilable_count: z.number().int().nonnegative(),
   blocker_count: z.number().int().nonnegative(),
+  activity: z.object({
+    contract: z.literal("studio-agent-attempt-activity/v1"),
+    attempt_id: z.string().regex(/^construction-attempt\.[0-9a-f]{32}$/),
+    candidate_revision: z.number().int().nonnegative(),
+    candidate_count: z.number().int().nonnegative(),
+    candidate_collection_counts: z.record(z.string(), z.number().int().nonnegative()),
+    model_turn_count: z.number().int().nonnegative(),
+    tool_call_count: z.number().int().nonnegative(),
+    activity_stage: z.enum(["PREPARING", "READING_SOURCES", "MODELING", "VALIDATING", "FINALIZING"]),
+    updated_at: z.string().min(1),
+  }).strict().nullable(),
   created_at: z.string().min(1),
   updated_at: z.string().min(1),
   completed_at: z.string().nullable(),

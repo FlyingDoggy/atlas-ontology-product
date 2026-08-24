@@ -7,12 +7,14 @@ import {
   MappingWorkbenchView,
   MetricCatalogView,
   OntologyGraphEditor,
+  applyGraphSelection,
   RequirementsCatalogView,
   SampleAndEnumView,
   SchemaCatalogView,
   SqlContractCatalogView,
   SourceLibraryView,
   StudioVersionLineage,
+  buildForceDirectedGraphProjection,
   buildOntologyGraphProjection,
   graphImpactForNode,
 } from "./StudioProductViews";
@@ -418,6 +420,19 @@ describe("mature Studio product views", () => {
     ]));
   });
 
+  it("builds a stable relationship-driven layout without changing graph identity", () => {
+    const layered = buildOntologyGraphProjection(ontologyPackage);
+    const first = buildForceDirectedGraphProjection(layered);
+    const second = buildForceDirectedGraphProjection(layered);
+
+    expect(first.nodes.map((node) => node.id)).toEqual(layered.nodes.map((node) => node.id));
+    expect(first.edges.map((edge) => [edge.id, edge.source, edge.target]))
+      .toEqual(layered.edges.map((edge) => [edge.id, edge.source, edge.target]));
+    expect(first.nodes.map((node) => node.position)).toEqual(second.nodes.map((node) => node.position));
+    expect(first.edges.every((edge) => edge.type === "default")).toBe(true);
+    expect(new Set(first.nodes.map((node) => node.position.x)).size).toBeGreaterThan(2);
+  });
+
   it("keeps construction candidates in an explicit non-canonical graph overlay", () => {
     const metricCandidate = candidate({});
     const linkCandidate = candidate({
@@ -479,8 +494,29 @@ describe("mature Studio product views", () => {
     expect(screen.getByRole("link", { name: "新建关系" }).getAttribute("href"))
       .toBe("/ontology-studio/semantic/model/?create=relationships");
     expect((screen.getByLabelText("显示待复核候选") as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText("节点类型") as HTMLSelectElement).value).toBe("entity");
-    expect(screen.getByText("2 / 5 个正式节点可见")).toBeTruthy();
+    expect((screen.getByLabelText("节点类型") as HTMLSelectElement).value).toBe("all");
+    expect(screen.getByRole("button", { name: "关联布局" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("5 / 5 个正式节点可见")).toBeTruthy();
+  });
+
+  it("highlights a selected node, its first-degree relationships and dims unrelated graph content", () => {
+    const projection = buildOntologyGraphProjection(ontologyPackage);
+    const selectedId = ontologyPackage.entities[0].id;
+    const focused = applyGraphSelection(projection, selectedId, null);
+    const connectedEdges = focused.edges.filter((edge) => edge.source === selectedId || edge.target === selectedId);
+    const connectedNodeIds = new Set(connectedEdges.flatMap((edge) => [edge.source, edge.target]));
+
+    expect(focused.nodes.find((node) => node.id === selectedId)?.className).toBe("is-graph-focus");
+    connectedNodeIds.delete(selectedId);
+    connectedNodeIds.forEach((nodeId) => {
+      expect(focused.nodes.find((node) => node.id === nodeId)?.className).toBe("is-graph-neighbor");
+    });
+    expect(connectedEdges.every((edge) => edge.className === "is-graph-highlighted")).toBe(true);
+    expect(focused.nodes.some((node) => node.className === "is-graph-dimmed")).toBe(true);
+
+    const cleared = applyGraphSelection(projection, null, null);
+    expect(cleared.nodes.every((node) => node.className === undefined)).toBe(true);
+    expect(cleared.edges.every((edge) => edge.className === undefined)).toBe(true);
   });
 
   it("separates schema, mapping and sample/enum workflows into real data pages", async () => {

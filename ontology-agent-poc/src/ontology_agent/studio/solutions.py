@@ -1140,9 +1140,13 @@ class SolutionCatalogService:
                 # Another process may have completed the exact install while this
                 # caller was waiting. Verify the bytes again under the same lock.
                 if target.exists():
-                    if not verify_cache(target):
-                        raise SolutionCatalogError("Installed solution cache is invalid")
-                    return target
+                    if verify_cache(target):
+                        return target
+                    # This directory is only a derived cache keyed by the verified
+                    # bundle checksum. A partial or stale copy has no authority and
+                    # is rebuilt from the exact artifact store while holding the
+                    # per-bundle install lock.
+                    shutil.rmtree(target)
 
                 temporary = Path(
                     tempfile.mkdtemp(prefix=".install-", dir=target.parent)

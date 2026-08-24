@@ -31,7 +31,7 @@ class SolutionLlmExecution(StrictModel):
     provider: Literal["qwen"] = "qwen"
     requested_model: Literal["qwen3.8-max"] = "qwen3.8-max"
     model_called: bool
-    provider_call_count: int = Field(ge=0, le=1)
+    provider_call_count: int = Field(ge=0, le=12)
     fallback_used: bool
     reason_code: str | None = None
     profile_checksum: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -91,7 +91,7 @@ class ProfileArtifactPin(StrictModel):
 class SolutionLlmBudgets(StrictModel):
     absolute_timeout_ms: int = Field(ge=1000, le=15000)
     provider_timeout_ms: int = Field(ge=500, le=10000)
-    max_provider_calls: int = Field(ge=1, le=3)
+    max_provider_calls: int = Field(ge=1, le=12)
     max_tool_calls: int = Field(ge=1, le=12)
     max_iterations: int = Field(ge=1, le=12)
     max_input_tokens: int = Field(ge=1, le=10000)
@@ -117,9 +117,18 @@ class SolutionLlmProfile(StrictModel):
     budgets: SolutionLlmBudgets
     temperature: Literal[0]
     thinking: Literal[False]
-    fallback_policy: Literal["restart-original-trusted-request/v1"]
-    outcome_contract: Literal["engineering-demo-five-outcome/v1"]
-    renderer_policy: Literal["closed-answer-clause-deterministic-renderer/v1"]
+    fallback_policy: Literal[
+        "restart-original-trusted-request/v1",
+        "deterministic-semantic-engine/v1",
+    ]
+    outcome_contract: Literal[
+        "engineering-demo-five-outcome/v1",
+        "analysis-response/v1",
+    ]
+    renderer_policy: Literal[
+        "closed-answer-clause-deterministic-renderer/v1",
+        "deepagent-natural-language/v1",
+    ]
     trace_policy: Literal["safe-metadata-no-raw-content/v1"]
 
     @model_validator(mode="after")

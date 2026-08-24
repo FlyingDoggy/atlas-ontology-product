@@ -88,8 +88,8 @@ def main() -> None:
     )
     subject = SolutionRegistrationSubjectV1(
         solution_id="ontology.exchange_analytics.cash_trading",
-        solution_version="1.2.0",
-        semantic_source_version="0.2.0",
+        solution_version="1.2.2",
+        semantic_source_version="0.2.1",
         scenario_id="scenario.cash_trading_activity_monitoring",
         workspace_id="workspace.cash_trading.reference",
         studio_adapter_id="studio-adapter.cash-trading.reference@1",

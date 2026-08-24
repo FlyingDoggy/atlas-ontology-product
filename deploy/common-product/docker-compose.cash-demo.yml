@@ -1,0 +1,35 @@
+services:
+  bootstrap-runtime:
+    command: ["ontology-agent", "bootstrap-cash-demo"]
+
+  bootstrap-context:
+    command: ["ontology-agent", "bootstrap-cash-product-context"]
+
+  bootstrap-solution-catalog:
+    command: ["ontology-agent", "bootstrap-cash-solution-catalog"]
+
+  runtime:
+    environment:
+      ONTOLOGY_DEFAULT_SOLUTION_ID: ontology.exchange_analytics.cash_trading
+      ONTOLOGY_DEFAULT_ENVIRONMENT_ID: cash-trading-poc
+      ONTOLOGY_SOLUTION_LLM_ACTIVATION_DIR: /run/ontology-llm/solution-activations
+    volumes:
+      - ./config/llm/cash-demo-activations:/run/ontology-llm/solution-activations:ro
+
+  model-gateway:
+    environment:
+      ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/cash_trading/llm/studio/engineering-profile.json
+      ONTOLOGY_STUDIO_LLM_SLOT_MANIFEST_PATH: /app/scenarios/cash_trading/llm/studio/semantic-slot-manifest.json
+    volumes:
+      - ./config/llm/cash-demo-activations:/run/ontology-llm/solution-activations:ro
+
+  studio:
+    environment:
+      ONTOLOGY_DEFAULT_WORKSPACE_ID: workspace.cash_trading.reference
+      ONTOLOGY_STUDIO_LLM_PROFILE_PATH: /app/scenarios/cash_trading/llm/studio/engineering-profile.json
+      ONTOLOGY_STUDIO_LLM_SLOT_MANIFEST_PATH: /app/scenarios/cash_trading/llm/studio/semantic-slot-manifest.json
+
+  agent-control:
+    environment:
+      ONTOLOGY_DEFAULT_SOLUTION_ID: ontology.exchange_analytics.cash_trading
+      ONTOLOGY_DEFAULT_ENVIRONMENT_ID: cash-trading-poc

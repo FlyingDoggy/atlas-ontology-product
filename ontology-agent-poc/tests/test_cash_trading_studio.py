@@ -55,8 +55,8 @@ def test_cash_solution_registration_and_editor_close_the_package() -> None:
     assert registration.solution_id == "ontology.exchange_analytics.cash_trading"
     assert registration.workspace_id == "workspace.cash_trading.reference"
     assert len(registration.resources) == 36
-    assert registration.solution_version == "1.2.0"
-    assert registration.semantic_source_version == "0.2.0"
+    assert registration.solution_version == "1.2.2"
+    assert registration.semantic_source_version == "0.2.1"
     assert tuple(field.path for field in descriptor.fields) == (
         "self_trade_definition",
         "self_trade_identity_level",
@@ -74,7 +74,7 @@ def test_cash_workspace_exposes_intake_assumptions_and_confirmations(
     intake = service.get_intake()
 
     assert workspace.revision == 1
-    assert workspace.target_version == "0.2.1"
+    assert workspace.target_version == "0.2.2"
     assert workspace.validation.status == "NOT_RUN"
     assert workspace.draft.exclude_corrections is True
     assert intake.classification == "constructed_synthetic"
@@ -84,7 +84,7 @@ def test_cash_workspace_exposes_intake_assumptions_and_confirmations(
     assert intake.response_required_count == 12
     assert intake.reference_source_pack["physical_file_count"] == 4
     assert intake.construction_profile["authority"] == "PRODUCT_OWNED_COMPILER_PROFILE"
-    assert intake.reviewed_baseline["semantic_version"] == "0.2.0"
+    assert intake.reviewed_baseline["semantic_version"] == "0.2.1"
     assert intake.reviewed_baseline["review_status"] == (
         "INTERNAL_REVIEWED_WITH_PROVISIONAL_ASSUMPTIONS"
     )
@@ -114,8 +114,8 @@ def test_cash_workspace_rebases_an_existing_draft_when_the_reviewed_package_adva
 
     rebased = service.get()
 
-    assert rebased.base_version == "0.2.0"
-    assert rebased.target_version == "0.2.1"
+    assert rebased.base_version == "0.2.1"
+    assert rebased.target_version == "0.2.2"
     assert rebased.revision == stale.revision + 1
     assert rebased.draft.self_trade_definition == stale.draft.self_trade_definition
     assert rebased.validation.status == "STALE"
@@ -189,7 +189,7 @@ def test_cash_descriptor_operations_validate_and_publish_a_new_semantic_release(
     assert updated.modified_fields == ("self_trade_definition",)
     assert validated.validation.status == "PASS"
     assert release.ref.package_id == "ontology.exchange_analytics.cash_trading"
-    assert release.ref.version == "0.2.1"
+    assert release.ref.version == "0.2.2"
     assert published_workspace.last_published == release.ref
 
 

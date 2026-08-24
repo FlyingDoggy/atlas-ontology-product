@@ -69,7 +69,7 @@ export const studioPages: StudioPageDefinition[] = [
   {
     id: "semantic",
     label: "语义模型",
-    description: "对象、关系、指标与规则",
+    description: "对象、关系、指标与知识图谱",
     defaultSubpage: "model",
     subpages: [
       { id: "model", label: "业务模型", description: "对象、属性和关系目录" },

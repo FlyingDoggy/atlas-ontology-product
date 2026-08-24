@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
 
 
 class StrictModel(BaseModel):
@@ -157,9 +158,21 @@ class Scenario(GovernedObject):
 
 
 class Entity(GovernedObject):
-    primary_key: str
+    primary_key: str | tuple[str, ...]
     grain: str
     lifecycle: str
+
+    @model_validator(mode="after")
+    def primary_key_is_non_empty(self) -> Entity:
+        keys = self.primary_key_properties()
+        if not keys or any(not key.strip() for key in keys):
+            raise ValueError("Entity primary key requires at least one property")
+        if len(set(keys)) != len(keys):
+            raise ValueError("Entity primary key properties must be unique")
+        return self
+
+    def primary_key_properties(self) -> tuple[str, ...]:
+        return (self.primary_key,) if isinstance(self.primary_key, str) else self.primary_key
 
 
 class Property(GovernedObject):
@@ -188,8 +201,46 @@ class Dimension(GovernedObject):
 
 class Condition(StrictModel):
     property: str
-    op: Literal["eq", "neq", "in", "not_in", "is_true", "is_false"]
+    op: Literal[
+        "eq",
+        "neq",
+        "in",
+        "not_in",
+        "is_true",
+        "is_false",
+        "is_null",
+        "is_not_null",
+        "eq_property",
+        "neq_property",
+    ]
     value: Any | None = None
+
+    @model_validator(mode="after")
+    def validate_shape(self, info: ValidationInfo) -> Condition:
+        literal_ops = {"eq", "neq", "in", "not_in"}
+        unary_ops = {"is_true", "is_false", "is_null", "is_not_null"}
+        property_ops = {"eq_property", "neq_property"}
+        if self.op in literal_ops and self.value is None:
+            legacy_run_read = bool(
+                info.context
+                and info.context.get("allow_legacy_null_condition_comparison")
+            )
+            if not legacy_run_read:
+                raise ValueError(
+                    f"{self.op} requires a literal value; use is_null instead"
+                )
+        if self.op in {"in", "not_in"} and (
+            not isinstance(self.value, (list, tuple)) or not self.value
+        ):
+            raise ValueError(f"{self.op} requires a non-empty list value")
+        if self.op in unary_ops and self.value is not None:
+            raise ValueError(f"{self.op} does not accept a value")
+        if self.op in property_ops and not (
+            isinstance(self.value, str)
+            and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", self.value)
+        ):
+            raise ValueError(f"{self.op} requires another governed property id")
+        return self
 
 
 class Rule(GovernedObject):
@@ -209,6 +260,7 @@ class FormulaNode(StrictModel):
         "subtract",
         "multiply",
         "divide",
+        "duration_ms",
     ]
     ref: str | None = None
     value: Decimal | None = None
@@ -221,7 +273,7 @@ class FormulaNode(StrictModel):
         if self.op == "literal" and self.value is None:
             raise ValueError("literal requires value")
         unary = {"sum", "count_distinct"}
-        binary = {"add", "subtract", "multiply", "divide"}
+        binary = {"add", "subtract", "multiply", "divide", "duration_ms"}
         if self.op in unary and len(self.args) != 1:
             raise ValueError(f"{self.op} requires one argument")
         if self.op in binary and len(self.args) != 2:
@@ -235,6 +287,7 @@ class QueryContract(StrictModel):
     period_property: str | None = None
     date_property: str | None = None
     population_property: str | None = None
+    population_rule: str | None = None
     required_joins: tuple[str, ...] = ()
     filters: tuple[str, ...] = ()
 
@@ -282,7 +335,16 @@ class PhysicalBinding(GovernedObject):
     column: str
     data_type: Literal["string", "integer", "decimal", "boolean", "date", "datetime"]
     unit: str | None = None
-    transformation: str = "identity"
+    transformation: str = Field(
+        default="identity",
+        min_length=1,
+        max_length=500,
+        description=(
+            "Governed mapping transform. New generic Candidates may use identity, "
+            "yn_to_boolean, or yn_to_boolean_not; scenario adapters may retain "
+            "separately certified legacy transforms."
+        ),
+    )
 
 
 class JoinKeyPair(StrictModel):
@@ -532,7 +594,7 @@ class EvidenceRecord(StrictModel):
 
 
 class AnalysisResponse(StrictModel):
-    status: Literal["ANSWERED", "CLARIFY", "REFUSED", "FAILED"]
+    status: Literal["ANSWERED", "CLARIFY", "REFUSED", "NO_DATA", "FAILED"]
     answer: str
     execution_id: str | None = None
     snapshot_checksum: str | None = None

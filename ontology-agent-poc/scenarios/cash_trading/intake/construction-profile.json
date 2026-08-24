@@ -3,7 +3,7 @@
   "profile_id": "construction-profile.cash-trading.reference.v1",
   "package_id": "ontology.exchange_analytics.cash_trading",
   "required_pack_id": "cash-trading.deloitte-hk.reference.20260820",
-  "reviewed_baseline_id": "cash-trading.internal-reviewed.0.2.0",
+  "reviewed_baseline_id": "cash-trading.internal-reviewed.0.2.1",
   "authority": "PRODUCT_OWNED_COMPILER_PROFILE",
   "candidate_collections": [
     "actors",

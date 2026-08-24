@@ -7,7 +7,7 @@
       "kind": "semantic_source",
       "locator": "ontology/package.yaml",
       "media_type": "application/yaml",
-      "sha256": "9246ca57f83b13b814a5a04ad59db7a685ab897418d319ad4476ade3c34f0ad8"
+      "sha256": "8dabd65c1210755f52cf625f896ca2e15bc2b612abd2793f102e68e29a88307f"
     },
     {
       "component_id": "component.cash-trading.authoring-profile",
@@ -21,7 +21,7 @@
       "kind": "agent_experience",
       "locator": "llm/question-family.json",
       "media_type": "application/json",
-      "sha256": "43a5c7f38160c9499f92220d2a7e7ed23cab0ee88c73bcb2370666ecf6ac6297"
+      "sha256": "9b4670491b7d68bba8765c9156740eff7ad030f6f16ccae9be503847bfe516a7"
     },
     {
       "component_id": "component.cash-trading.reference-evaluation",
@@ -135,14 +135,14 @@
     {
       "locator": "governance/deloitte-confirmation-register.json",
       "media_type": "application/json",
-      "sha256": "99b220c54a1d705f20f31edd9382a34916bfa78cf1508b1e397cb78a87f4cb29",
-      "size_bytes": 9768
+      "sha256": "8fbfb0310d75f480c1a668df90e57e4edd927c082a969d887ae525f1c56e66e8",
+      "size_bytes": 10263
     },
     {
       "locator": "governance/reviewed-baseline.json",
       "media_type": "application/json",
-      "sha256": "6b498671013fa37dd5759e9efca2b778e2b5a9472330b48b33906702a871a3de",
-      "size_bytes": 5244
+      "sha256": "27a4c29acd592dd6f1836264efe13058859d83c27cefd994fb919bf6842521d9",
+      "size_bytes": 5211
     },
     {
       "locator": "intake/compile-spec.json",
@@ -153,7 +153,7 @@
     {
       "locator": "intake/construction-profile.json",
       "media_type": "application/json",
-      "sha256": "24442abf69bd1685ecc3a715d0a0ad9141e3c53825f015de5b52ce71c6d6bb56",
+      "sha256": "90794cb0f8aec666b882b834db3c4aa236f5ae3350514b4e66dc5e42f74daccd",
       "size_bytes": 1747
     },
     {
@@ -195,26 +195,26 @@
     {
       "locator": "llm/engineering-profile.json",
       "media_type": "application/json",
-      "sha256": "03c8d0e3691c3cae7f5ecde7c9aa7425d841e17938303c2a84574aac167ce50c",
-      "size_bytes": 1813
+      "sha256": "647356b403248d9f16cefff13e8a26683e237f7dbf50917c55a14af22d1bc11c",
+      "size_bytes": 1709
     },
     {
       "locator": "llm/projection-policy.json",
       "media_type": "application/json",
-      "sha256": "b0017fbf0136937f30850a96fc624a9150e2fb12fd1878ab129c232d4f925873",
-      "size_bytes": 800
+      "sha256": "a65ab78fdd7095652d33980f051493aac9f8dd998249819f90f1a2398d4e54e2",
+      "size_bytes": 628
     },
     {
       "locator": "llm/prompts.json",
       "media_type": "application/json",
-      "sha256": "5622b6bc7d68eb9556cc9881ac6d1d6984663bbd0e7eef6cd1e020a11e8ba4ba",
-      "size_bytes": 1170
+      "sha256": "4c155eebb35a0e28fafa441477403f7abc81735f02072e068fe830afbf754530",
+      "size_bytes": 568
     },
     {
       "locator": "llm/question-family.json",
       "media_type": "application/json",
-      "sha256": "43a5c7f38160c9499f92220d2a7e7ed23cab0ee88c73bcb2370666ecf6ac6297",
-      "size_bytes": 1250
+      "sha256": "9b4670491b7d68bba8765c9156740eff7ad030f6f16ccae9be503847bfe516a7",
+      "size_bytes": 2056
     },
     {
       "locator": "llm/studio/engineering-profile.json",
@@ -243,14 +243,14 @@
     {
       "locator": "llm/tool-registry.json",
       "media_type": "application/json",
-      "sha256": "e1baba7334d7f0060f33302d9cc0abb48a01b5094293abf28b1bad43987ad1e7",
-      "size_bytes": 1328
+      "sha256": "929f310291637491e9c0863f93185f0a0deeac05e526a5d55bb06240ae494692",
+      "size_bytes": 856
     },
     {
       "locator": "ontology/package.yaml",
       "media_type": "application/yaml",
-      "sha256": "9246ca57f83b13b814a5a04ad59db7a685ab897418d319ad4476ade3c34f0ad8",
-      "size_bytes": 162432
+      "sha256": "8dabd65c1210755f52cf625f896ca2e15bc2b612abd2793f102e68e29a88307f",
+      "size_bytes": 233086
     },
     {
       "locator": "sql/reference_controls.sql",
@@ -260,9 +260,9 @@
     }
   ],
   "scenario_id": "scenario.cash_trading_activity_monitoring",
-  "semantic_source_version": "0.2.0",
+  "semantic_source_version": "0.2.1",
   "solution_id": "ontology.exchange_analytics.cash_trading",
-  "solution_version": "1.2.0",
+  "solution_version": "1.2.2",
   "studio_adapter_id": "studio-adapter.cash-trading.reference@1",
   "workspace_id": "workspace.cash_trading.reference"
 }

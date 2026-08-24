@@ -29,6 +29,7 @@ import type {
 } from "./api";
 import { semanticAssetHref } from "./SemanticAssetCatalog";
 import { studioPageHref } from "./StudioNavigation";
+import { useUiLocale, type UiLocale } from "./i18n";
 
 type OntologyPackage = StudioWorkbench["package"];
 
@@ -201,6 +202,57 @@ export type OntologyGraphProjection = {
   edges: OntologyEdge[];
 };
 
+export function applyGraphSelection(
+  projection: OntologyGraphProjection,
+  selectedNodeId: string | null,
+  selectedEdgeId: string | null,
+): OntologyGraphProjection {
+  const selectedEdge = selectedEdgeId
+    ? projection.edges.find((edge) => edge.id === selectedEdgeId)
+    : undefined;
+  const focusedNodeIds = new Set<string>();
+  const focusedEdgeIds = new Set<string>();
+
+  if (selectedNodeId) {
+    focusedNodeIds.add(selectedNodeId);
+    projection.edges.forEach((edge) => {
+      if (edge.source !== selectedNodeId && edge.target !== selectedNodeId) return;
+      focusedEdgeIds.add(edge.id);
+      focusedNodeIds.add(edge.source);
+      focusedNodeIds.add(edge.target);
+    });
+  } else if (selectedEdge) {
+    focusedEdgeIds.add(selectedEdge.id);
+    focusedNodeIds.add(selectedEdge.source);
+    focusedNodeIds.add(selectedEdge.target);
+  }
+
+  const hasFocus = focusedNodeIds.size > 0;
+  return {
+    nodes: projection.nodes.map((node) => ({
+      ...node,
+      selected: node.id === selectedNodeId,
+      className: hasFocus
+        ? node.id === selectedNodeId
+          ? "is-graph-focus"
+          : focusedNodeIds.has(node.id)
+            ? "is-graph-neighbor"
+            : "is-graph-dimmed"
+        : undefined,
+    })),
+    edges: projection.edges.map((edge) => ({
+      ...edge,
+      className: hasFocus
+        ? focusedEdgeIds.has(edge.id)
+          ? "is-graph-highlighted"
+          : "is-graph-dimmed"
+        : undefined,
+    })),
+  };
+}
+
+type GraphLayoutMode = "force" | "layered";
+
 export type OntologyGraphImpact = {
   nodeId: string;
   incoming: OntologyEdge[];
@@ -230,8 +282,8 @@ export function graphImpactForNode(
   };
 }
 
-function zhName(item: { name: { zh: string; en: string } }): string {
-  return item.name.zh || item.name.en;
+function zhName(item: { name: { zh: string; en: string } }, locale: UiLocale = "zh"): string {
+  return locale === "en" ? item.name.en || item.name.zh : item.name.zh || item.name.en;
 }
 
 function formulaMetricRefs(value: unknown, output = new Set<string>()): Set<string> {
@@ -265,13 +317,14 @@ function candidateEndpoint(
 export function buildOntologyGraphProjection(
   ontologyPackage: OntologyPackage,
   candidates: ConstructionCandidate[] = [],
+  locale: UiLocale = "zh",
 ): OntologyGraphProjection {
   const entityNodes: OntologyNode[] = ontologyPackage.entities.map((entity, index) => ({
     id: entity.id,
     type: "ontologyNode",
     position: { x: (index % 4) * 260, y: Math.floor(index / 4) * 180 },
     data: {
-      label: zhName(entity),
+      label: zhName(entity, locale),
       technicalId: entity.id,
       kind: "entity",
       status: entity.status,
@@ -286,7 +339,7 @@ export function buildOntologyGraphProjection(
     type: "ontologyNode",
     position: { x: (index % 4) * 260, y: metricStartY + Math.floor(index / 4) * 180 },
     data: {
-      label: zhName(metric),
+      label: zhName(metric, locale),
       technicalId: metric.id,
       kind: "metric",
       status: metric.status,
@@ -301,7 +354,7 @@ export function buildOntologyGraphProjection(
     type: "ontologyNode",
     position: { x: (index % 4) * 260, y: ruleStartY + Math.floor(index / 4) * 180 },
     data: {
-      label: zhName(rule),
+      label: zhName(rule, locale),
       technicalId: rule.id,
       kind: "rule",
       status: rule.status,
@@ -389,6 +442,173 @@ export function buildOntologyGraphProjection(
   return {
     nodes: [...entityNodes, ...metricNodes, ...ruleNodes, ...candidateNodes],
     edges: [...relationshipEdges, ...dependencyEdges, ...candidateImpactEdges, ...candidateLinkEdges],
+  };
+}
+
+function stableGraphSeed(value: string): number {
+  let seed = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    seed ^= value.charCodeAt(index);
+    seed = Math.imul(seed, 16777619);
+  }
+  return (seed >>> 0) / 4294967295;
+}
+
+/**
+ * Deterministic force simulation: relationship structure shapes the graph,
+ * while stable seeds keep a review workspace from jumping on every refresh.
+ */
+export function buildForceDirectedGraphProjection(
+  projection: OntologyGraphProjection,
+): OntologyGraphProjection {
+  if (projection.nodes.length < 2) {
+    return {
+      nodes: projection.nodes.map((node) => ({ ...node, position: { ...node.position } })),
+      edges: projection.edges.map((edge) => ({ ...edge, type: "default" })),
+    };
+  }
+
+  const vertices = projection.nodes.map((node, index) => {
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const progress = Math.sqrt((index + 0.75) / projection.nodes.length);
+    const angle = index * goldenAngle + stableGraphSeed(node.id) * 0.42;
+    const radius = (250 + Math.sqrt(projection.nodes.length) * 24) * progress;
+    const kindAnchor = node.data.kind === "entity"
+      ? { x: -210, y: -25 }
+      : node.data.kind === "metric"
+        ? { x: 190, y: -115 }
+        : { x: 210, y: 190 };
+    const candidateOffset = node.data.layer === "candidate" ? -150 : 0;
+    return {
+      node,
+      x: Math.cos(angle) * radius + kindAnchor.x * 0.45,
+      y: Math.sin(angle) * radius + kindAnchor.y * 0.45 + candidateOffset,
+      vx: 0,
+      vy: 0,
+      kindAnchor,
+    };
+  });
+  const vertexById = new Map(vertices.map((vertex, index) => [vertex.node.id, index]));
+  const linkedEdges = projection.edges.flatMap((edge) => {
+    const source = vertexById.get(edge.source);
+    const target = vertexById.get(edge.target);
+    return source === undefined || target === undefined ? [] : [{ edge, source, target }];
+  });
+  const degree = new Array(vertices.length).fill(0) as number[];
+  linkedEdges.forEach(({ source, target }) => {
+    degree[source] += 1;
+    degree[target] += 1;
+  });
+
+  const iterations = vertices.length > 200 ? 45 : vertices.length > 100 ? 80 : 210;
+  const repulsionStrength = 15_000;
+  const collisionDistance = 218;
+  for (let tick = 0; tick < iterations; tick += 1) {
+    const temperature = 1 - tick / iterations;
+    for (let left = 0; left < vertices.length; left += 1) {
+      for (let right = left + 1; right < vertices.length; right += 1) {
+        const a = vertices[left];
+        const b = vertices[right];
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        if (Math.abs(dx) + Math.abs(dy) < 0.001) {
+          const nudge = stableGraphSeed(`${a.node.id}:${b.node.id}`) * Math.PI * 2;
+          dx = Math.cos(nudge);
+          dy = Math.sin(nudge);
+        }
+        const distanceSquared = Math.max(160, dx * dx + dy * dy);
+        const distance = Math.sqrt(distanceSquared);
+        const repel = (repulsionStrength / distanceSquared) * (0.55 + temperature * 0.45);
+        const collision = distance < collisionDistance
+          ? (collisionDistance - distance) * 0.034
+          : 0;
+        const force = repel + collision;
+        const fx = (dx / distance) * force;
+        const fy = (dy / distance) * force;
+        a.vx += fx;
+        a.vy += fy;
+        b.vx -= fx;
+        b.vy -= fy;
+      }
+    }
+
+    linkedEdges.forEach(({ edge, source, target }) => {
+      const a = vertices[source];
+      const b = vertices[target];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      const idealDistance = edge.data?.kind === "candidate-impact" ? 285 : 235;
+      const spring = (distance - idealDistance) * 0.014;
+      const fx = (dx / distance) * spring;
+      const fy = (dy / distance) * spring;
+      a.vx += fx;
+      a.vy += fy;
+      b.vx -= fx;
+      b.vy -= fy;
+    });
+
+    vertices.forEach((vertex, index) => {
+      const hubGravity = Math.min(0.012, degree[index] * 0.0012);
+      vertex.vx += -vertex.x * (0.0028 + hubGravity);
+      vertex.vy += -vertex.y * (0.0028 + hubGravity);
+      vertex.vx += (vertex.kindAnchor.x - vertex.x) * 0.0018;
+      vertex.vy += (vertex.kindAnchor.y - vertex.y) * 0.0018;
+      const speed = Math.max(1, Math.sqrt(vertex.vx * vertex.vx + vertex.vy * vertex.vy));
+      const speedLimit = 14 * (0.35 + temperature * 0.65);
+      if (speed > speedLimit) {
+        vertex.vx = (vertex.vx / speed) * speedLimit;
+        vertex.vy = (vertex.vy / speed) * speedLimit;
+      }
+      vertex.x += vertex.vx;
+      vertex.y += vertex.vy;
+      vertex.vx *= 0.78;
+      vertex.vy *= 0.78;
+    });
+  }
+
+  // React Flow nodes are cards rather than dots. Resolve remaining rectangle
+  // collisions after the force simulation so labels stay readable at fitView.
+  for (let pass = 0; pass < 140; pass += 1) {
+    let collisionFound = false;
+    for (let left = 0; left < vertices.length; left += 1) {
+      for (let right = left + 1; right < vertices.length; right += 1) {
+        const a = vertices[left];
+        const b = vertices[right];
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        if (Math.abs(dx) + Math.abs(dy) < 0.001) {
+          dx = stableGraphSeed(`${a.node.id}:${b.node.id}`) < 0.5 ? -1 : 1;
+          dy = 1;
+        }
+        const overlapX = 222 - Math.abs(dx);
+        const overlapY = 104 - Math.abs(dy);
+        if (overlapX <= 0 || overlapY <= 0) continue;
+        collisionFound = true;
+        if (overlapX < overlapY * 1.65) {
+          const direction = dx < 0 ? -1 : 1;
+          const shift = (overlapX + 3) / 2;
+          a.x += direction * shift;
+          b.x -= direction * shift;
+        } else {
+          const direction = dy < 0 ? -1 : 1;
+          const shift = (overlapY + 3) / 2;
+          a.y += direction * shift;
+          b.y -= direction * shift;
+        }
+      }
+    }
+    if (!collisionFound) break;
+  }
+
+  const minX = Math.min(...vertices.map((vertex) => vertex.x));
+  const minY = Math.min(...vertices.map((vertex) => vertex.y));
+  return {
+    nodes: vertices.map(({ node, x, y }) => ({
+      ...node,
+      position: { x: Math.round(x - minX + 90), y: Math.round(y - minY + 70) },
+    })),
+    edges: projection.edges.map((edge) => ({ ...edge, type: "default" })),
   };
 }
 
@@ -545,12 +765,20 @@ const ontologyNodeTypes = { ontologyNode: OntologyNodeCard };
 const noConstructionCandidates: ConstructionCandidate[] = [];
 
 export function OntologyGraphEditor({ ontologyPackage, candidates = noConstructionCandidates, reviewHref, createEntityHref, createRelationshipHref, editAssetHref, readOnly = false }: { ontologyPackage: OntologyPackage; candidates?: ConstructionCandidate[]; reviewHref?: string; createEntityHref?: string; createRelationshipHref?: string; editAssetHref?: (collection: "entities" | "relationships", objectId: string) => string; readOnly?: boolean }) {
-  const projection = useMemo(() => buildOntologyGraphProjection(ontologyPackage, candidates), [candidates, ontologyPackage]);
+  const { locale } = useUiLocale();
+  const [layoutMode, setLayoutMode] = useState<GraphLayoutMode>("force");
+  const [showCandidates, setShowCandidates] = useState(false);
+  const layeredProjection = useMemo(() => buildOntologyGraphProjection(ontologyPackage, candidates, locale), [candidates, locale, ontologyPackage]);
+  const forceInputProjection = useMemo(() => showCandidates ? layeredProjection : {
+    nodes: layeredProjection.nodes.filter((node) => node.data.layer === "canonical"),
+    edges: layeredProjection.edges.filter((edge) => edge.data?.layer === "canonical"),
+  }, [layeredProjection, showCandidates]);
+  const forceProjection = useMemo(() => buildForceDirectedGraphProjection(forceInputProjection), [forceInputProjection]);
+  const projection = layoutMode === "force" ? forceProjection : layeredProjection;
   const [nodes, setNodes, onNodesChange] = useNodesState(projection.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(projection.edges);
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<GraphNodeKind | "all">("entity");
-  const [showCandidates, setShowCandidates] = useState(false);
+  const [kind, setKind] = useState<GraphNodeKind | "all">("all");
   const [focusNeighborhood, setFocusNeighborhood] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -562,8 +790,12 @@ export function OntologyGraphEditor({ ontologyPackage, candidates = noConstructi
     ? new Set([selectedNodeId, ...graphImpactForNode(projection, selectedNodeId).affectedNodeIds])
     : null;
   const visibleNodeIds = new Set([...filteredNodeIds].filter((nodeId) => !neighborhoodNodeIds || neighborhoodNodeIds.has(nodeId)));
-  const visibleNodes = nodes.filter((node) => visibleNodeIds.has(node.id));
-  const visibleEdges = edges.filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target));
+  const visibleProjection = applyGraphSelection({
+    nodes: nodes.filter((node) => visibleNodeIds.has(node.id)),
+    edges: edges.filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)),
+  }, selectedNodeId, selectedEdgeId);
+  const visibleNodes = visibleProjection.nodes;
+  const visibleEdges = visibleProjection.edges;
   const selectedNode = projection.nodes.find((node) => node.id === selectedNodeId);
   const selectedRelationship = selectedEdgeId ? ontologyPackage.relationships.find((relationship) => relationship.id === selectedEdgeId) : undefined;
   const selectedCandidateId = selectedNode?.data.candidateId
@@ -576,19 +808,23 @@ export function OntologyGraphEditor({ ontologyPackage, candidates = noConstructi
 
   return <section className="ontology-graph-workspace" aria-labelledby="graph-title">
     <header className="object-page-heading">
-      <div><span>CANONICAL GRAPH + CANDIDATE OVERLAY</span><h2 id="graph-title">知识图谱</h2><p>图是同一批语义资产的关系视图，不是第二套编辑器。新建或修改会进入统一资产表单；虚线候选仍需在复核中心处置。</p></div>
+      <div><span>KNOWLEDGE GRAPH</span><h2 id="graph-title">知识图谱</h2><p>浏览对象、关系、指标和规则；选择节点或连线查看定义、来源与影响。</p></div>
       <div className="object-page-counts"><strong>{visibleCanonicalNodeCount} / {canonicalNodeCount} 个正式节点可见</strong><span>{candidateCount} 个待复核候选</span></div>
     </header>
     <div className="graph-toolbar">
       <label><span>搜索图谱</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="对象、指标或 ID" /></label>
       <label><span>节点类型</span><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}><option value="all">全部</option><option value="entity">对象</option><option value="metric">指标</option><option value="rule">规则</option></select></label>
+      <div className="graph-layout-switch" role="group" aria-label="图谱布局">
+        <button type="button" className={layoutMode === "force" ? "is-active" : ""} aria-pressed={layoutMode === "force"} title="按关系强度组织节点" onClick={() => setLayoutMode("force")}>关联布局</button>
+        <button type="button" className={layoutMode === "layered" ? "is-active" : ""} aria-pressed={layoutMode === "layered"} title="按对象、指标和规则分层排列" onClick={() => setLayoutMode("layered")}>分层布局</button>
+      </div>
       <label className="graph-layer-toggle"><input type="checkbox" checked={showCandidates} onChange={(event) => setShowCandidates(event.target.checked)} />显示待复核候选</label>
       <label className="graph-layer-toggle"><input type="checkbox" checked={focusNeighborhood} disabled={!selectedNodeId} onChange={(event) => setFocusNeighborhood(event.target.checked)} />只看一跳影响</label>
       <div className="graph-toolbar-actions">{!readOnly && createEntityHref ? <a href={createEntityHref}>新建对象</a> : null}{!readOnly && createRelationshipHref ? <a className="is-primary" href={createRelationshipHref}>新建关系</a> : null}</div>
     </div>
     <div className="graph-editor-layout">
       <div className="graph-canvas" aria-label="Ontology graph canvas">
-        <ReactFlow nodes={visibleNodes} edges={visibleEdges} nodeTypes={ontologyNodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }} onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }} fitView minZoom={0.25} maxZoom={2}>
+        <ReactFlow key={layoutMode} nodes={visibleNodes} edges={visibleEdges} nodeTypes={ontologyNodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }} onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }} onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); setFocusNeighborhood(false); }} fitView fitViewOptions={{ padding: 0.16 }} minZoom={0.25} maxZoom={2}>
           <Background gap={22} size={1} /><Controls /><MiniMap pannable zoomable nodeColor={(node) => node.data?.kind === "metric" ? "#d48c32" : node.data?.kind === "rule" ? "#7c6bb2" : "#0b776f"} />
         </ReactFlow>
       </div>
@@ -781,6 +1017,7 @@ export function SourceLibraryView({
   onPreview,
   onInstallReferencePack,
   onImportInstalledSources,
+  openIntakeOnLoad = false,
   readOnly = false,
 }: {
   ontologyPackage: OntologyPackage;
@@ -793,13 +1030,14 @@ export function SourceLibraryView({
   onPreview?: (sourceVersionId: string) => Promise<StudioSourcePreview>;
   onInstallReferencePack?: () => Promise<void> | void;
   onImportInstalledSources?: () => Promise<void> | void;
+  openIntakeOnLoad?: boolean;
   readOnly?: boolean;
 }) {
   const assets = [
     ...(Array.isArray(intake.assets) ? intake.assets : []),
     ...(Array.isArray(intake.source_files) ? intake.source_files : []),
   ].filter((value): value is Record<string, unknown> => Boolean(value) && typeof value === "object");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(openIntakeOnLoad && !readOnly);
   const [kind, setKind] = useState<StudioSourceKind>("requirement_transcription");
   const [title, setTitle] = useState("需求与分析流程");
   const [text, setText] = useState("");

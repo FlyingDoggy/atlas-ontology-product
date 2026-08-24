@@ -60,12 +60,24 @@ def _parser() -> argparse.ArgumentParser:
         help="Initialize every installed constructed-synthetic demo solution",
     )
     commands.add_parser(
+        "bootstrap-cash-demo",
+        help="Initialize only the Cash Trading demo solution",
+    )
+    commands.add_parser(
         "bootstrap-product-context",
         help="Import the current legacy active snapshot into PostgreSQL/S3 once",
     )
     commands.add_parser(
+        "bootstrap-cash-product-context",
+        help="Import the Cash Trading active snapshot into PostgreSQL/S3 once",
+    )
+    commands.add_parser(
         "bootstrap-solution-catalog",
         help="Register the exact ADT solution descriptor and component inventory",
+    )
+    commands.add_parser(
+        "bootstrap-cash-solution-catalog",
+        help="Register only the exact Cash Trading solution descriptor and component inventory",
     )
     construction_worker = commands.add_parser(
         "construction-worker",
@@ -234,19 +246,21 @@ def main() -> None:
         report = validate_package(package, DEFAULT_SCENARIO_DIR, include_data=True)
         _print(report.model_dump(mode="json"))
         raise SystemExit(0 if report.status == "PASS" else 1)
-    if args.command == "bootstrap-solution-catalog":
+    if args.command in {"bootstrap-solution-catalog", "bootstrap-cash-solution-catalog"}:
         try:
             settings = ProductInfrastructureSettings.from_env()
+            scenario_dirs = (
+                (DEFAULT_CASH_TRADING_SCENARIO_DIR,)
+                if args.command == "bootstrap-cash-solution-catalog"
+                else (DEFAULT_SCENARIO_DIR, DEFAULT_CASH_TRADING_SCENARIO_DIR)
+            )
             records = tuple(
                 SolutionCatalogService.from_settings(
                     settings,
                     manifest_path=scenario_dir / "solution-registration.json",
                     component_root=scenario_dir,
                 ).bootstrap()
-                for scenario_dir in (
-                    DEFAULT_SCENARIO_DIR,
-                    DEFAULT_CASH_TRADING_SCENARIO_DIR,
-                )
+                for scenario_dir in scenario_dirs
             )
         except (ProductInfrastructureError, SolutionCatalogError) as exc:
             _print({"status": "FAIL", "error": str(exc)})
@@ -382,9 +396,39 @@ def main() -> None:
             raise SystemExit(1) from exc
         _print({"status": "PASS", "solutions": list(results)})
         return
-    if args.command == "bootstrap-product-context":
+    if args.command == "bootstrap-cash-demo":
+        cash_package = load_package(
+            DEFAULT_CASH_TRADING_SCENARIO_DIR / "ontology" / "package.yaml"
+        )
         try:
-            active = agent.open_active("adt-poc", "ontology.exchange_analytics.adt")
+            DEFAULT_EXECUTION_DIR.mkdir(parents=True, exist_ok=True)
+            result = _bootstrap_scenario(
+                studio,
+                agent,
+                cash_package,
+                environment_id="cash-trading-poc",
+                binding=cash_trading_synthetic_binding(
+                    resource_root_id="cash-trading-scenario"
+                ),
+                certification=cash_trading_golden_certification(
+                    resource_root_id="cash-trading-scenario"
+                ),
+                certification_profile=CASH_CERTIFICATION_PROFILE,
+                replace_different_release=True,
+            )
+        except PublicationError as exc:
+            _print({"status": "FAIL", "error": str(exc)})
+            raise SystemExit(1) from exc
+        _print(result)
+        return
+    if args.command in {"bootstrap-product-context", "bootstrap-cash-product-context"}:
+        try:
+            environment_id, package_id = (
+                ("cash-trading-poc", "ontology.exchange_analytics.cash_trading")
+                if args.command == "bootstrap-cash-product-context"
+                else ("adt-poc", "ontology.exchange_analytics.adt")
+            )
+            active = agent.open_active(environment_id, package_id)
             settings = ProductInfrastructureSettings.from_env()
             context, idempotent = ProductContextService.from_settings(
                 settings

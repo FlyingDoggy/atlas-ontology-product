@@ -29,19 +29,47 @@ from ..product_context import (
     ProductInfrastructureSettings,
     S3ArtifactStore,
 )
+from .agentic_construction import (
+    AgenticConstructionRuntime,
+    normalized_source_operations,
+)
+from .agentic_contracts import CandidateClaimV1, RunAuthorityContextV1
+from .agentic_evidence import EvidenceWorkspaceError, ExactEvidenceWorkspace
+from .agentic_runtime import (
+    AgentGatewayUnavailable,
+    AgentRuntimeError,
+    StudioAgentRuntime,
+)
+from .agentic_reviewer import (
+    AgenticReviewerError,
+    ReviewerToolHarness,
+    compile_review_engine,
+    compile_review_objective,
+    render_review_skill_instructions,
+    run_agentic_review,
+)
+from .agentic_store import AgenticStoreError
+from .agentic_tools import StudioToolHarness
 from .package_authoring import (
     PackageCollection,
     PackageDraftOperation,
     PackageDraftOperationsV1,
     ReviewFinalizationOperationsV1,
     apply_package_operations,
+    package_collection_items,
 )
 from .builder import (
     BoundedBuilderOrchestrator,
     BuilderError,
     BuilderRunResultV1,
 )
-from .construction_jobs import ConstructionJobInputV1
+from .construction_jobs import (
+    ConstructionJobConflict,
+    ConstructionJobInputV1,
+    ConstructionJobStage,
+    ConstructionJobV1,
+    validate_continuation_engine_contract,
+)
 from .evidence import EvidenceNormalizationError, normalize_evidence
 from .source_projection import (
     SourceProjectionAnchorV1,
@@ -66,12 +94,18 @@ class ConstructionError(RuntimeError):
     """A construction run or review could not be completed safely."""
 
 
+class ConstructionRetryableError(ConstructionError):
+    """A frozen construction attempt can resume from its durable checkpoint."""
+
+
 class ConstructionConflict(ConstructionError):
     """An immutable construction result already has a different decision."""
 
 
 ConstructionCandidateType = Literal[
+    "SCENARIO",
     "SOURCE",
+    "DECISION",
     "GAP",
     "REQUIREMENT",
     "ACTOR",
@@ -375,6 +409,13 @@ _LEGACY_DECISION_V1_V2_FIELDS = {
     "server_blockers",
 }
 
+_LEGACY_RUN_READ_CONTEXT = {
+    # Early immutable Candidate Runs allowed `eq/neq: null`. Current authoring
+    # correctly requires `is_null/is_not_null`, but historical audit artifacts
+    # must remain readable without weakening new writes or changing their bytes.
+    "allow_legacy_null_condition_comparison": True,
+}
+
 
 def _decision_canonical_payload(
     decision: ConstructionReviewDecisionV1,
@@ -425,7 +466,11 @@ def _package_asset(
     object_id: str,
 ) -> StrictModel | None:
     return next(
-        (item for item in getattr(package, collection) if item.id == object_id),
+        (
+            item
+            for item in package_collection_items(package, collection)
+            if item.id == object_id
+        ),
         None,
     )
 
@@ -567,7 +612,8 @@ class FileConstructionRunStore:
     def get_run(self, run_id: str) -> ConstructionRunV1:
         try:
             run = ConstructionRunV1.model_validate_json(
-                self._run_path(run_id).read_text(encoding="utf-8")
+                self._run_path(run_id).read_text(encoding="utf-8"),
+                context=_LEGACY_RUN_READ_CONTEXT,
             )
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             raise ConstructionError("Construction run is unavailable") from exc
@@ -729,7 +775,14 @@ class PostgresConstructionRunStore:
             raise ConstructionError("Construction exact artifact identity mismatch")
         try:
             payload = json.loads(body)
-            restored = type(subject).model_validate(payload)
+            restored = type(subject).model_validate(
+                payload,
+                context=(
+                    _LEGACY_RUN_READ_CONTEXT
+                    if isinstance(subject, ConstructionRunV1)
+                    else None
+                ),
+            )
         except (json.JSONDecodeError, ValueError) as exc:
             raise ConstructionError("Construction exact artifact is invalid") from exc
         if restored != subject:
@@ -747,7 +800,10 @@ class PostgresConstructionRunStore:
     @staticmethod
     def _run_from_row(row: StudioConstructionRunRow) -> ConstructionRunV1:
         try:
-            run = ConstructionRunV1.model_validate(row.subject)
+            run = ConstructionRunV1.model_validate(
+                row.subject,
+                context=_LEGACY_RUN_READ_CONTEXT,
+            )
         except ValueError as exc:
             raise ConstructionError("Construction run database subject is invalid") from exc
         if (
@@ -1065,7 +1121,7 @@ def _with_draft_diff(
     current = next(
         (
             item.model_dump(mode="json")
-            for item in getattr(package, operation.collection)
+            for item in package_collection_items(package, operation.collection)
             if item.id == operation.object_id
         ),
         None,
@@ -1096,6 +1152,9 @@ class StudioConstructionService:
 
     PROFILE_REF = "construction-profile.generic-builder/v3"
     PACKAGED_COLLECTION_TYPES: dict[str, ConstructionCandidateType] = {
+        "scenario": "SCENARIO",
+        "sources": "SOURCE",
+        "decisions": "DECISION",
         "actors": "ACTOR",
         "processes": "PROCESS",
         "entities": "OBJECT",
@@ -1127,6 +1186,7 @@ class StudioConstructionService:
         review_drafts: Any | None = None,
         selected_source_version_ids: tuple[str, ...] = (),
         workspace_id: str | None = None,
+        agentic: AgenticConstructionRuntime | None = None,
     ) -> None:
         self.store = store
         self.workspace = workspace
@@ -1139,6 +1199,7 @@ class StudioConstructionService:
         self.review_drafts = review_drafts
         self.selected_source_version_ids = selected_source_version_ids
         self.workspace_id = workspace_id
+        self.agentic = agentic
 
     def _workspace(self) -> Any:
         """Open the one Draft authority bound to this construction service.
@@ -1497,7 +1558,7 @@ class StudioConstructionService:
         output: list[ConstructionCandidateV1] = []
         for collection in configured_collections:
             candidate_type = self.PACKAGED_COLLECTION_TYPES[collection]
-            for item in getattr(self.package, collection):
+            for item in package_collection_items(self.package, collection):
                 target = (collection, item.id)
                 if target in existing_targets:
                     continue
@@ -1709,10 +1770,611 @@ class StudioConstructionService:
         )
         return result, projected
 
+    @staticmethod
+    def _agentic_support_class(
+        claims: tuple[CandidateClaimV1, ...],
+    ) -> Literal[
+        "DIRECT_EXACT",
+        "DERIVED_DETERMINISTIC",
+        "MODEL_INFERRED",
+    ]:
+        supports = {item.support for item in claims}
+        if supports and supports <= {"EXACT"}:
+            return "DIRECT_EXACT"
+        if supports and supports <= {"EXACT", "DETERMINISTIC_DERIVED"}:
+            return "DERIVED_DETERMINISTIC"
+        return "MODEL_INFERRED"
+
+    @staticmethod
+    def _agentic_label(
+        operation: PackageDraftOperation, language: AuthoringLanguage
+    ) -> tuple[str, str]:
+        payload = operation.payload or {}
+        raw_name = payload.get("name")
+        label = operation.object_id
+        if isinstance(raw_name, dict):
+            label = str(
+                raw_name.get(language)
+                or raw_name.get("en")
+                or raw_name.get("zh")
+                or label
+            )
+        elif isinstance(raw_name, str) and raw_name.strip():
+            label = raw_name.strip()
+        definition = str(
+            payload.get("definition")
+            or payload.get("description")
+            or f"Candidate change for {operation.object_id}"
+        )
+        return label[:500], definition[:4000]
+
+    def _project_agentic_candidates(
+        self,
+        *,
+        context: RunAuthorityContextV1,
+    ) -> tuple[ConstructionCandidateV1, ...]:
+        assert self.agentic is not None
+        view = self.agentic.checkpoint_store.view(context)
+        bundle = view.sealed_bundle
+        if bundle is None:
+            raise ConstructionError("Agentic Builder did not seal a Candidate Bundle")
+        receipt_by_id = {
+            item.receipt_id: item.model_dump(mode="json")
+            for item in view.evidence_receipts
+        }
+        obligations_by_target: dict[str, list[str]] = {}
+        for disposition in bundle.obligation_dispositions:
+            if disposition.disposition != "CANDIDATE":
+                continue
+            for target in disposition.candidate_targets:
+                obligations_by_target.setdefault(target, []).append(
+                    disposition.obligation_id
+                )
+
+        output: list[ConstructionCandidateV1] = []
+        for operation in bundle.operations:
+            target = f"{operation.collection}:{operation.object_id}"
+            claims = bundle.claims_by_target.get(target, ())
+            referenced_receipts = tuple(
+                dict.fromkeys(
+                    receipt_id
+                    for claim in claims
+                    for receipt_id in claim.evidence_receipt_ids
+                )
+            )
+            label, definition = self._agentic_label(
+                operation, self.agentic.plan.objective.output_language
+            )
+            output.append(
+                _candidate(
+                    candidate_type=self.PACKAGED_COLLECTION_TYPES[
+                        operation.collection
+                    ],
+                    source_key=f"{bundle.bundle_id}:{target}",
+                    label=label,
+                    definition=definition,
+                    support_class=self._agentic_support_class(claims),
+                    proposal={
+                        "contract": "agentic-candidate-projection/v1",
+                        "bundle_id": bundle.bundle_id,
+                        "bundle_checksum": bundle.bundle_checksum,
+                        "target": target,
+                        "claims": [item.model_dump(mode="json") for item in claims],
+                        "obligation_ids": sorted(obligations_by_target.get(target, ())),
+                        "evidence_receipts": [
+                            receipt_by_id[item]
+                            for item in referenced_receipts
+                            if item in receipt_by_id
+                        ],
+                    },
+                    operation=operation,
+                    canonical_target=operation.object_id,
+                    limitations=(
+                        "Candidate only; an operator must review it before Draft changes.",
+                    ),
+                )
+            )
+
+        objective_by_id = {
+            item.obligation_id: item
+            for item in self.agentic.plan.objective.obligations
+        }
+        gaps: dict[str, list[object]] = {}
+        for disposition in bundle.obligation_dispositions:
+            if disposition.disposition not in {"GAP", "UNSUPPORTED"}:
+                continue
+            gaps.setdefault(disposition.gap_id or disposition.obligation_id, []).append(
+                disposition
+            )
+        for gap_id, dispositions in sorted(gaps.items()):
+            first = dispositions[0]
+            obligation = objective_by_id[first.obligation_id]
+            obligation_ids = sorted(item.obligation_id for item in dispositions)
+            output.append(
+                _candidate(
+                    candidate_type="GAP",
+                    source_key=f"{bundle.bundle_id}:{gap_id}",
+                    label=obligation.title[:500],
+                    definition=(
+                        first.explanation
+                        or "Required evidence or modeling closure is unavailable."
+                    )[:4000],
+                    support_class="MISSING",
+                    proposal={
+                        "contract": "agentic-gap-projection/v1",
+                        "bundle_id": bundle.bundle_id,
+                        "gap_id": gap_id,
+                        "disposition": first.disposition,
+                        "obligation_ids": obligation_ids,
+                        "source_version_ids": sorted(
+                            {
+                                source_version_id
+                                for item in dispositions
+                                for source_version_id in objective_by_id[
+                                    item.obligation_id
+                                ].source_version_ids
+                            }
+                        ),
+                    },
+                    operation=None,
+                    canonical_target=None,
+                    limitations=(
+                        "The gap must remain explicit until evidence is supplied or the boundary is accepted by a reviewer.",
+                    ),
+                )
+            )
+        return tuple(_with_draft_diff(item, self.package) for item in output)
+
+    def _project_normalized_source_candidates(
+        self,
+    ) -> tuple[ConstructionCandidateV1, ...]:
+        """Expose deterministic source normalization to the same human boundary."""
+
+        assert self.agentic is not None
+        versions = {
+            item.source_id: item for item in self.agentic.plan.versions
+        }
+        operations = normalized_source_operations(
+            self.agentic.plan.versions,
+            owner=self.package.scenario.owner,
+            output_language=self.agentic.plan.objective.output_language,
+        )
+        output: list[ConstructionCandidateV1] = []
+        for operation in operations:
+            version = versions[operation.object_id]
+            payload = operation.payload or {}
+            output.append(
+                _candidate(
+                    candidate_type="SOURCE",
+                    source_key=f"normalized-source:{version.source_version_id}",
+                    label=str(payload.get("title") or operation.object_id),
+                    definition=(
+                        "Immutable Source Library version normalized for ontology "
+                        "lineage; it does not approve claims derived from the file."
+                    ),
+                    support_class="DERIVED_DETERMINISTIC",
+                    proposal={
+                        "contract": "agentic-source-normalization/v1",
+                        "source_id": version.source_id,
+                        "source_version_id": version.source_version_id,
+                        "content_checksum": version.content_checksum,
+                        "subject_checksum": version.subject_checksum,
+                        "processing_mode": version.processing_mode,
+                    },
+                    operation=operation,
+                    canonical_target=operation.object_id,
+                    limitations=(
+                        "System-normalized source identity only; business interpretation remains subject to review.",
+                    ),
+                )
+            )
+        return tuple(_with_draft_diff(item, self.package) for item in output)
+
+    def start_agentic(
+        self,
+        *,
+        job: ConstructionJobV1,
+        commit_fence: Callable[[], None] | None = None,
+        execution_fence: Callable[[], None] | None = None,
+        progress_callback: (
+            Callable[[ConstructionJobStage, int, str], None] | None
+        ) = None,
+    ) -> ConstructionRunV1:
+        if self.agentic is None or job.engine_contract is None or job.build_objective is None:
+            raise ConstructionError("Agentic Builder is not configured for this job")
+        workspace = self._workspace()
+        plan = self.agentic.plan
+        if (
+            workspace.workspace_id != job.workspace_id
+            or workspace.package_id != job.solution_id
+            or workspace.revision != job.base_revision
+            or workspace.draft_checksum != job.base_draft_checksum
+        ):
+            raise WorkspaceConflictError("Agentic construction input is stale")
+        engine_matches = plan.engine == job.engine_contract
+        if job.resume_from_attempt_id is not None:
+            try:
+                validate_continuation_engine_contract(
+                    plan.engine,
+                    job.engine_contract,
+                )
+            except ConstructionJobConflict as exc:
+                raise ConstructionError(
+                    "Frozen Agentic Builder continuation authority no longer matches"
+                ) from exc
+            engine_matches = True
+        if (
+            plan.objective != job.build_objective
+            or not engine_matches
+            or tuple(item.source_version_id for item in plan.versions)
+            != job.selected_source_version_ids
+            or plan.objective.source_set_digest != job.source_set_digest
+        ):
+            raise ConstructionError("Frozen Agentic Builder inputs no longer match")
+        if not job.attempt_id or not job.lease_owner:
+            raise ConstructionError("Agentic Builder requires an active worker lease")
+
+        context = RunAuthorityContextV1(
+            job_id=job.job_id,
+            run_id=job.run_id,
+            attempt_id=job.attempt_id,
+            lease_epoch=job.lease_epoch,
+            lease_owner=job.lease_owner,
+            workspace_id=job.workspace_id,
+            solution_id=job.solution_id,
+            source_set_digest=job.source_set_digest,
+            selected_source_version_ids=job.selected_source_version_ids,
+            principal_id=self.agentic.principal_id,
+            tool_registry_digest=job.engine_contract.tool_registry_digest,
+            tool_policy_digest=job.engine_contract.tool_policy_digest,
+            objective_checksum=job.build_objective.objective_checksum,
+            candidate_revision=0,
+            step_sequence=0,
+            remaining_model_calls=job.engine_contract.max_model_calls,
+            remaining_tool_calls=job.engine_contract.max_tool_calls,
+        )
+        started = datetime.now(timezone.utc)
+        try:
+            normalized_sources = normalized_source_operations(
+                plan.versions,
+                owner=self.package.scenario.owner,
+                output_language=plan.objective.output_language,
+            )
+            candidate_base_package = apply_package_operations(
+                self.package,
+                normalized_sources,
+            )
+            self.agentic.checkpoint_store.start_attempt(
+                context,
+                job.build_objective,
+                candidate_base_package,
+                resume_from_attempt_id=job.resume_from_attempt_id,
+            )
+            evidence = ExactEvidenceWorkspace(
+                context=context,
+                versions=plan.versions,
+                store=self.agentic.source_store,
+            )
+            harness = StudioToolHarness(
+                store=self.agentic.checkpoint_store,
+                evidence=evidence,
+                context=context,
+            )
+            trace = StudioAgentRuntime(
+                gateway=self.agentic.gateway,
+                checkpoint_store=self.agentic.checkpoint_store,
+            ).run(
+                engine=job.engine_contract,
+                objective=job.build_objective,
+                context=context,
+                skill_instructions=plan.skill_instructions,
+                harness=harness,
+                execution_fence=execution_fence,
+            )
+            candidates = (
+                *self._project_normalized_source_candidates(),
+                *self._project_agentic_candidates(context=context),
+            )
+        except AgentGatewayUnavailable as exc:
+            raise ConstructionRetryableError(
+                "Agentic Builder model turn is temporarily unavailable"
+            ) from exc
+        except (AgentRuntimeError, AgenticStoreError, EvidenceWorkspaceError) as exc:
+            raise ConstructionError("Agentic Builder failed before review handoff") from exc
+        if not candidates:
+            raise ConstructionError("Agentic Builder produced no review denominator")
+
+        source_indices = {item.source_version_id: item for item in evidence.list_sources()}
+        settlements = tuple(
+            ConstructionSourceSettlementV1(
+                source_id=version.source_id,
+                source_checksum=version.content_checksum,
+                locator=version.source_version_id,
+                source_kind=version.kind,
+                outcome=(
+                    "UNSUPPORTED"
+                    if source_indices[version.source_version_id].index_receipt.completeness
+                    == "UNSUPPORTED"
+                    else "SETTLED"
+                ),
+                detail=(
+                    "Registered exact bytes are archive-only for this parser set."
+                    if source_indices[version.source_version_id].index_receipt.completeness
+                    == "UNSUPPORTED"
+                    else "Exact bytes were indexed and remained bound to this run."
+                ),
+            )
+            for version in plan.versions
+        )
+        candidate_digest = sha256_value(
+            [item.revision_digest for item in candidates]
+        )
+        deterministic_findings = deterministic_candidate_findings(
+            candidates,
+            package=self.package,
+            evidence_bundle=None,
+        )
+        advisory_findings: tuple[ReviewerFindingV1, ...] = ()
+        if self.agentic.reviewer_skill is not None:
+            reviewer_input_digest = trace.completion.bundle.bundle_checksum
+            reviewer_implementation = (
+                f"{self.agentic.reviewer_skill.manifest.skill_id}@"
+                f"{self.agentic.reviewer_skill.manifest.version}"
+            )
+            try:
+                if progress_callback is not None:
+                    progress_callback(
+                        "REVIEWING_CANDIDATES",
+                        4,
+                        "REVIEWER_RUNNING",
+                    )
+                review_objective = compile_review_objective(
+                    run_id=job.run_id,
+                    workspace_id=workspace.workspace_id,
+                    solution_id=workspace.package_id,
+                    source_set_digest=job.source_set_digest,
+                    base_draft_checksum=workspace.draft_checksum,
+                    candidate_bundle_checksum=trace.completion.bundle.bundle_checksum,
+                    candidates=candidates,
+                    deterministic_findings=deterministic_findings,
+                    output_language=(
+                        job.authoring_language
+                        or self.agentic.plan.objective.output_language
+                    ),
+                )
+                reviewer_input_digest = review_objective.objective_checksum
+                review_engine = compile_review_engine(
+                    objective=review_objective,
+                    skill=self.agentic.reviewer_skill,
+                    provider=job.engine_contract.provider,
+                    requested_model=job.engine_contract.requested_model,
+                    parser_contract_digest=job.engine_contract.parser_contract_digest,
+                )
+                reviewer_implementation = (
+                    f"{review_engine.skill_id}@{review_engine.skill_version}"
+                )
+                review_harness = ReviewerToolHarness(
+                    objective=review_objective,
+                    candidates=candidates,
+                    deterministic_findings=deterministic_findings,
+                    evidence=evidence,
+                )
+                review_completion, review_usage = run_agentic_review(
+                    runtime=StudioAgentRuntime(
+                        gateway=self.agentic.gateway,
+                        checkpoint_store=self.agentic.checkpoint_store,
+                    ),
+                    engine=review_engine,
+                    objective=review_objective,
+                    skill_instructions=render_review_skill_instructions(
+                        self.agentic.reviewer_skill
+                    ),
+                    harness=review_harness,
+                    execution_fence=execution_fence,
+                )
+                advisory_findings = review_completion.findings
+                reviewer_stage = ConstructionStageReceiptV1(
+                    stage="REVIEWER_AGENT",
+                    status="PASS",
+                    input_digest=review_objective.objective_checksum,
+                    output_digest=review_completion.completion_checksum,
+                    item_count=len(advisory_findings),
+                    implementation=(
+                        f"{review_engine.skill_id}@{review_engine.skill_version}"
+                    ),
+                    detail=(
+                        "Fresh-context Reviewer completed "
+                        f"{review_usage['model_calls']} model turns and "
+                        f"{review_usage['tool_calls']} governed tool calls: "
+                        f"{review_usage['candidate_list_calls']} denominator pages, "
+                        f"{review_usage['candidate_get_calls']} Candidate batches, "
+                        f"{review_usage['exact_evidence_read_calls']} exact evidence "
+                        f"reads and {review_usage['finding_write_calls']} advisory "
+                        "finding writes. All model findings remain advisory."
+                    ),
+                )
+            except (AgenticReviewerError, AgentRuntimeError, EvidenceWorkspaceError) as exc:
+                reviewer_stage = ConstructionStageReceiptV1(
+                    stage="REVIEWER_AGENT",
+                    status="WARN",
+                    input_digest=reviewer_input_digest,
+                    output_digest=sha256_value(
+                        {
+                            "status": "ADVISORY_REVIEW_UNAVAILABLE",
+                            "error_type": type(exc).__name__,
+                        }
+                    ),
+                    item_count=0,
+                    implementation=reviewer_implementation,
+                    detail=(
+                        "Fresh-context Reviewer did not complete; no advisory findings "
+                        "were attached. The sealed Builder Bundle and deterministic "
+                        "findings remain available for mandatory human review."
+                    ),
+                )
+        else:
+            reviewer_stage = ConstructionStageReceiptV1(
+                stage="REVIEWER_AGENT",
+                status="SKIPPED",
+                input_digest=candidate_digest,
+                output_digest=sha256_value({"status": "REVIEWER_DISABLED"}),
+                item_count=0,
+                implementation="deterministic-precheck-only",
+                detail="Agentic Reviewer is disabled; mandatory human disposition remains.",
+            )
+        receipts = (
+            ConstructionStageReceiptV1(
+                stage="SOURCE_SETTLEMENT",
+                status=(
+                    "WARN"
+                    if any(item.outcome == "UNSUPPORTED" for item in settlements)
+                    else "PASS"
+                ),
+                input_digest=job.source_set_digest,
+                output_digest=sha256_value(
+                    [
+                        item.index_receipt.receipt_checksum
+                        for item in evidence.list_sources()
+                    ]
+                ),
+                item_count=len(settlements),
+                implementation="ontology-studio/exact-evidence-workspace@2",
+                detail="Frozen source bytes were verified and indexed with explicit parser completeness.",
+            ),
+            ConstructionStageReceiptV1(
+                stage="STRUCTURED_EXTRACTION",
+                status="PASS",
+                input_digest=job.source_set_digest,
+                output_digest=job.build_objective.objective_checksum,
+                item_count=len(job.build_objective.obligations),
+                implementation="ontology-studio/build-objective-compiler@1",
+                detail="The immutable obligation denominator was compiled before model execution.",
+            ),
+            ConstructionStageReceiptV1(
+                stage="BUILDER_AGENT",
+                status="PASS",
+                input_digest=job.engine_contract.engine_checksum,
+                output_digest=trace.completion.bundle.bundle_checksum,
+                item_count=len(trace.completion.bundle.operations),
+                implementation=(
+                    f"{job.engine_contract.skill_id}@{job.engine_contract.skill_version}"
+                ),
+                detail=(
+                    f"Agent completed {trace.model_calls} model turns and {trace.tool_calls} governed tool calls."
+                ),
+            ),
+            ConstructionStageReceiptV1(
+                stage="PACKAGED_CASE_COMPILATION",
+                status="SKIPPED",
+                input_digest=candidate_digest,
+                output_digest=sha256_value({"status": "NOT_USED"}),
+                item_count=0,
+                implementation="not-used",
+                detail="No case-specific compiler was used by the Agentic Builder path.",
+            ),
+            ConstructionStageReceiptV1(
+                stage="SEMANTICA_PROPOSAL",
+                status="SKIPPED",
+                input_digest=candidate_digest,
+                output_digest=sha256_value({"status": "AVAILABLE_AS_TOOLS_NOT_AUTHORITY"}),
+                item_count=0,
+                implementation="agent-tools-boundary",
+                detail="Optional semantic tooling does not own this run or write Draft.",
+            ),
+            ConstructionStageReceiptV1(
+                stage="CANDIDATE_PRECHECK",
+                status=(
+                    "WARN"
+                    if trace.completion.outcome == "BLOCKED"
+                    else "PASS"
+                ),
+                input_digest=candidate_digest,
+                output_digest=sha256_value(
+                    {
+                        "outcome": trace.completion.outcome,
+                        "validator_reports": trace.completion.bundle.validator_report_digests,
+                    }
+                ),
+                item_count=len(candidates),
+                implementation="ontology-studio/candidate-completion-gate@2",
+                detail="Server-owned completion checked typed materialization, reference closure and obligation disposition.",
+            ),
+            reviewer_stage,
+        )
+        machine_findings = (*deterministic_findings, *advisory_findings)
+        unsigned = {
+            "contract": "construction-run/v1",
+            "run_id": job.run_id,
+            "attempt_id": job.attempt_id,
+            "lease_epoch": job.lease_epoch,
+            "workspace_id": workspace.workspace_id,
+            "solution_id": workspace.package_id,
+            "base_revision": workspace.revision,
+            "base_draft_checksum": workspace.draft_checksum,
+            "source_set_digest": job.source_set_digest,
+            "authoring_language": job.authoring_language,
+            "language_policy_digest": job.language_policy_digest,
+            "profile_ref": job.profile_ref,
+            "status": "NEEDS_REVIEW",
+            "engine_status": "COMPLETED",
+            "selected_sources": settlements,
+            "stage_receipts": receipts,
+            "candidates": candidates,
+            "machine_findings": machine_findings,
+            "started_at": started,
+            "completed_at": datetime.now(timezone.utc),
+        }
+        provisional = ConstructionRunV1(**unsigned, run_checksum="0" * 64)
+        run = provisional.model_copy(
+            update={
+                "run_checksum": sha256_value(
+                    provisional.model_dump(
+                        mode="json", exclude={"run_checksum"}, exclude_none=True
+                    )
+                )
+            }
+        )
+        current = self.workspace.get(workspace.workspace_id)
+        if (
+            current.revision != workspace.revision
+            or current.draft_checksum != workspace.draft_checksum
+        ):
+            raise WorkspaceConflictError("Agentic construction result is stale")
+        if commit_fence is not None:
+            commit_fence()
+        self.store.put_run(run)
+        return run
+
     def job_input(self, *, expected_revision: int) -> ConstructionJobInputV1:
         workspace = self._workspace()
         if workspace.revision != expected_revision:
             raise WorkspaceConflictError("Draft revision conflict")
+        if self.agentic is not None:
+            plan = self.agentic.plan
+            if (
+                plan.objective.workspace_id != workspace.workspace_id
+                or plan.objective.solution_id != workspace.package_id
+            ):
+                raise ConstructionError("Agentic Build Plan escaped the workspace")
+            return ConstructionJobInputV1(
+                workspace_id=workspace.workspace_id,
+                solution_id=workspace.package_id,
+                base_revision=workspace.revision,
+                base_draft_checksum=workspace.draft_checksum,
+                source_set_digest=plan.objective.source_set_digest,
+                selected_source_version_ids=plan.objective.selected_source_version_ids,
+                authoring_language=plan.objective.output_language,
+                language_policy_digest=(
+                    self.package.authoring_policy.policy_digest
+                    if self.package.authoring_policy is not None
+                    else None
+                ),
+                profile_ref=(
+                    f"agentic-builder/{plan.engine.skill_id}@{plan.engine.skill_version}"
+                ),
+                engine_contract=plan.engine,
+                build_objective=plan.objective,
+            )
         settlements = self._source_settlements()
         source_set_digest = sha256_value(
             [item.model_dump(mode="json") for item in settlements]
@@ -2227,7 +2889,8 @@ class StudioConstructionService:
                 candidate_blockers = tuple(
                     finding.finding_id
                     for finding in run.machine_findings
-                    if finding.blocks_release
+                    if finding.finding_authority == "DETERMINISTIC"
+                    and finding.blocks_release
                     and disposition.candidate_id in finding.candidate_ids
                 )
                 if disposition.action in {"ACCEPT", "EDIT"} and candidate_blockers:

@@ -30,6 +30,56 @@ COLLECTIONS = (
 )
 
 
+def test_required_scenario_has_a_typed_reviewable_write_path(
+    package: OntologyPackage,
+) -> None:
+    edited = package.scenario.model_copy(
+        update={"definition": "A reviewable scenario definition."}
+    )
+    operation = PackageDraftOperation(
+        action="UPSERT",
+        collection="scenario",
+        object_id=package.scenario.id,
+        payload=edited.model_dump(mode="json"),
+    )
+
+    candidate = apply_package_operations(package, (operation,))
+
+    assert candidate.scenario.id == package.scenario.id
+    assert candidate.scenario.definition == "A reviewable scenario definition."
+    assert candidate.scenario.status == "proposed"
+
+
+def test_scenario_write_cannot_replace_package_identity(
+    package: OntologyPackage,
+) -> None:
+    payload = package.scenario.model_copy(
+        update={"id": "scenario.unrelated"}
+    ).model_dump(mode="json")
+
+    with pytest.raises(ValueError, match="preserve the package scenario identity"):
+        apply_package_operations(
+            package,
+            (
+                PackageDraftOperation(
+                    action="UPSERT",
+                    collection="scenario",
+                    object_id="scenario.unrelated",
+                    payload=payload,
+                ),
+            ),
+        )
+
+
+def test_required_scenario_cannot_be_deprecated() -> None:
+    with pytest.raises(ValidationError, match="cannot be deprecated"):
+        PackageDraftOperation(
+            action="DEPRECATE",
+            collection="scenario",
+            object_id="scenario.example",
+        )
+
+
 def test_exact_source_can_be_registered_without_fabricating_review_status(
     package: OntologyPackage,
 ) -> None:

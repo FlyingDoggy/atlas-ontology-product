@@ -139,7 +139,11 @@ def product_context_subject(snapshot: VerifiedSnapshot) -> ProductContextSubject
     package = snapshot.package
     certification = snapshot.manifest.get("certification") or {}
     return ProductContextSubjectV1(
-        context_id="context.adt.reference",
+        context_id=(
+            "context.adt.reference"
+            if package.package_id == "ontology.exchange_analytics.adt"
+            else f"context.{package.scenario.id}.active"
+        ),
         solution_id=package.package_id,
         solution_version=package.version,
         scenario_id=package.scenario.id,

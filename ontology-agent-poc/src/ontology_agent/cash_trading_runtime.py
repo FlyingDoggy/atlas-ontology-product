@@ -278,6 +278,7 @@ class CashTradingDuckDB:
               t.base_notional_before_haircut AS base_notional_usd,
               t.transaction_timestamp,
               t.receive_timestamp,
+              ep.participant_type,
               TRUE AS is_eligible_trade,
               coalesce(
                 upper(trim(ep.participant_type)) = 'CLIENT'
@@ -321,7 +322,6 @@ class CashTradingDuckDB:
               LEFT JOIN corrected_originals AS c
                 ON c.id = o.activity_id
               WHERE upper(trim(coalesce(o.correction_indicator, 'N'))) NOT IN ('Y', 'TRUE', '1')
-                AND o.reference_activity_id IS NULL
                 AND c.id IS NULL
             ), effective_participant AS (
               SELECT
@@ -343,6 +343,7 @@ class CashTradingDuckDB:
                 concat(o.venue_code, '|', cast(o.trading_date AS VARCHAR), '|', o.order_id)
                   AS lifecycle_key,
                 o.*,
+                ep.participant_type AS participant_type,
                 coalesce(
                   upper(trim(ep.participant_type)) = 'CLIENT'
                     AND upper(trim(ep.participant_status)) = 'ACTIVE',
@@ -372,6 +373,9 @@ class CashTradingDuckDB:
                 max(CASE WHEN latest_rank = 1 THEN market_segment END) AS market_segment,
                 max(CASE WHEN latest_rank = 1 THEN instrument_id END) AS instrument_id,
                 max(CASE WHEN latest_rank = 1 THEN participant_id END) AS participant_id,
+                max(CASE WHEN latest_rank = 1 THEN participant_type END) AS participant_type,
+                max(CASE WHEN latest_rank = 1 THEN order_type END) AS order_type,
+                max(CASE WHEN latest_rank = 1 THEN session_phase END) AS session_phase,
                 bool_or(latest_rank = 1 AND is_client_event) AS is_client,
                 bool_or(upper(trim(activity_type)) IN ('NEW', 'REJECT')) AS is_submitted,
                 bool_or(
@@ -400,6 +404,9 @@ class CashTradingDuckDB:
               market_segment,
               instrument_id,
               participant_id,
+              participant_type,
+              order_type,
+              session_phase,
               is_client,
               is_submitted,
               is_rejected,

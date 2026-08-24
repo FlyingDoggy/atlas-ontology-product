@@ -1,38 +1,9 @@
 {
   "contract": "model-projection-policy/v1",
-  "policy_id": "cash-trading.synthetic.model-projection.v1",
-  "version": "1.0.0",
+  "policy_id": "cash-trading.deepagent.projection.v2",
+  "version": "2.0.0",
   "classification": "constructed_synthetic",
-  "question_projection_fields": [
-    "contract",
-    "family_id",
-    "family_checksum",
-    "case_id",
-    "language",
-    "question",
-    "date_range",
-    "participant_id",
-    "allowed_intents"
-  ],
-  "evidence_projection_fields": [
-    "contract",
-    "run_id",
-    "step_id",
-    "tool_id",
-    "result_contract",
-    "aggregate_values",
-    "synthetic_identifiers",
-    "claim_handles",
-    "mandatory_limitations"
-  ],
-  "denied_field_tokens": [
-    "raw_bundle",
-    "filesystem_path",
-    "credential",
-    "api_key",
-    "unapproved_sql",
-    "production_table",
-    "production_column",
-    "policy_detail"
-  ]
+  "question_projection_fields": ["contract", "family_id", "family_checksum", "case_id", "language", "question", "allowed_intents", "role", "active_package_id", "active_package_version"],
+  "evidence_projection_fields": ["metric_id", "metric_definition", "source_ids", "decision_ids", "mapping_ids", "query_hash", "aggregate_rows", "limitations"],
+  "denied_field_tokens": ["credential", "api_key", "filesystem_path", "production_table", "production_column"]
 }

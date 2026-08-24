@@ -325,7 +325,7 @@ export function StudioWorkbenchView({
                           <div><span>OBJECT</span><h4>{selectedEntity.name.zh}</h4><code>{selectedEntity.id}</code></div>
                           <p>{selectedEntity.definition}</p>
                           <dl>
-                            <div><dt>Primary key</dt><dd>{selectedEntity.primary_key}</dd></div>
+                            <div><dt>Primary key</dt><dd>{Array.isArray(selectedEntity.primary_key) ? selectedEntity.primary_key.join(" + ") : selectedEntity.primary_key}</dd></div>
                             <div><dt>Grain</dt><dd>{selectedEntity.grain}</dd></div>
                             <div><dt>Lifecycle</dt><dd>{selectedEntity.lifecycle}</dd></div>
                             <div><dt>Owner</dt><dd>{selectedEntity.owner}</dd></div>

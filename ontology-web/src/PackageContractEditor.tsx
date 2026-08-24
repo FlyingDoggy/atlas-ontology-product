@@ -70,6 +70,9 @@ function templateFor(
   const actor = ontologyPackage.actors[0]?.id ?? "actor.pending";
   const pattern = ontologyPackage.analysis_patterns[0]?.id ?? "analysis_pattern.pending";
   switch (collection) {
+    // Scenario is a singleton package root. Builder/Reviewer operations may update it,
+    // while the generic collection editor intentionally keeps it out of its list UI.
+    case "scenario": return { ...ontologyPackage.scenario };
     case "sources": return {
       id: "source.new",
       source_type: "assumption_register",

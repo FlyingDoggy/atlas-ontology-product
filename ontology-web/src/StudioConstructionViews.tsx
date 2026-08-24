@@ -46,7 +46,9 @@ const stageLabels: Record<string, string> = {
 };
 
 const candidateTypeLabels: Record<ConstructionCandidate["candidate_type"], string> = {
+  SCENARIO: "场景",
   SOURCE: "来源",
+  DECISION: "决策",
   GAP: "缺口",
   REQUIREMENT: "需求",
   ACTOR: "角色",
@@ -80,6 +82,9 @@ const jobProgressLabels: Record<string, string> = {
   JOB_QUEUED: "等待后台执行",
   SETTLING_SOURCES: "正在核对材料版本与证据身份",
   BUILDING_CANDIDATES: "正在提取并构建候选资产",
+  BUILDER_RUNNING: "Builder 正在读取证据并构建候选资产",
+  MODEL_GATEWAY_RETRY_PENDING: "模型服务短暂波动，将从最近检查点继续",
+  REVIEWER_RUNNING: "正在独立复核候选资产",
   PERSISTING_RESULT: "正在保存不可变候选集合",
   JOB_COMPLETED: "候选集合已保存，等待人工复核",
   JOB_FAILED: "执行失败，请查看技术原因",
@@ -202,7 +207,7 @@ export function ConstructionRunsView({
       {latestJob ? <section className={`construction-job-banner is-${latestJob.status.toLowerCase()}`} aria-live="polite">
         <div><span>构建任务</span><strong>{latestJob.status === "QUEUED" ? "已排队" : latestJob.status === "RUNNING" ? "正在后台构建" : latestJob.status === "COMMITTING" ? "正在保存候选集合" : latestJob.status === "CANCEL_REQUESTED" ? "正在取消" : latestJob.status === "SUCCEEDED" ? "执行已结束" : latestJob.status === "STALE" ? "输入已变化，结果未应用" : latestJob.status === "CANCELLED" ? "已取消" : "执行失败"}</strong><code>{shortId(latestJob.job_id)} · {latestJob.selected_source_version_ids.length ? `${latestJob.selected_source_version_ids.length} 个来源版本` : "工作区来源"}</code></div>
         <div className="construction-job-progress"><span><i style={{ width: `${jobProgress}%` }} /></span><b>{jobProgress}%</b><small>{jobProgressLabels[latestJob.progress_message] ?? latestJob.progress_message}</small></div>
-        <div className="construction-job-actions"><Link to={`/ontology-studio/tasks/${encodeURIComponent(latestJob.job_id)}/`}>查看任务</Link>{latestJob.status === "SUCCEEDED" && latestJob.result_run_id ? <Link className="is-primary" to={studioBuildReviewHref(latestJob.solution_id, latestJob.result_run_id)}>进入人工复核</Link> : null}{!readOnly && activeJob && ["QUEUED", "RUNNING"].includes(activeJob.status) ? <button type="button" disabled={busy} onClick={() => onCancel(activeJob.job_id)}>取消任务</button> : null}{!readOnly && ["FAILED", "CANCELLED", "STALE"].includes(latestJob.status) ? <button type="button" disabled={busy || latestJob.base_revision !== currentRevision} onClick={() => onRetry(latestJob.job_id)}>重试同一输入</button> : null}</div>
+        <div className="construction-job-actions"><Link to={`/ontology-studio/tasks/${encodeURIComponent(latestJob.job_id)}/`}>查看任务</Link>{latestJob.status === "SUCCEEDED" && latestJob.result_run_id ? <Link className="is-primary" to={studioBuildReviewHref(latestJob.solution_id, latestJob.result_run_id)}>进入人工复核</Link> : null}{!readOnly && activeJob && ["QUEUED", "RUNNING"].includes(activeJob.status) ? <button type="button" disabled={busy} onClick={() => onCancel(activeJob.job_id)}>取消任务</button> : null}{!readOnly && ["FAILED", "CANCELLED", "STALE"].includes(latestJob.status) ? <button type="button" disabled={busy || latestJob.base_revision !== currentRevision} onClick={() => onRetry(latestJob.job_id)}>{latestJob.attempt_id ? "继续修复" : "重新构建"}</button> : null}</div>
       </section> : null}
 
       {latest ? (

@@ -1,0 +1,22 @@
+{
+  "contract": "agent-skill-package/v2",
+  "skill_id": "ontology-build",
+  "version": "2.0.4",
+  "role": "BUILDER",
+  "entrypoint": "SKILL.md",
+  "references": ["references/modeling-method.md"],
+  "evals": ["evals/production-tracer.md"],
+  "tool_ids": [
+    "evidence.list_sources", "evidence.search", "evidence.read",
+    "spreadsheet.list_sheets", "spreadsheet.read_range",
+    "sql.inspect", "sql.read_statement", "schema.get_collection",
+    "candidate.list", "candidate.get", "candidate.upsert",
+    "candidate.apply_patch", "obligation.cover", "gap.record",
+    "candidate.validate", "run.update_working_memory", "run.request_completion"
+  ],
+  "completion_tool_id": "run.request_completion",
+  "max_model_calls": 320,
+  "max_tool_calls": 640,
+  "human_review_required": true,
+  "direct_draft_write": false
+}

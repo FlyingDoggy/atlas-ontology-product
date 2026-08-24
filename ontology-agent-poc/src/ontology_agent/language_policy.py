@@ -15,8 +15,9 @@ from .models import (
 
 _HAN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 _ENGLISH_WORD = re.compile(r"[A-Za-z]{2,}")
-_TECHNICAL_VALUE = re.compile(r"^[A-Za-z0-9_.$:/@+\-\[\](),=*<>\s]+$")
+_TECHNICAL_VALUE = re.compile(r"^[A-Za-z0-9_.$:/@+|\[\](),=*<>]+$")
 _HUMAN_TEXT_KEYS = {
+    "name",
     "definition",
     "description",
     "rationale",
@@ -31,6 +32,11 @@ _HUMAN_TEXT_KEYS = {
     "trigger",
     "grain",
     "lifecycle",
+    "operation",
+    "exception_paths",
+    "failure_conditions",
+    "examples",
+    "null_meaning",
 }
 _EXACT_KEYS = {
     "id",
@@ -87,6 +93,28 @@ def _without_allowlist(value: str, allowlist: tuple[str, ...]) -> str:
     return cleaned
 
 
+def _english_prose_words(value: str) -> list[str]:
+    words: list[str] = []
+    for match in _ENGLISH_WORD.finditer(value):
+        start = match.start()
+        end = match.end()
+        while start > 0 and not value[start - 1].isspace():
+            start -= 1
+        while end < len(value) and not value[end].isspace():
+            end += 1
+        token = value[start:end].strip("，。；：、（）()[]{}<>\"'`")
+        # Inline identifiers, checksums, locators and acronyms are contracts,
+        # even when they appear next to Chinese prose. Hyphenated natural words
+        # are deliberately not exempted (for example, "Append-only event").
+        if any(char.isdigit() or char in "_.$:/@+|[](),=*<>" for char in token):
+            continue
+        word = match.group(0)
+        if word.isupper():
+            continue
+        words.append(word)
+    return words
+
+
 def text_language_violation(
     value: str,
     policy: OntologyAuthoringPolicyV1,
@@ -101,13 +129,22 @@ def text_language_violation(
             return "contains Chinese text while the Solution authoring language is English"
         return None
     if _HAN.search(cleaned):
+        # Chinese prose may legitimately contain exact identifiers and common
+        # acronyms, but a Han character must not become an escape hatch for an
+        # otherwise English sentence.  Lower-case prose of three or more words
+        # is a reliable boundary while terms such as SQL, ID and SCD2 remain
+        # usable without manufacturing translations.
+        prose_words = _english_prose_words(cleaned)
+        if len(prose_words) >= 3:
+            return "contains English prose while the Solution authoring language is Chinese"
         return None
     words = _ENGLISH_WORD.findall(cleaned)
-    if short_label and len(words) <= 4:
+    # Exact identifiers and governed literals have no prose whitespace.  They
+    # are contracts, not authoring-language content.  Brand/domain phrases must
+    # be explicit allowed_verbatim_terms instead of relying on word count.
+    if _TECHNICAL_VALUE.fullmatch(cleaned):
         return None
-    if _TECHNICAL_VALUE.fullmatch(cleaned) and len(words) <= 8:
-        return None
-    if len(words) >= 5:
+    if words:
         return "contains English prose while the Solution authoring language is Chinese"
     return None
 
@@ -153,14 +190,13 @@ def package_language_violations(package: OntologyPackage) -> tuple[str, ...]:
         return ()
     violations: list[str] = []
     for item in package.governed_objects():
-        primary = getattr(item.name, policy.authoring_language)
-        if primary is None:
-            violations.append(f"{item.id}.name.{policy.authoring_language}: primary name is missing")
-        else:
-            issue = text_language_violation(primary, policy, short_label=True)
-            if issue:
-                violations.append(f"{item.id}.name.{policy.authoring_language}: {issue}")
-        issue = text_language_violation(item.definition, policy)
-        if issue:
-            violations.append(f"{item.id}.definition: {issue}")
-    return tuple(violations)
+        # Candidate writes and final package validation must enforce the same
+        # boundary.  Checking only name/definition allowed English grain,
+        # lifecycle, field descriptions and question examples to leak into an
+        # otherwise Chinese ontology after materialisation.
+        for violation in operation_language_violations(
+            item.model_dump(mode="json"),
+            policy,
+        ):
+            violations.append(f"{item.id}.{violation}")
+    return tuple(dict.fromkeys(violations))

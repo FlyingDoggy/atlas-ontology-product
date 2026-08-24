@@ -511,36 +511,10 @@ class _CashPackageBuilderModel:
 
 
 def _cash_build_target() -> OntologyPackage:
-    """Keep the reviewed Cash semantics while respecting one bounded phase call."""
+    """Return the complete reviewed Cash package for the E2E build fixture."""
 
-    target = load_package(
+    return load_package(
         DEFAULT_CASH_TRADING_SCENARIO_DIR / "ontology" / "package.yaml"
-    )
-    omitted_relationship_ids = {
-        "relationship.trade_participant",
-        "relationship.order_participant",
-    }
-    omitted_property_ids = {
-        "property.order.order_id",
-        "property.order.trading_date",
-        "property.order.order_status",
-        "property.order.transaction_timestamp",
-        "property.instrument.primary_symbol",
-        "property.calendar.is_trading_day",
-    }
-    return target.model_copy(
-        update={
-            "properties": tuple(
-                item
-                for item in target.properties
-                if item.id not in omitted_property_ids
-            ),
-            "relationships": tuple(
-                item
-                for item in target.relationships
-                if item.id not in omitted_relationship_ids
-            ),
-        }
     )
 
 

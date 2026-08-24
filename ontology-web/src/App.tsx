@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import ReactMarkdown from "react-markdown";
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import remarkGfm from "remark-gfm";
 
 import {
   fetchProductContext,
@@ -38,15 +40,12 @@ import {
   prepareAgentRuntime,
   validateDraft,
   verifyAgentRuntime,
-  submitSemanticChangeRequest,
   ProductApiError,
   type DraftOperationValue,
   type ProductContext,
   type PackageDraftOperation,
   type AgentSolution,
   type SolutionAnalysis,
-  type SolutionOntology,
-  type SemanticChangeRequestInput,
   type ConstructionDisposition,
   type StudioWorkbench,
   type AgentRuntimeStatus,
@@ -59,6 +58,7 @@ import {
   type AuthSession,
 } from "./api";
 import { formatDisplayValue } from "./display";
+import { LanguageSwitch, LegacyUiLocalizer, useUiLocale } from "./i18n";
 import { StudioWorkbenchView, type WorkbenchTab } from "./StudioWorkbench";
 import {
   StudioNavigation,
@@ -75,8 +75,6 @@ import {
   type StudioSubpageId,
 } from "./StudioNavigation";
 import { StudioSolutionDirectory } from "./StudioSolutionDirectory";
-import { SemanticChangeRequestPanel } from "./SemanticChangeRequestPanel";
-import { AgentExecutionEvidence } from "./AgentExecutionEvidence";
 import {
   MappingWorkbenchView,
   OntologyGraphEditor,
@@ -115,6 +113,7 @@ function shortDigest(value: string): string {
 }
 
 function SolutionSwitcher({ selectedId, kind, canOperate }: { selectedId: string; kind: ProductKind; canOperate: boolean }) {
+  const { name, t } = useUiLocale();
   const agentQuery = useQuery({
     queryKey: ["agent-solution-catalog", "header"],
     queryFn: fetchAgentSolutionCatalog,
@@ -148,9 +147,9 @@ function SolutionSwitcher({ selectedId, kind, canOperate }: { selectedId: string
   };
   return (
     <details className="solution-switcher">
-      <summary aria-label="切换解决方案">
+      <summary aria-label={t("切换解决方案", "Switch solution")}>
         <span>Solution</span>
-        <strong>{selected?.display_name.zh ?? "选择解决方案"}</strong>
+        <strong>{selected ? name(selected.display_name) : t("选择解决方案", "Select solution")}</strong>
         <small>{selected ? `v${selected.solution_version}` : ""}</small>
       </summary>
       <div className="solution-switcher-popover">
@@ -159,7 +158,7 @@ function SolutionSwitcher({ selectedId, kind, canOperate }: { selectedId: string
           {visible.map((solution) => (
             <a href={destination(solution.solution_id)} className={solution.solution_id === selectedId ? "is-selected" : ""} key={solution.solution_id}>
               <span>{solution.solution_id === selectedId ? "✓" : ""}</span>
-              <div><strong>{solution.display_name.zh}</strong><small>{solution.display_name.en}</small></div>
+              <div><strong>{name(solution.display_name)}</strong><small>{solution.solution_id}</small></div>
               <code>v{solution.solution_version}</code>
             </a>
           ))}
@@ -188,6 +187,7 @@ function Header({
   directoryHome?: boolean;
   taskCenter?: boolean;
 }) {
+  const { t } = useUiLocale();
   const otherUrl = directoryHome || taskCenter
     ? "/ontology-agent/"
     : kind === "agent"
@@ -213,9 +213,10 @@ function Header({
         </span>
       </a>
       <div className="header-actions">
+        <LanguageSwitch />
         {session?.authenticated ? <span className={`access-role is-${session.role}`}><i aria-hidden="true" />{session.role === "operator" ? "配置人员" : "只读访问"}<small>{session.username}</small></span> : <span className="access-role is-loading">正在确认权限</span>}
         {directoryHome || taskCenter
-          ? <span className="header-directory-context">{taskCenter ? "任务中心" : "解决方案目录"}</span>
+          ? <span className="header-directory-context">{taskCenter ? t("任务中心", "Task Center") : t("解决方案目录", "Solution Catalog")}</span>
           : <SolutionSwitcher selectedId={solutionId} kind={kind} canOperate={session?.authenticated === true && session.role === "operator"} />}
         <a className="product-switch" href={otherUrl}>
           {phaseLabels[kind].companion}
@@ -243,6 +244,28 @@ const outcomeLabels: Record<NonNullable<StudioBuildTask["result_outcome"]>, stri
   REVIEW_READY_WITH_WARNINGS: "可复核（有警告）",
   REVIEW_READY: "可复核",
   NO_APPLICABLE_CHANGES: "无适用变更",
+};
+
+const taskProgressLabels: Record<string, string> = {
+  JOB_QUEUED: "等待执行",
+  SOURCE_VERSIONS_BOUND: "正在锁定来源版本",
+  BUILDER_RUNNING: "Builder 正在构建候选",
+  MODEL_GATEWAY_RETRY_PENDING: "模型服务波动，准备从检查点继续",
+  REVIEWER_RUNNING: "正在执行机器复核",
+  IMMUTABLE_RUN_COMMITTING: "正在保存不可变结果",
+  IMMUTABLE_RUN_COMMITTED: "构建结果已保存",
+  CANCEL_REQUESTED: "正在安全取消",
+  CANCELLED_BY_USER: "已取消",
+  CONSTRUCTION_FAILED: "构建执行失败",
+  MODEL_GATEWAY_UNAVAILABLE: "模型服务持续不可用",
+};
+
+const agentActivityLabels: Record<NonNullable<StudioBuildTask["activity"]>["activity_stage"], string> = {
+  PREPARING: "准备构建上下文",
+  READING_SOURCES: "读取与核对来源证据",
+  MODELING: "生成并修订候选语义",
+  VALIDATING: "验证候选包并修复问题",
+  FINALIZING: "封存候选包",
 };
 
 function taskDestination(task: StudioBuildTask): string {
@@ -296,14 +319,14 @@ function StudioTaskCenter({ session }: { session: AuthSession | null }) {
               <div><strong>{task.solution_name}</strong><code>{task.task_id}</code><small>{new Date(task.updated_at).toLocaleString("zh-CN", { hour12: false })}</small></div>
               <span className={`task-status is-${task.execution_status.toLowerCase()}`}>{executionLabels[task.execution_status]}</span>
               <span className={`task-outcome is-${(task.result_outcome ?? "pending").toLowerCase()}`}>{task.result_outcome ? outcomeLabels[task.result_outcome] : "尚未形成"}</span>
-              <div className="task-progress"><span><i style={{ width: `${Math.min(100, Math.round(task.completed_stages / task.total_stages * 100))}%` }} /></span><small>{task.completed_stages} / {task.total_stages}</small></div>
+              <div className="task-progress"><span><i style={{ width: `${Math.min(100, Math.round(task.completed_stages / task.total_stages * 100))}%` }} /></span><small>{task.activity ? agentActivityLabels[task.activity.activity_stage] : taskProgressLabels[task.progress_message] ?? `${task.completed_stages} / ${task.total_stages}`}</small></div>
               <Link className="row-action" to={taskDestination(task)}>{task.review_status === "NEEDS_REVIEW" ? "进入复核" : task.destination.type === "RESULT" ? "查看结果" : "查看任务"}</Link>
             </article>) : <div className="task-empty"><strong>当前筛选下没有任务</strong><p>从任一解决方案的“构建与复核”发起构建后，任务会出现在这里。</p></div>}
           </section>
           {selected ? <aside className="task-detail-panel">
             <Link to="/ontology-studio/tasks/" aria-label="关闭任务详情">×</Link>
             <span>TASK DETAIL</span><h2>{selected.solution_name}</h2><code>{selected.task_id}</code>
-            <dl><div><dt>执行状态</dt><dd>{executionLabels[selected.execution_status]}</dd></div><div><dt>业务结果</dt><dd>{selected.result_outcome ? outcomeLabels[selected.result_outcome] : "尚未形成"}</dd></div><div><dt>当前阶段</dt><dd>{selected.progress_message}</dd></div><div><dt>候选</dt><dd>{selected.candidate_count} 项，其中 {selected.compilable_count} 项可应用</dd></div><div><dt>阻断项</dt><dd>{selected.blocker_count}</dd></div><div><dt>输出语言</dt><dd>{selected.authoring_language === "zh" ? "中文" : selected.authoring_language === "en" ? "英文" : "尚未锁定"}</dd></div></dl>
+            <dl><div><dt>执行状态</dt><dd>{executionLabels[selected.execution_status]}</dd></div><div><dt>业务结果</dt><dd>{selected.result_outcome ? outcomeLabels[selected.result_outcome] : "尚未形成"}</dd></div><div><dt>当前阶段</dt><dd>{selected.activity ? agentActivityLabels[selected.activity.activity_stage] : taskProgressLabels[selected.progress_message] ?? selected.progress_message}</dd></div><div><dt>候选</dt><dd>{selected.activity && selected.execution_status === "RUNNING" ? `${selected.activity.candidate_count} 项草稿候选` : `${selected.candidate_count} 项，其中 ${selected.compilable_count} 项可应用`}</dd></div>{selected.activity ? <><div><dt>模型轮次</dt><dd>{selected.activity.model_turn_count}</dd></div><div><dt>工具调用</dt><dd>{selected.activity.tool_call_count}</dd></div></> : null}<div><dt>阻断项</dt><dd>{selected.blocker_count}</dd></div><div><dt>输出语言</dt><dd>{selected.authoring_language === "zh" ? "中文" : selected.authoring_language === "en" ? "英文" : "尚未锁定"}</dd></div></dl>
             <Link className="primary-action" to={taskDestination(selected)}>{selected.review_status === "NEEDS_REVIEW" ? "进入人工复核" : selected.destination.type === "RESULT" ? "查看复核结果" : "打开任务所在方案"}</Link>
           </aside> : null}
         </div>
@@ -780,16 +803,52 @@ function StudioOverviewPanel({
   const validation = workbench.workspace.validation.status;
   const release = workbench.workspace.last_published;
   const active = runtime?.active;
-  const packageAssets = [
-    workbench.package.entities,
-    workbench.package.relationships,
-    workbench.package.metrics,
-    workbench.package.rules,
-    workbench.package.bindings,
-    workbench.package.sql_contracts,
-    workbench.package.analysis_patterns,
-  ].reduce((total, items) => total + items.length, 0);
-  const intakeGaps = Array.isArray(workbench.intake.gaps) ? workbench.intake.gaps.length : 0;
+  const packageGroups = [
+    {
+      label: "业务模型",
+      count: workbench.package.entities.length
+        + workbench.package.properties.length
+        + workbench.package.relationships.length,
+      detail: `${workbench.package.entities.length} 对象 · ${workbench.package.properties.length} 属性 · ${workbench.package.relationships.length} 关系`,
+      page: "semantic" as const,
+      subpage: "model" as const,
+    },
+    {
+      label: "指标与维度",
+      count: workbench.package.metrics.length
+        + workbench.package.dimensions.length
+        + workbench.package.rules.length,
+      detail: `${workbench.package.metrics.length} 指标 · ${workbench.package.dimensions.length} 维度 · ${workbench.package.rules.length} 规则`,
+      page: "semantic" as const,
+      subpage: "metrics" as const,
+    },
+    {
+      label: "数据语义",
+      count: workbench.package.data_sources.length
+        + workbench.package.bindings.length
+        + workbench.package.joins.length,
+      detail: `${workbench.package.data_sources.length} 数据源 · ${workbench.package.bindings.length} 映射 · ${workbench.package.joins.length} 关联`,
+      page: "data" as const,
+      subpage: "mappings" as const,
+    },
+    {
+      label: "分析能力",
+      count: workbench.package.analysis_patterns.length
+        + workbench.package.questions.length
+        + workbench.package.policies.length,
+      detail: `${workbench.package.analysis_patterns.length} 模式 · ${workbench.package.questions.length} 问题 · ${workbench.package.policies.length} 策略`,
+      page: "semantic" as const,
+      subpage: "experience" as const,
+    },
+    {
+      label: "证据与假设",
+      count: workbench.package.sources.length + workbench.package.decisions.length,
+      detail: `${workbench.package.sources.length} 来源 · ${workbench.package.decisions.length} 决策/假设`,
+      page: "inputs" as const,
+      subpage: "sources" as const,
+    },
+  ];
+  const packageAssets = packageGroups.reduce((total, group) => total + group.count, 0);
   const referencePack = workbench.intake.reference_source_pack && typeof workbench.intake.reference_source_pack === "object"
     ? workbench.intake.reference_source_pack as Record<string, unknown>
     : {};
@@ -898,11 +957,18 @@ function StudioOverviewPanel({
           ))}
         </ol>
       </section>
-      <section className="studio-asset-summary">
-        <div><span>语义资产</span><strong>{packageAssets}</strong><small>核心对象、关系、指标、规则、映射与分析模式</small></div>
-        <div><span>待处理变更</span><strong>{workbench.semantic_change_requests.length}</strong><small>来自分析端的语义变更请求</small></div>
-        <div><span>输入缺口</span><strong>{intakeGaps}</strong><small>已记录且需要后续确认的材料缺口</small></div>
-        <div><span>构建链路</span><strong>已就绪</strong><small>Builder、Reviewer 与人工复核</small></div>
+      <section className="studio-package-inventory" aria-labelledby="package-inventory-title">
+        <header>
+          <div><span>ONTOLOGY PACKAGE</span><h2 id="package-inventory-title">Package 内容</h2></div>
+          <strong>{packageAssets} 项已登记资产</strong>
+        </header>
+        <div className="studio-asset-summary">
+          {packageGroups.map((group) => (
+            <Link key={group.label} to={studioPageHref(group.page, solutionId, group.subpage)}>
+              <span>{group.label}</span><strong>{group.count}</strong><small>{group.detail}</small><i aria-hidden="true">→</i>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
@@ -916,6 +982,7 @@ function StudioPackageWorkbench({
   reviewer,
   requestedRunId = null,
   requestedDecisionId = null,
+  openMaterialIntake = false,
   readOnly = false,
 }: {
   workspaceId: string;
@@ -925,6 +992,7 @@ function StudioPackageWorkbench({
   reviewer: string;
   requestedRunId?: string | null;
   requestedDecisionId?: string | null;
+  openMaterialIntake?: boolean;
   readOnly?: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -1226,6 +1294,7 @@ function StudioPackageWorkbench({
       onPreview={(sourceVersionId) => fetchStudioSourcePreview(workspaceId, sourceVersionId)}
       onInstallReferencePack={async () => { await installReferencePack.mutateAsync(); }}
       onImportInstalledSources={async () => { await importInstalledSources.mutateAsync(); }}
+      openIntakeOnLoad={openMaterialIntake}
       readOnly={readOnly}
     />;
   } else if (page === "construction" && subpage === "runs") {
@@ -1397,36 +1466,6 @@ function StudioPackageWorkbench({
   return <>{showDraftControls ? controls : null}{content}</>;
 }
 
-function SolutionLineage({
-  solution,
-  runtime,
-  answerStatus,
-}: {
-  solution: AgentSolution | StudioSolution;
-  runtime?: { version: string; release_checksum: string; snapshot_checksum: string };
-  answerStatus?: string;
-}) {
-  const steps = [
-    ["Solution registration", shortDigest(solution.subject_checksum), "installed"],
-    ["Semantic package", runtime?.version ?? solution.semantic_source_version, "versioned"],
-    ["Runtime snapshot", runtime ? shortDigest(runtime.snapshot_checksum) : "Not active", runtime ? "active" : "blocked"],
-    ["Supported answer", answerStatus ?? "Ask a question", answerStatus === "ANSWERED" ? "committed" : "bounded"],
-  ];
-  return (
-    <aside className="semantic-spine" aria-label="Selected solution lineage">
-      <div className="spine-heading"><span>SOLUTION LINEAGE</span><b>04 / 04</b></div>
-      <ol>
-        {steps.map(([stepLabel, value, stepState], index) => (
-          <li key={stepLabel} className={index === steps.length - 1 ? "is-current" : ""}>
-            <span className="spine-node">{String(index + 1).padStart(2, "0")}</span>
-            <div><span className="spine-label">{stepLabel}</span><strong>{value}</strong><small>{stepState}</small></div>
-          </li>
-        ))}
-      </ol>
-    </aside>
-  );
-}
-
 function FactValue({ value }: { value: unknown }) {
   if (Array.isArray(value)) {
     if (value.length === 0) return <span>—</span>;
@@ -1457,33 +1496,57 @@ function FactValue({ value }: { value: unknown }) {
   return <strong>{formatDisplayValue(value)}</strong>;
 }
 
-function OntologyInventory({ ontology }: { ontology: SolutionOntology }) {
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function AgentQueryResults({ result }: { result: SolutionAnalysis }) {
+  const { t } = useUiLocale();
+  const rawQueries = Array.isArray(result.facts.queries) ? result.facts.queries : [];
+  const queries = rawQueries.map(objectValue).filter((item): item is Record<string, unknown> => item !== null);
+  if (queries.length === 0) return null;
   return (
-    <section className="ontology-inventory" aria-labelledby="ontology-inventory-heading">
-      <div className="section-heading">
-        <span>ACTIVE ONTOLOGY PACKAGE</span>
-        <h2 id="ontology-inventory-heading">指标与分析模式</h2>
-      </div>
-      <div className="inventory-columns">
-        <div>
-          <h3>{ontology.metrics.length} governed metrics</h3>
-          {ontology.metrics.map((metric) => (
-            <article key={metric.id}><code>{metric.id}</code><strong>{metric.name.zh}</strong><p>{metric.definition}</p><small>{metric.unit}</small></article>
-          ))}
-        </div>
-        <div>
-          <h3>{ontology.analysis_patterns.length} bounded patterns</h3>
-          {ontology.analysis_patterns.map((pattern) => (
-            <article key={pattern.id}><code>{pattern.id}</code><strong>{pattern.intent.replaceAll("_", " ")}</strong><p>{pattern.operation}</p><small>{pattern.output_fields.join(" · ")}</small></article>
-          ))}
-        </div>
-      </div>
+    <section className="agent-query-results" aria-label={t("本次分析结果", "Analysis results")}>
+      {queries.map((query, index) => {
+        const period = objectValue(query.period);
+        const evidence = objectValue(query.evidence);
+        const rows = Array.isArray(query.rows) ? query.rows : [];
+        const metricName = typeof query.metric_name === "string" ? query.metric_name : `指标 ${index + 1}`;
+        const metricCode = typeof query.metric_code === "string" ? query.metric_code : "METRIC";
+        const queryHash = typeof evidence?.query_hash === "string" ? evidence.query_hash : null;
+        return (
+          <article key={`${metricCode}:${index}`}>
+            <header>
+              <div><span>{metricCode}</span><h3>{metricName}</h3></div>
+              <code>{typeof query.unit === "string" ? query.unit : ""}</code>
+            </header>
+            <FactValue value={rows} />
+            <details>
+              <summary>{t("查看计算口径与证据", "View calculation semantics and evidence")}</summary>
+              <dl>
+                <div><dt>Ontology metric</dt><dd><code>{String(query.metric_id ?? "—")}</code></dd></div>
+                <div><dt>分析期间</dt><dd>{period ? `${String(period.start ?? "—")} — ${String(period.end ?? "—")}` : "—"}</dd></div>
+                <div><dt>维度</dt><dd>{stringArray(query.dimensions).join(" · ") || "整体"}</dd></div>
+                <div><dt>来源</dt><dd>{stringArray(evidence?.sources).join(" · ") || "—"}</dd></div>
+                <div><dt>口径决策</dt><dd>{stringArray(evidence?.decisions).join(" · ") || "—"}</dd></div>
+                <div><dt>Query hash</dt><dd><code>{queryHash ? shortDigest(queryHash) : "—"}</code></dd></div>
+              </dl>
+            </details>
+          </article>
+        );
+      })}
     </section>
   );
 }
 
-function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }) {
-  const queryClient = useQueryClient();
+export function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }) {
+  const { locale, name, t } = useUiLocale();
   const questions = useQuery({
     queryKey: ["solution-questions", solution.solution_id],
     queryFn: () => fetchSolutionQuestions(solution.solution_id),
@@ -1500,41 +1563,30 @@ function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }) {
   const [selectedQuestionCaseId, setSelectedQuestionCaseId] = useState<string | null>(null);
   const [role, setRole] = useState("");
   const [result, setResult] = useState<SolutionAnalysis | null>(null);
-  const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
+  const [submittedQuestion, setSubmittedQuestion] = useState("");
   const selectedQuestionCase = questions.data?.cases.find((item) => item.case_id === selectedQuestionCaseId);
-  const modelEligibleCaseId = selectedQuestionCase?.question === question.trim()
+  const exactQuestionCaseId = selectedQuestionCase?.question === question.trim()
     ? selectedQuestionCase.case_id
     : undefined;
   const analysis = useMutation({
-    mutationFn: () => analyzeSolution(
+    mutationFn: ({ submitted, questionCaseId }: { submitted: string; questionCaseId?: string }) => analyzeSolution(
       solution.solution_id,
-      question.trim(),
+      submitted,
       role || runtime.data?.default_role || "",
-      modelEligibleCaseId,
+      questionCaseId,
     ),
     onSuccess: (payload) => {
       setResult(payload);
-      setSubmittedRequestId(null);
-    },
-  });
-  const semanticChange = useMutation({
-    mutationFn: (input: SemanticChangeRequestInput) => submitSemanticChangeRequest(
-      solution.solution_id,
-      input,
-    ),
-    onSuccess: async (request) => {
-      setSubmittedRequestId(request.request_id);
-      await queryClient.invalidateQueries({ queryKey: ["studio-workbench", solution.workspace_id] });
     },
   });
 
   useEffect(() => {
     const first = questions.data?.cases[0];
-    if (first && !question) {
-      setQuestion(first.question);
-      setSelectedQuestionCaseId(first.case_id);
-    }
-  }, [questions.data, question]);
+    setQuestion(first?.question ?? "");
+    setSelectedQuestionCaseId(first?.case_id ?? null);
+    setSubmittedQuestion("");
+    setResult(null);
+  }, [solution.solution_id, questions.data?.family_id]);
 
   useEffect(() => {
     if (runtime.data) {
@@ -1544,98 +1596,112 @@ function AgentSolutionWorkspace({ solution }: { solution: AgentSolution }) {
   }, [runtime.data]);
 
   if (questions.isPending || runtime.isPending || ontology.isPending) {
-    return <section className="catalog-state">正在核验 selected solution 的 runtime、ontology 与问题清单…</section>;
+    return <section className="catalog-state">正在加载分析语境…</section>;
   }
   if (questions.isError || runtime.isError || ontology.isError || !questions.data || !runtime.data || !ontology.data) {
-    return <section className="catalog-state is-error" role="alert">Selected solution 尚未形成可读取的 active runtime；Agent 不会退回其他 solution。</section>;
+    return <section className="catalog-state is-error" role="alert">当前解决方案尚未激活，无法开始分析。</section>;
   }
 
+  const registeredDates = questions.data.cases.flatMap((item) => item.question.match(/20\d{2}-\d{2}-\d{2}/g) ?? []).sort();
+  const samplePeriod = registeredDates.length > 0
+    ? `${registeredDates[0]} — ${registeredDates[registeredDates.length - 1]}`
+    : "已激活样例数据";
+  const runAnalysis = () => {
+    const submitted = question.trim();
+    if (!submitted || analysis.isPending) return;
+    const questionCaseId = exactQuestionCaseId;
+    setSubmittedQuestion(submitted);
+    setQuestion("");
+    setSelectedQuestionCaseId(null);
+    setResult(null);
+    analysis.mutate({ submitted, questionCaseId });
+  };
+  const modelLabel = result?.llm.status === "GROUNDED"
+    ? "DeepAgent · Qwen 3.8 Max"
+    : result?.llm.status === "FALLBACK"
+      ? "DeepAgent fallback"
+      : result ? "Ontology runtime" : "DeepAgent · Qwen 3.8 Max";
+
   return (
-    <>
-      <section className="hero solution-hero">
-        <div className="hero-copy">
-          <div className="eyebrow-row"><span>ONTOLOGY ANALYTIC AGENT</span><span className="active-chip"><i /> ACTIVE</span></div>
-          <p className="scenario-kicker">{solution.display_name.en}</p>
-          <h1>从业务问题走到可追溯答案</h1>
-          <p className="hero-summary">自然语言负责表达意图；Ontology 限定可执行语义；确定性工具计算事实；active snapshot 与证据决定什么可以展示。</p>
-          <div className="hero-identity"><span>{solution.display_name.zh}</span><code>{solution.solution_id}</code></div>
+    <section className="agent-console">
+      <header className="agent-console-header">
+        <div>
+          <span className="agent-console-kicker">ONTOLOGY ANALYTIC AGENT</span>
+          <h1>{name(solution.display_name)}</h1>
+          <p>{locale === "en" ? solution.solution_id : solution.display_name.en}</p>
         </div>
-        <SolutionLineage solution={solution} runtime={runtime.data} answerStatus={result?.status} />
-      </section>
-      <section className="analysis-workspace">
-        <div className="question-panel">
-          <div className="section-heading"><span>GOVERNED QUESTION</span><h2>选择示例或输入业务问题</h2></div>
-          <label className="role-control">分析角色
-            <select value={role || runtime.data.default_role} onChange={(event) => setRole(event.target.value)}>
-              {runtime.data.roles.map((item) => (
-                <option key={item.role_id} value={item.role_id}>
-                  {item.name.zh} · {item.role_id}{item.access === "DENIED" ? "（拒绝演示）" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="question-family">
-            {questions.data.cases.map((item) => (
+        <div className="agent-context-strip" aria-label="当前分析语境">
+          <div><span>Ontology</span><strong>v{ontology.data.version}</strong></div>
+          <div><span>数据期间</span><strong>{samplePeriod}</strong></div>
+          <div><span>Runtime</span><strong><i /> Active</strong></div>
+          <label><span>分析角色</span><select value={role || runtime.data.default_role} onChange={(event) => setRole(event.target.value)}>
+            {runtime.data.roles.filter((item) => item.access === "ALLOWED").map((item) => (
+              <option key={item.role_id} value={item.role_id}>{name(item.name)}</option>
+            ))}
+          </select></label>
+        </div>
+      </header>
+
+      <div className="agent-console-layout">
+        <aside className="agent-starters" aria-label="示例问题">
+          <header><h2>示例问题</h2><span>{questions.data.cases.length}</span></header>
+          <div>
+            {questions.data.cases.map((item, index) => (
               <button
                 type="button"
                 key={item.case_id}
-                className={modelEligibleCaseId === item.case_id ? "is-selected" : undefined}
+                className={exactQuestionCaseId === item.case_id ? "is-selected" : undefined}
                 onClick={() => {
                   setQuestion(item.question);
                   setSelectedQuestionCaseId(item.case_id);
+                  setResult(null);
+                  setSubmittedQuestion("");
                 }}
-              >
-                <span>{item.expected_intent}</span>{item.question}
-              </button>
+              ><span>{String(index + 1).padStart(2, "0")}</span>{item.question}</button>
             ))}
           </div>
-          <textarea aria-label="业务问题" value={question} onChange={(event) => setQuestion(event.target.value)} rows={4} />
-          <button className="run-analysis" type="button" disabled={!question.trim() || analysis.isPending} onClick={() => { setResult(null); analysis.mutate(); }}>
-            {analysis.isPending ? "分析中…" : "运行受治理分析"}
-          </button>
-          <p className="analysis-boundary">
-            {modelEligibleCaseId
-              ? "当前为登记问题：Qwen 只负责受约束的意图 grounding；事实仍由 Ontology 工具确定性计算。"
-              : "当前为开放输入：不会外发给模型；Agent 仅在封闭语义内确定性匹配、澄清或拒绝。"}
-          </p>
-        </div>
-        <div className="answer-panel">
-          {analysis.isError ? <div className="answer-boundary"><span>FAILED</span><h2>{(analysis.error as Error).message}</h2></div> : null}
-          {!analysis.isError && !result ? <div className="answer-placeholder"><span>SUPPORTED ANSWER</span><h2>答案会连同事实、计划和证据显示在这里。</h2></div> : null}
-          {result && result.status !== "ANSWERED" ? (
-            <div className="answer-boundary"><span>{result.status}</span><code>{result.boundary_code}</code><h2>{result.answer}</h2><p>没有释放部分 facts 或 evidence。</p></div>
+        </aside>
+
+        <section className="agent-conversation" aria-live="polite">
+          {!submittedQuestion && !analysis.isPending && !result ? (
+            <div className="agent-empty-state"><h2>{t("询问 Cash Trading 数据", "Ask about Cash Trading data")}</h2><p>{t("可以直接输入问题，或从左侧选择一个示例。", "Enter a question directly or choose a suggested question on the left.")}</p></div>
           ) : null}
-          {result?.status === "ANSWERED" ? (
-            <div className="answer-result">
-              <header>
-                <span>COMMITTED ANALYSIS</span>
-                <div className="answer-badges">
-                  <b>ANSWERED</b>
-                  <b className={`llm-state is-${result.llm.status.toLowerCase()}`}>
-                    {result.llm.status === "GROUNDED" ? "QWEN GROUNDED" : null}
-                    {result.llm.status === "SHADOW_VERIFIED" ? "QWEN SHADOW" : null}
-                    {result.llm.status === "DETERMINISTIC_ONLY" ? "DETERMINISTIC" : null}
-                    {result.llm.status === "FALLBACK" ? "SAFE FALLBACK" : null}
-                  </b>
-                </div>
-                <h2>{result.answer}</h2>
-              </header>
-              <FactValue value={result.facts} />
-              {result.llm.status === "FALLBACK" ? <p className="fallback-note">模型路径未通过，本答案已从原始请求重新执行确定性分析，不包含部分模型输出。</p> : null}
-              <AgentExecutionEvidence result={result} />
-              <SemanticChangeRequestPanel
-                result={result}
-                busy={semanticChange.isPending}
-                error={semanticChange.error instanceof Error ? semanticChange.error.message : null}
-                submittedId={submittedRequestId}
-                onSubmit={(request) => semanticChange.mutate(request)}
-              />
-            </div>
+          {submittedQuestion ? <article className="agent-message is-user"><span>{t("你", "You")}</span><p data-no-ui-translate>{submittedQuestion}</p></article> : null}
+          {analysis.isPending ? <article className="agent-message is-assistant is-loading"><span>Agent</span><p>{t("正在分析 Ontology 与样例数据…", "Analyzing the ontology and sample data…")}</p></article> : null}
+          {analysis.isError ? <article className="agent-message is-assistant is-error"><span>Agent</span><p data-no-ui-translate>{(analysis.error as Error).message}</p></article> : null}
+          {result ? (
+            <article className={`agent-message is-assistant is-${result.status.toLowerCase()}`}>
+              <div className="agent-message-heading"><span>Agent</span><small>{modelLabel}</small></div>
+              <div className="agent-answer-copy" data-no-ui-translate>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.answer}</ReactMarkdown>
+              </div>
+              {result.status === "ANSWERED" ? <AgentQueryResults result={result} /> : null}
+              {result.boundary_code ? <code className="agent-boundary-code">{result.boundary_code}</code> : null}
+              {result.status === "ANSWERED" ? (
+                <details className="agent-run-identity"><summary>本次运行信息</summary><dl>
+                  <div><dt>Package</dt><dd><code>{ontology.data.package_id}@{ontology.data.version}</code></dd></div>
+                  <div><dt>Snapshot</dt><dd><code>{result.snapshot_checksum ? shortDigest(result.snapshot_checksum) : "—"}</code></dd></div>
+                  <div><dt>Execution</dt><dd><code>{result.execution_id ?? "—"}</code></dd></div>
+                  <div><dt>Model</dt><dd>{modelLabel}</dd></div>
+                </dl></details>
+              ) : null}
+            </article>
           ) : null}
-        </div>
-      </section>
-      <OntologyInventory ontology={ontology.data} />
-    </>
+        </section>
+      </div>
+
+      <form className="agent-composer" onSubmit={(event) => { event.preventDefault(); runAnalysis(); }}>
+        <label htmlFor="agent-question">输入分析问题</label>
+        <div><textarea id="agent-question" value={question} onChange={(event) => {
+          setQuestion(event.target.value);
+          if (selectedQuestionCase?.question !== event.target.value) setSelectedQuestionCaseId(null);
+        }} rows={3} placeholder={t(
+          "例如：展示样例期间每日潜在自成交率。",
+          "For example: Show the daily potential self-trade rate for the sample period.",
+        )} />
+        <button type="submit" disabled={!question.trim() || analysis.isPending}>{analysis.isPending ? "分析中…" : "发送"}</button></div>
+      </form>
+    </section>
   );
 }
 
@@ -1652,6 +1718,7 @@ function StudioApplication({
   canOperate: boolean;
   reviewer: string;
 }) {
+  const { name, t } = useUiLocale();
   const location = useLocation();
   const buildRoute = studioBuildRouteFromPath(location.pathname);
   const page = studioPageFromPath(location.pathname);
@@ -1677,14 +1744,14 @@ function StudioApplication({
     <div className="studio-application">
       <StudioNavigation
         activePage={page}
-        solutionName={solution.display_name.zh}
+        solutionName={name(solution.display_name)}
         solutionVersion={solution.solution_version}
         activeRuntimeVersion={runtime?.version ?? null}
         solutionId={solution.solution_id}
       />
       <section className="studio-page">
         <header className="studio-page-header">
-          <div className="studio-breadcrumbs"><Link to="/ontology-studio/solutions/">解决方案目录</Link><i>/</i><span>{solution.display_name.zh}</span><i>/</i><span>{definition.label}</span></div>
+          <div className="studio-breadcrumbs"><Link to="/ontology-studio/solutions/">{t("解决方案目录", "Solution Catalog")}</Link><i>/</i><span>{name(solution.display_name)}</span><i>/</i><span>{definition.label}</span></div>
           <div className="studio-page-title">
             <div><h1>{definition.label}</h1><p>{definition.description}</p></div>
             <div className="studio-page-context"><span>方案 v{solution.solution_version}</span><code>{solution.workspace_id}</code></div>
@@ -1692,7 +1759,7 @@ function StudioApplication({
           <StudioSubnavigation page={page} activeSubpage={subpage} solutionId={solution.solution_id} />
         </header>
         {!canOperate ? <div className="readonly-role-banner"><strong>只读访问</strong><span>模型和运行状态可查看；新建、修改、审核、发布与激活已锁定。</span></div> : null}
-        {referenceMode ? <div className="reference-solution-banner"><div><strong>参考方案 · 只读</strong><span>浏览已确认的内容与运行结果；要重新构建或修改，请先复制为独立方案。</span></div><Link to={`/ontology-studio/solutions/?copy=${encodeURIComponent(solution.solution_id)}`}>复制为可编辑方案</Link></div> : null}
+        {referenceMode ? <div className="reference-solution-banner"><div><strong>参考方案 · 只读</strong><span>浏览已确认的内容与运行结果；要重新构建或修改，请先复制为独立方案。</span></div><div className="reference-solution-actions"><Link to={studioPageHref("semantic", solution.solution_id, "graph")}>查看知识图谱</Link><Link className="is-primary" to={`/ontology-studio/solutions/?copy=${encodeURIComponent(solution.solution_id)}`}>复制为可编辑方案</Link></div></div> : null}
         <fieldset className="role-gated-content studio-page-content" disabled={!canOperate}>
           {page === "overview" || page === "inputs" || page === "construction" || page === "semantic" || page === "data" || page === "quality" ? (
             <StudioPackageWorkbench
@@ -1703,6 +1770,7 @@ function StudioApplication({
               reviewer={reviewer}
               requestedRunId={buildRoute?.runId ?? null}
               requestedDecisionId={buildRoute?.decisionId ?? null}
+              openMaterialIntake={new URLSearchParams(location.search).get("intake") === "1"}
               readOnly={referenceMode}
             />
           ) : null}
@@ -1875,16 +1943,16 @@ export function App() {
   const location = useLocation();
   const selectedSolution = studioSolutionIdFromPath(location.pathname)
     ?? searchParams.get("solution")
-    ?? "ontology.exchange_analytics.adt";
+    ?? "ontology.exchange_analytics.cash_trading";
   return (
-    <Routes>
+    <><LegacyUiLocalizer /><Routes>
       <Route path="/" element={<Navigate to="/ontology-agent/" replace />} />
       <Route path="/ontology-agent/*" element={<GenericSolutionView kind="agent" solutionId={selectedSolution} />} />
       <Route path="/ontology-studio" element={<Navigate to="/ontology-studio/solutions/" replace />} />
       <Route path="/ontology-studio/tasks/*" element={<TaskCenterRoute />} />
       <Route path="/ontology-studio/*" element={<GenericSolutionView kind="studio" solutionId={selectedSolution} />} />
       <Route path="*" element={<Navigate to="/ontology-agent/" replace />} />
-    </Routes>
+    </Routes></>
   );
 }
 

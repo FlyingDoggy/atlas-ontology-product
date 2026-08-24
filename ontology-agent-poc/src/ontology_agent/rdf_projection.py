@@ -158,7 +158,13 @@ def build_graph(package: OntologyPackage) -> Graph:
     return graph
 
 
-SHAPES_TTL = f"""
+def _shapes_ttl(*, require_confirmed: bool) -> str:
+    authority_constraint = (
+        '  sh:property [ sh:path ex:status ; sh:hasValue "confirmed" ] ;\n'
+        if require_confirmed
+        else ""
+    )
+    return f"""
 @prefix ex: <{BASE}> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -167,7 +173,7 @@ ex:MetricShape a sh:NodeShape ;
   sh:targetClass ex:Metric ;
   sh:property [ sh:path ex:id ; sh:minCount 1 ; sh:maxCount 1 ] ;
   sh:property [ sh:path ex:version ; sh:minCount 1 ; sh:maxCount 1 ] ;
-  sh:property [ sh:path ex:status ; sh:hasValue "confirmed" ] ;
+{authority_constraint.rstrip()}
   sh:property [ sh:path ex:definition ; sh:minCount 1 ] ;
   sh:property [ sh:path ex:owner ; sh:minCount 1 ] ;
   sh:property [ sh:path ex:supportedBy ; sh:minCount 1 ] ;
@@ -177,7 +183,7 @@ ex:MetricShape a sh:NodeShape ;
 ex:BindingShape a sh:NodeShape ;
   sh:targetClass ex:PhysicalBinding ;
   sh:property [ sh:path ex:id ; sh:minCount 1 ] ;
-  sh:property [ sh:path ex:status ; sh:hasValue "confirmed" ] ;
+{authority_constraint.rstrip()}
   sh:property [ sh:path ex:logicalTarget ; sh:minCount 1 ] ;
   sh:property [ sh:path ex:source ; sh:minCount 1 ] ;
   sh:property [ sh:path ex:table ; sh:minCount 1 ] ;
@@ -187,14 +193,21 @@ ex:BindingShape a sh:NodeShape ;
 ex:AnalysisPatternShape a sh:NodeShape ;
   sh:targetClass ex:AnalysisPattern ;
   sh:property [ sh:path ex:id ; sh:minCount 1 ] ;
-  sh:property [ sh:path ex:status ; sh:hasValue "confirmed" ] ;
+{authority_constraint.rstrip()}
   sh:property [ sh:path ex:requiresMetric ; sh:minCount 1 ] .
 """
 
 
-def validate_graph(package: OntologyPackage) -> tuple[ValidationCheck, Graph, Graph, str]:
+SHAPES_TTL = _shapes_ttl(require_confirmed=True)
+
+
+def validate_graph(
+    package: OntologyPackage, *, require_confirmed: bool = True
+) -> tuple[ValidationCheck, Graph, Graph, str]:
     graph = build_graph(package)
-    shapes = Graph().parse(data=SHAPES_TTL, format="turtle")
+    shapes = Graph().parse(
+        data=_shapes_ttl(require_confirmed=require_confirmed), format="turtle"
+    )
     conforms, report_graph, report_text = shacl_validate(
         graph,
         shacl_graph=shapes,

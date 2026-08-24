@@ -2,6 +2,20 @@
   "contract": "cash-trading-external-confirmation-register/v1",
   "register_id": "cash-trading.deloitte-hk.confirmations.v0.1",
   "prepared_at": "2026-08-20T00:00:00+08:00",
+  "review_pack": {
+    "file_name": "HKEX_Cash_Trading_Review_Pack_v0.2_EN_v20250823.xlsx",
+    "sha256": "c696db6e872e514135887a22f167fc49e0d687abb5af7eed7325b8d6a95980d6",
+    "reviewed_on": "2026-08-23",
+    "scope": {
+      "clarification_items": 12,
+      "business_metrics": 8,
+      "analytical_dimensions": 8,
+      "business_entities": 8,
+      "relationship_patterns": 8,
+      "field_mappings": 39
+    },
+    "authority": "INTERNAL_REVIEW_BASELINE_PENDING_EXTERNAL_CONFIRMATION"
+  },
   "audience": "Deloitte HK team for confirmation or onward validation with HKEX",
   "delivery_rule": "Responses improve the next package revision but do not block the constructed-synthetic PoC build.",
   "response_guidance": "For each Confirmation requested row, enter Confirmed, Correction provided, or Unable to confirm, followed by a concise explanation. Documents or examples are welcome where export controls permit.",

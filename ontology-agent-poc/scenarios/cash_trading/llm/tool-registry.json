@@ -1,31 +1,10 @@
 {
-  "contract": "cash-trading-llm-tool-registry/v1",
-  "registry_id": "cash-trading.agent.tools.v1",
-  "version": "1.0.0",
+  "contract": "cash-trading-deepagent-tool-registry/v2",
+  "registry_id": "cash-trading.agent.tools.v2",
+  "version": "2.0.0",
   "tools": [
-    {
-      "tool_id": "self_trade_summary",
-      "purpose": "Return eligible-trade count, potential self-trade candidate count/rate and bounded candidate dimensions.",
-      "required_parameters": ["start_date", "end_date", "population_id"],
-      "result_contract": "safe-self-trade-summary/v1"
-    },
-    {
-      "tool_id": "self_trade_trend",
-      "purpose": "Return daily eligible/candidate counts and candidate rate over an approved range.",
-      "required_parameters": ["start_date", "end_date", "population_id"],
-      "result_contract": "safe-self-trade-trend/v1"
-    },
-    {
-      "tool_id": "self_trade_timeline",
-      "purpose": "Return candidate trades and linked observed order events for one allowed synthetic participant.",
-      "required_parameters": ["participant_id", "start_date", "end_date", "population_id"],
-      "result_contract": "safe-self-trade-timeline/v1"
-    },
-    {
-      "tool_id": "trade_latency_profile",
-      "purpose": "Return count, min, nearest-rank p50/p95/p99, max and negative-latency exceptions.",
-      "required_parameters": ["start_date", "end_date", "population_id"],
-      "result_contract": "safe-trade-latency-profile/v1"
-    }
+    {"tool_id": "inspect_ontology", "purpose": "Search the active package for governed entities, relationships, metrics, dimensions and rules.", "required_parameters": [], "result_contract": "ontology-catalog-search/v1"},
+    {"tool_id": "query_cash_metric", "purpose": "Compute M-01 through M-08 with governed definitions, approved dimensions and deterministic SQL.", "required_parameters": ["metric", "start_date", "end_date"], "result_contract": "cash-metric-result/v1"},
+    {"tool_id": "retrieve_metric_evidence", "purpose": "Retrieve definitions, source anchors, decisions, assumptions and limitations for an ontology topic.", "required_parameters": ["topic"], "result_contract": "metric-evidence/v1"}
   ]
 }

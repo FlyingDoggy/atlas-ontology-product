@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationInfo, model_validator
 
 from ..models import (
     Actor,
@@ -23,6 +23,7 @@ from ..models import (
     Property,
     Relationship,
     Rule,
+    Scenario,
     SqlContract,
     SourceReference,
     Status,
@@ -32,6 +33,7 @@ from ..io import sha256_value
 
 
 PackageCollection = Literal[
+    "scenario",
     "sources",
     "decisions",
     "actors",
@@ -52,6 +54,7 @@ PackageCollection = Literal[
 ]
 
 _MODEL_BY_COLLECTION: dict[str, type[StrictModel]] = {
+    "scenario": Scenario,
     "sources": SourceReference,
     "decisions": Decision,
     "actors": Actor,
@@ -93,8 +96,10 @@ class PackageDraftOperation(StrictModel):
     payload: dict[str, Any] | None = None
 
     @model_validator(mode="after")
-    def validate_typed_payload(self) -> PackageDraftOperation:
+    def validate_typed_payload(self, info: ValidationInfo) -> PackageDraftOperation:
         if self.action == "DEPRECATE":
+            if self.collection == "scenario":
+                raise ValueError("The required package scenario cannot be deprecated")
             if self.payload is not None:
                 raise ValueError("DEPRECATE does not accept a replacement payload")
             return self
@@ -105,11 +110,14 @@ class PackageDraftOperation(StrictModel):
                 )
             if self.payload is None:
                 raise ValueError("CONFIRM requires an exact review receipt")
-            AssetConfirmation.model_validate(self.payload)
+            AssetConfirmation.model_validate(self.payload, context=info.context)
             return self
         if self.payload is None:
             raise ValueError("UPSERT requires a typed replacement payload")
-        parsed = _MODEL_BY_COLLECTION[self.collection].model_validate(self.payload)
+        parsed = _MODEL_BY_COLLECTION[self.collection].model_validate(
+            self.payload,
+            context=info.context,
+        )
         if getattr(parsed, "id", None) != self.object_id:
             raise ValueError("Package operation identity does not match its payload")
         # Authoring and extraction can propose content, but they cannot manufacture
@@ -185,7 +193,7 @@ class ReviewFinalizationOperationsV1(StrictModel):
         "studio-review-finalization-operations/v1"
     )
     expected_revision: int = Field(ge=1)
-    operations: tuple[PackageDraftOperation, ...] = Field(min_length=1, max_length=512)
+    operations: tuple[PackageDraftOperation, ...] = Field(min_length=1, max_length=1024)
 
     @model_validator(mode="after")
     def exact_review_pairs(self) -> ReviewFinalizationOperationsV1:
@@ -221,7 +229,12 @@ def apply_package_operations(
     values = package.model_dump(mode="python")
     for operation in operations:
         model = _MODEL_BY_COLLECTION[operation.collection]
-        current = list(values[operation.collection])
+        singular = operation.collection == "scenario"
+        current = (
+            [values[operation.collection]]
+            if singular
+            else list(values[operation.collection])
+        )
         index = next(
             (
                 position
@@ -231,6 +244,10 @@ def apply_package_operations(
             ),
             None,
         )
+        if singular and index is None:
+            raise ValueError(
+                "Scenario operations must preserve the package scenario identity"
+            )
         if operation.action == "UPSERT":
             replacement = model.model_validate(operation.payload)
             if isinstance(replacement, GovernedObject) and replacement.status not in {
@@ -281,5 +298,15 @@ def apply_package_operations(
             # The immutable operation is the tombstone. The materialized candidate
             # excludes the object so deprecated contracts cannot leak into runtime.
             current.pop(index)
-        values[operation.collection] = tuple(current)
+        values[operation.collection] = current[0] if singular else tuple(current)
     return OntologyPackage.model_validate(values)
+
+
+def package_collection_items(
+    package: OntologyPackage,
+    collection: PackageCollection,
+) -> tuple[StrictModel, ...]:
+    """Expose singular and plural package assets through one typed boundary."""
+
+    value = getattr(package, collection)
+    return (value,) if collection == "scenario" else tuple(value)

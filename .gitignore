@@ -37,9 +37,11 @@
 **/node_modules/
 ontology-web/dist/
 ontology-web/test-artifacts/
+ontology-slide-preview/
 
 # Runtime and generated state
 .playwright-cli/
+.codex-tmp/
 .work/
 artifacts/
 deliverables/

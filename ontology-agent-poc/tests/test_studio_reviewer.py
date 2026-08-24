@@ -6,7 +6,7 @@ import json
 import pytest
 
 from ontology_agent.io import sha256_value
-from ontology_agent.models import OntologyPackage
+from ontology_agent.models import OntologyPackage, Status
 from ontology_agent.studio.construction import (
     CandidateDraftDiffV1,
     ConstructionCandidateV1,
@@ -84,9 +84,35 @@ def _candidate() -> ConstructionCandidateV1:
     )
 
 
+def _gap_candidate() -> ConstructionCandidateV1:
+    return ConstructionCandidateV1(
+        candidate_id="candidate." + "8" * 32,
+        occurrence_key="7" * 64,
+        revision_digest="6" * 64,
+        candidate_type="GAP",
+        label="Unsupported image source",
+        definition="The image source cannot be parsed by the current evidence tools.",
+        support_class="MISSING",
+        risk_class="MEDIUM",
+        compile_eligible=False,
+        canonical_target=None,
+        proposal={
+            "contract": "agentic-gap-projection/v1",
+            "gap_id": "gap.unsupported_image_source",
+            "disposition": "UNSUPPORTED",
+        },
+        proposed_operation=None,
+        source_anchors=(),
+        impact_refs=(),
+        limitations=("The boundary requires human disposition.",),
+        draft_diff=CandidateDraftDiffV1(change_type="NON_COMPILABLE"),
+    )
+
+
 class FakeReviewerModel:
-    def __init__(self, *, escape: bool = False) -> None:
+    def __init__(self, *, escape: bool = False, blocking_advice: bool = False) -> None:
         self.escape = escape
+        self.blocking_advice = blocking_advice
         self.requests: list[ReviewerRequestV1] = []
 
     def review(self, request: ReviewerRequestV1) -> ReviewerResponseV1:
@@ -104,6 +130,21 @@ class FakeReviewerModel:
                     evidence_fragment_ids=(),
                     blocks_release=True,
                     recommendation="Reject.",
+                ),
+            )
+        elif self.blocking_advice:
+            target = request.candidates[0]
+            findings = (
+                ReviewerFindingV1(
+                    finding_id="finding.model.advice_only",
+                    finding_type="RELEASE_BLOCKER",
+                    severity="ERROR",
+                    summary="Model recommends blocking",
+                    detail="This remains advisory even when the model asks to block.",
+                    candidate_ids=(target.candidate_id,),
+                    evidence_fragment_ids=target.evidence_fragment_ids,
+                    blocks_release=True,
+                    recommendation="Ask a human reviewer to decide.",
                 ),
             )
         output = ReviewerOutputV1(
@@ -152,6 +193,22 @@ def test_reviewer_gets_a_fresh_projection_and_only_returns_findings(
     assert any(item.blocks_release for item in result.findings)
 
 
+def test_deterministic_review_treats_explicit_gap_as_governed_disposition(
+    package: OntologyPackage,
+) -> None:
+    candidate = _gap_candidate()
+
+    findings = deterministic_candidate_findings(
+        (candidate,), package=package, evidence_bundle=None
+    )
+
+    assert not any(
+        item.finding_type == "MISSING_COVERAGE"
+        and candidate.candidate_id in item.candidate_ids
+        for item in findings
+    )
+
+
 def test_reviewer_rejects_a_finding_for_an_unknown_candidate(
     package: OntologyPackage,
 ) -> None:
@@ -166,6 +223,31 @@ def test_reviewer_rejects_a_finding_for_an_unknown_candidate(
             candidates=(_candidate(),),
             evidence_bundle=bundle,
         )
+
+
+def test_model_reviewer_finding_is_always_advisory_and_cannot_block_release(
+    package: OntologyPackage,
+) -> None:
+    bundle = normalize_evidence(_intake(), workspace_id="workspace.generic")
+
+    result = _reviewer(FakeReviewerModel(blocking_advice=True)).review(
+        run_id="construction-run." + "8" * 32,
+        workspace_id="workspace.generic",
+        base_draft_checksum="9" * 64,
+        package=package,
+        candidates=(_candidate(),),
+        evidence_bundle=bundle,
+    )
+
+    advice = next(
+        item for item in result.findings if item.finding_id == "finding.model.advice_only"
+    )
+    assert advice.finding_authority == "ADVISORY"
+    assert advice.blocks_release is False
+    assert any(
+        item.finding_authority == "DETERMINISTIC" and item.blocks_release
+        for item in result.findings
+    )
 
 
 def test_deterministic_review_blocks_binding_outside_candidate_schema(
@@ -295,6 +377,46 @@ def test_deterministic_review_blocks_invalid_metric_references_and_query_contrac
         item.finding_type == "INCONSISTENT_CONTRACT"
         and item.blocks_release
         and "derived metric" in item.detail
+        for item in candidate_findings
+    )
+
+
+def test_deterministic_review_accepts_governed_population_rule(
+    package: OntologyPackage,
+) -> None:
+    metric = next(item for item in package.metrics if item.metric_type == "base")
+    changed = metric.model_copy(
+        update={
+            "status": Status.PROPOSED,
+            "query": metric.query.model_copy(
+                update={
+                    "period_property": None,
+                    "population_property": None,
+                    "population_rule": package.rules[0].id,
+                    "filters": (),
+                }
+            ),
+        }
+    )
+    operation = PackageDraftOperation.model_validate(
+        {
+            "action": "UPSERT",
+            "collection": "metrics",
+            "object_id": metric.id,
+            "payload": changed.model_dump(mode="json"),
+        }
+    )
+    candidate = _typed_candidate("7", "METRIC", operation)
+
+    findings = deterministic_candidate_findings(
+        (candidate,), package=package, evidence_bundle=None
+    )
+    candidate_findings = [
+        item for item in findings if candidate.candidate_id in item.candidate_ids
+    ]
+
+    assert not any(
+        item.finding_type in {"BROKEN_REFERENCE", "INCONSISTENT_CONTRACT"}
         for item in candidate_findings
     )
 
