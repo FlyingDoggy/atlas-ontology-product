@@ -93,7 +93,7 @@ def test_packaged_scenario_upgrade_publishes_prepares_and_cas_activates_new_rele
     class FakeStudio:
         def publish(self, candidate, *, limitations):
             assert candidate == package
-            assert limitations == ("constructed synthetic; not HKEX validated",)
+            assert limitations == ("constructed synthetic; not customer validated",)
             return SimpleNamespace(ref=new_release)
 
         def load(self, *args, **kwargs):

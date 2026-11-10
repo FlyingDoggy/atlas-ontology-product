@@ -174,7 +174,7 @@ def test_cash_trading_publish_prepare_activate_analyze_and_verify(
     studio, agent = _services(tmp_path)
     release = studio.publish(
         package,
-        limitations=("constructed synthetic; not HKEX validated",),
+        limitations=("constructed synthetic; not customer validated",),
     )
     prepared = agent.prepare(
         release.ref,

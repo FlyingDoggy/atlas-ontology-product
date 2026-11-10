@@ -1,15 +1,15 @@
 {
   "contract": "cash-trading-source-manifest/v1",
-  "manifest_id": "cash-trading.deloitte-hk.20260820",
+  "manifest_id": "cash-trading.external-review.20260820",
   "captured_at": "2026-08-20T14:08:35+08:00",
-  "source_root": "HKEX DTT Input",
+  "source_root": "private-inputs",
   "immutability_rule": "Source files are read-only evidence. Corrections and enrichments are recorded in the assumption register and emitted only to derived artifacts.",
-  "classification": "deloitte_transcription_and_constructed_synthetic_sample",
+  "classification": "external-reviewer_transcription_and_constructed_synthetic_sample",
   "limitations": [
-    "HKEX source documents, production data and production SQL were not exported.",
-    "The data dictionary was generated and only cross-checked for field existence; physical names may differ in HKEX systems.",
+    "customer source documents, production data and production SQL were not exported.",
+    "The data dictionary was generated and only cross-checked for field existence; physical names may differ in customer systems.",
     "The sample data is constructed synthetic and spans one week.",
-    "No value in this packet is an HKEX-approved business definition or known-correct control unless separately confirmed."
+    "No value in this packet is a customer-approved business definition or known-correct control unless separately confirmed."
   ],
   "files": [
     {
@@ -19,13 +19,13 @@
       "size_bytes": 318582,
       "sha256": "488ed1d5b718337236bca5b812bd6606d73888e5028d347671c2569bc798fb9c",
       "role": "provenance_and_limitations",
-      "sender": "Huey Ngan, Deloitte HK",
+      "sender": "Huey Ngan, External Review Team",
       "sent_at": "2026-08-20T09:57:00+08:00",
       "evidence_summary": "The attached dictionary is generated, the sample is synthetic, fields were cross-checked for existence, physical column names may differ, and the metrics are common examples used by the referenced teams."
     },
     {
       "source_id": "SRC-REQ-001",
-      "file_name": "HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "file_name": "Example_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
       "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "size_bytes": 34495,
       "sha256": "fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",

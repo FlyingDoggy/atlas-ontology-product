@@ -1,5 +1,5 @@
 -- Compiler-generated reference SQL for the constructed-synthetic Cash Trading case.
--- It is not Deloitte/HKEX-provided SQL and does not establish production correctness.
+-- It is not External Reviewer/customer-provided SQL and does not establish production correctness.
 -- Every provisional rule is linked to the versioned CT-ASM assumption register.
 
 CREATE OR REPLACE TEMP VIEW cash_trade_analytics AS

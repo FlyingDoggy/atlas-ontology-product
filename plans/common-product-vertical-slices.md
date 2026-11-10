@@ -27,7 +27,7 @@ The implementation baseline is fixed:
 - Scenario code/config may define domain vocabulary, metrics, mappings, controls and presentation descriptors; it may not inject arbitrary executable code, system prompts or policy.
 - The current ADT calculator, oracle, release lifecycle and answer path remain the regression baseline. No second truth path is permitted.
 - Compose, filesystem and SQLite are compatibility/migration paths only. New product authority is PostgreSQL + S3-compatible storage.
-- A Kubernetes deployment is not a claim of HA, SLA, IAM or HKEX production readiness.
+- A Kubernetes deployment is not a claim of HA, SLA, IAM or customer production readiness.
 
 ## Phase 1 — New-infrastructure ADT tracer
 
@@ -227,7 +227,7 @@ The approved engineering demo is repeatably deployable to the current EC2/k3s en
 - [ ] Failed migration/image/readiness does not switch public traffic to an invalid version.
 - [ ] Rollback restores the previous image and exact active solution without reverting to stale authority.
 - [ ] Public routes, login, Studio↔Agent links and registered ADT flow pass desktop E2E.
-- [ ] Release label remains constructed-synthetic Engineering Demo; HA/SLA/IAM/HKEX readiness are explicitly excluded.
+- [ ] Release label remains constructed-synthetic Engineering Demo; HA/SLA/IAM/customer readiness are explicitly excluded.
 
 ## First implementation boundary
 

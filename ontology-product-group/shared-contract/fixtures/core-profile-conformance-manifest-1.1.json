@@ -209,7 +209,7 @@
     },
     "claim_ceiling": [
       "constructed-synthetic",
-      "non-hkex-validation",
+      "non-customer-validation",
       "non-production",
       "simulated-local-authority"
     ],
@@ -749,7 +749,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -1114,7 +1114,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -1798,7 +1798,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -2076,7 +2076,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -2547,7 +2547,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -3036,7 +3036,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -3587,7 +3587,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -3768,7 +3768,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"
@@ -4177,7 +4177,7 @@
                 "constructed-target-coupled",
                 "local-authority",
                 "no-raw-question",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "public-style-synthetic",
                 "synthetic-data",
                 "synthetic-scope"

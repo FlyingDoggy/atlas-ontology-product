@@ -22,7 +22,7 @@ Decision Owner批准`16_common_product_and_ontology_package_architecture.md`的�
 - PostgreSQL只承载产品状态、metadata、authority/read models、execution/evidence envelopes，不承载客户事实表；事实数据仍走Parquet + DuckDB或企业warehouse adapter。
 - S3 digest/versioning证明artifact完整性与版本定位，不产生semantic、truth、activation或release authority。
 - React是产品实现栈，不是portability proof；浏览器继续保持authority=0，所有事实与发布判断来自backend。
-- Kubernetes是部署底座，不自动产生HA、SLA、生产IAM、HKEX target readiness或production-ready claim。
+- Kubernetes是部署底座，不自动产生HA、SLA、生产IAM、customer target readiness或production-ready claim。
 - 当前ADT constructed-synthetic demo必须持续通过；迁移不得建立第二套truth/calculator/release path。
 - Listing仍是第二个materially-different synthetic falsifier；只有双场景证据允许提升common primitive。
 
@@ -35,4 +35,4 @@ Decision Owner批准`16_common_product_and_ontology_package_architecture.md`的�
 
 ## 4. Authority ceiling
 
-本决定授权开发和内部部署验证，不等于common product已经实现，不产生`PORTABLE_PASS`、Stage 1 conformance、HKEX validation、production readiness或External GO。外部demo发布仍需要单独GO判断。
+本决定授权开发和内部部署验证，不等于common product已经实现，不产生`PORTABLE_PASS`、Stage 1 conformance、customer validation、production readiness或External GO。外部demo发布仍需要单独GO判断。

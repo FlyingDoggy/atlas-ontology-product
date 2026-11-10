@@ -1,7 +1,7 @@
 # LLM-enabled Ontology Studio & Analytic Agent — Reviewed Candidate v0.2
 
-状态：`Reviewed Candidate` — 已完成两轮三视角 adversarial critic review；尚未成为 implementation baseline  
-日期：2026-08-19  
+状态：`Reviewed Candidate` — 已完成两轮三视角 adversarial critic review；尚未成为 implementation baseline
+日期：2026-08-19
 首发范围：constructed-synthetic ADT `LLM Engineering Demo`，desktop-only release gate
 
 关联裁决：[`reviews/llm-enabled-products-round-2-adjudication.md`](reviews/llm-enabled-products-round-2-adjudication.md)
@@ -159,7 +159,7 @@ Agent 有现成的 active ADT snapshot、确定性 calculator、claims/evidence 
 - 若 deterministic resolver 支持，则走 off/baseline；
 - 否则 `CLARIFY`、`REFUSED` 或 safe failure。
 
-原因不是模型无法理解自由文本，而是共享账号下无法阻止访客粘贴真实 HKEX/客户材料；UI notice 或 classifier 不能构成外部数据授权。未来若要开放 arbitrary free text，必须新增明确的数据外发决定与受控身份边界。
+原因不是模型无法理解自由文本，而是共享账号下无法阻止访客粘贴真实 customer/客户材料；UI notice 或 classifier 不能构成外部数据授权。未来若要开放 arbitrary free text，必须新增明确的数据外发决定与受控身份边界。
 
 ## 6. Agent LLM runtime
 
@@ -321,7 +321,7 @@ Rollout 不是全局裸 env switch，而是 versioned task record，绑定 exact
 
 LLM Ask 区域与回答必须邻接显示：
 
-> **LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; not Stage 1 governed-evidence conformant; not HKEX validated; not production-ready.**
+> **LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; not Stage 1 governed-evidence conformant; not customer validated; not production-ready.**
 
 ## 9. Ontology Studio LLM — second stage
 
@@ -375,7 +375,7 @@ Planning band：**8–13 pd**，不包含 publish/GSR authority extension。
 
 - 不把 Qwen key 直接塞进现有 shared backend/container anchor；
 - 不让 browser 直连模型；
-- 不让模型读未经批准的 HKEX 原始/转写材料；
+- 不让模型读未经批准的 customer 原始/转写材料；
 - 不让模型执行任意 SQL/Python/shell/filesystem/HTTP；
 - 不返回 streaming/partial analytic answer；
 - 不让模型或另一个模型成为 truth/release authority；

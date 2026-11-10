@@ -120,7 +120,7 @@ LIMITATION = enum(
     "constructed-target-coupled",
     "local-authority",
     "no-raw-question",
-    "non-hkex-validation",
+    "non-customer-validation",
     "public-style-synthetic",
     "synthetic-data",
     "synthetic-scope",
@@ -918,7 +918,7 @@ def build_manifest() -> dict[str, Any]:
             },
             "claim_ceiling": [
                 "constructed-synthetic",
-                "non-hkex-validation",
+                "non-customer-validation",
                 "non-production",
                 "simulated-local-authority",
             ],

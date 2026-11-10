@@ -35,7 +35,7 @@ _DATA_END = date(2026, 8, 9)
 _DETAIL_ROLES = {"MarketSurveillanceDemo", "TradingDemo"}
 _AGGREGATE_ROLES = {*_DETAIL_ROLES, "MarketsDemo"}
 _LIMITATIONS = (
-    "Constructed-synthetic data and provisional rules; not HKEX validated.",
+    "Constructed-synthetic data and provisional rules; not customer validated.",
     "Potential self-trade is a deterministic triage candidate, not a misconduct conclusion.",
     "Observed order-event timelines may be incomplete and do not reconstruct missing events.",
 )

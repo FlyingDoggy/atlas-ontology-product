@@ -1,14 +1,14 @@
 # Ontology Studio Product-Domain PRD v0.1
 
-Document ID：`ontology-studio-prd/0.1`  
-状态：Revised Candidate；Pending Fresh-reader Closure and R-01 Decision；not implementation authority  
-日期：2026-08-19  
-Decision Owner：Muyu  
-Accountable Product Owner：Studio Domain Owner（V0 前落实人名）  
-规范性父级：`01_product_group_strategy.md` v1.0、`02_shared_product_contract.md` v0.1 Approved/Frozen  
-当前冻结 Profile：`synthetic-trusted-flow/core@1`（ADT synthetic reference tracer）  
-待决 Profile revision：`synthetic-trusted-flow/core@1.1` Revision Pack R-01（E-01 `CONCEPT_NOT_BOUND` + E-02 `SELECT_REFERENCE`）  
-共同产品附件：`stage1-demo-delivery-companion/0.1`；file digest `sha-256:800d15d41fb2ad9143eac14d0f13a9297f18afe6bf704e1bce4e8b466e4a8b74`  
+Document ID：`ontology-studio-prd/0.1`
+状态：Revised Candidate；Pending Fresh-reader Closure and R-01 Decision；not implementation authority
+日期：2026-08-19
+Decision Owner：Muyu
+Accountable Product Owner：Studio Domain Owner（V0 前落实人名）
+规范性父级：`01_product_group_strategy.md` v1.0、`02_shared_product_contract.md` v0.1 Approved/Frozen
+当前冻结 Profile：`synthetic-trusted-flow/core@1`（ADT synthetic reference tracer）
+待决 Profile revision：`synthetic-trusted-flow/core@1.1` Revision Pack R-01（E-01 `CONCEPT_NOT_BOUND` + E-02 `SELECT_REFERENCE`）
+共同产品附件：`stage1-demo-delivery-companion/0.1`；file digest `sha-256:800d15d41fb2ad9143eac14d0f13a9297f18afe6bf704e1bce4e8b466e4a8b74`
 评审裁决：`reviews/product-prds-round-2-adjudication.md`
 
 ## 0. 如何阅读
@@ -31,7 +31,7 @@ Accountable Product Owner：Studio Domain Owner（V0 前落实人名）
 | Formal handoff | Studio 唯一正式下游语义输出是 immutable environment-independent GSR |
 | Fail closed | raw/unapproved input、wrong selector、missing trace slot、unresolved release gap、wrong approval subject、invalid SCR chain |
 | Must never happen | Studio 选择业务真相、读取 Agent facts 作 truth、把 draft/评论交给 Agent、把 ACCEPTED feedback 当 confirmed Ontology |
-| Stage 1 promise | 用 constructed-synthetic ADT 证明一条 safe intake → human decision → GSR → safe triage 链；不证明 HKEX truth 或 production workflow |
+| Stage 1 promise | 用 constructed-synthetic ADT 证明一条 safe intake → human decision → GSR → safe triage 链；不证明 customer truth 或 production workflow |
 
 ## 1. Product Decision
 
@@ -58,7 +58,7 @@ Studio 的唯一正式下游语义产出是 GSR。Candidate、draft、review com
 
 ## 2. Problem Statement
 
-企业的需求、指标、流程、数据模型、数据字典和已有 SQL 通常分散在不同人员与文档中。对 HKEX PoC 而言，问题更严格：原始业务材料不能离开安全区，Deloitte HK 只能按要求人工转写解释性内容；缺失信息也不能由模型补齐。
+企业的需求、指标、流程、数据模型、数据字典和已有 SQL 通常分散在不同人员与文档中。对 customer PoC 而言，问题更严格：原始业务材料不能离开安全区，External Review Team 只能按要求人工转写解释性内容；缺失信息也不能由模型补齐。
 
 当前资产已经能展示 Ontology 对象、编辑少量指标/映射、运行校验并发布一个本地 package，但尚未形成以下产品能力：
 
@@ -87,20 +87,20 @@ Studio 的唯一正式下游语义产出是 GSR。Candidate、draft、review com
 ### 3.2 Non-goals
 
 - 通用自动文档抽取器或“一键生成 Ontology”；
-- 要 Deloitte/HK 或业务 Reviewer 填写内部 ontology schema；
+- 要 External Reviewer/HK 或业务 Reviewer 填写内部 ontology schema；
 - 完整图谱编辑器、任意 RDF/OWL authoring UI 或企业知识图谱平台；
 - 多人并发工作流、生产电子签名、IAM、PKI、DLP 或 WORM audit；
 - 企业 Data Catalog、MDM、Semantic Layer 或 Knowledge Center 替代；
 - 在 Studio 内执行普通业务事实查询；
 - 从 Agent telemetry 或 SCR 自动创建 confirmed object、Claim 或 GSR；
-- 证明 HKEX 业务定义正确或客户已确认；
+- 证明 customer 业务定义正确或客户已确认；
 - 决定最终商业 SKU、顶层导航或独立 deployment。
 
 ## 4. Users and Jobs-to-be-Done
 
 | User / role | Primary job | Product outcome |
 |---|---|---|
-| Deloitte Transcriber / Coordinator | 按允许范围转写需求、过程、指标逻辑和材料边界 | 可登记的 input proposal、明确 Missing/Withheld |
+| External Reviewer Transcriber / Coordinator | 按允许范围转写需求、过程、指标逻辑和材料边界 | 可登记的 input proposal、明确 Missing/Withheld |
 | Disclosure & Policy Approver | 决定某份转写/附件可否及如何进入 ontology workflow | ClearedInput approval 或安全拒绝 |
 | Reference Truth Owner | 按预登记标准选择并冻结 exact reference case | 唯一 selected ReferenceManifest；不能由 Studio Owner 代替 |
 | Ontology Operator | 只从 ClearedInput 编译 Candidate，暴露来源、缺口和冲突 | Candidate、Trace、Gap/Conflict queue |
@@ -136,7 +136,7 @@ Stage 1 ordinary Studio proposal boundary 只接受 closed metadata、opaque loc
 
 Ontology Operator 从 Reference Truth Owner 已冻结的 selected ReferenceManifest 所引用的 ClearedInput 建立对象/关系/规则/指标/流程 Candidate。每个 candidate field 都能回到一个 ClearedInput locator 或一个明确的 Decision；无来源推断只能保持 proposed。
 
-Operator 只获得 audience-specific `Operator Intake Projection`：包含语义构建所需陈述/locator，不包含 Control expected values、oracle、report target、Package、fixture 或 runtime result。若一个获批 source pack 无法把 semantic input 与 target/control content 安全分开，本轮不得声称 blind rebuild，而不是要求 Deloitte 重复转写。
+Operator 只获得 audience-specific `Operator Intake Projection`：包含语义构建所需陈述/locator，不包含 Control expected values、oracle、report target、Package、fixture 或 runtime result。若一个获批 source pack 无法把 semantic input 与 target/control content 安全分开，本轮不得声称 blind rebuild，而不是要求 External Reviewer 重复转写。
 
 在 Candidate 构建前，V0 预登记 versioned semantic validation profile，冻结 formula、grain/additivity、period/calendar、population/exclusions、dimensions/segments、unit/scale/rounding、limitations 和 release-impacting Missing/Withheld/Decision slots。Trace completeness 以该独立分母计算，不能从最终 Candidate 反推分母。
 
@@ -162,7 +162,7 @@ UI 状态 `TRIAGED → ACCEPTED / REJECTED / DUPLICATE / NEEDS_CONTEXT → CLOSE
 
 ### Journey A — Register safe input
 
-1. 人工安全转写先在获准的 restricted review boundary 形成受控 artifact；ordinary Studio 不接收 raw HKEX bytes。
+1. 人工安全转写先在获准的 restricted review boundary 形成受控 artifact；ordinary Studio 不接收 raw customer bytes。
 2. Transcriber 登记 closed metadata、opaque locator 和 safe artifact ref；Studio 验证必需 metadata，缺失内容不自动补齐。
 3. Disclosure & Policy Approver 查看 exact proposal、classification、用途和限制。
 4. ALLOW 后形成 ClearedInput 和 audience-specific projection；DENY 只保留最小获准 rejection/audit metadata，不产生可供 Candidate 使用的 input。
@@ -199,7 +199,7 @@ UI 状态 `TRIAGED → ACCEPTED / REJECTED / DUPLICATE / NEEDS_CONTEXT → CLOSE
 | STU-INT-01 | Studio 必须区分 input proposal 与 approved ClearedInput | 未获 AuthorityDecision 的 proposal 不能进入 Candidate build |
 | STU-INT-02 | 必须保存 classification、allowed use、limitations、opaque locator、proposal/ClearedInput exact subject ref + `subject_digest` 与 approval identity；storage checksum 如有仅作 non-authority metadata | 任一 required field 缺失即 fail closed；storage checksum 不能替代 contract identity |
 | STU-INT-03 | Missing / Withheld / Unconfirmed 必须是一等状态 | 模型或默认值不能把它们转成 confirmed |
-| STU-INT-04 | Deloitte/外部输入不得要求 RDF、OWL、SHACL、AST 或内部 schema | 2 名 non-author proxy 用 blank common template 安全完成；internal schema input = 0；真实 Deloitte usability 标 Not Assessed |
+| STU-INT-04 | External Reviewer/外部输入不得要求 RDF、OWL、SHACL、AST 或内部 schema | 2 名 non-author proxy 用 blank common template 安全完成；internal schema input = 0；真实 External Reviewer usability 标 Not Assessed |
 | STU-INT-05 | 被拒或超范围内容不得进入 Candidate/runtime/public projection | cross-boundary canary/forbidden-field test 为 0 |
 | STU-INT-06 | ordinary Stage 1 Studio proposal 不得摄入 raw/restricted bytes 或 unrestricted free text | nested/encoded canary 在 ordinary API、Candidate/model input、general logs/cache/search/export 命中 = 0；restricted review boundary 单独审计 |
 
@@ -245,11 +245,11 @@ UI 状态 `TRIAGED → ACCEPTED / REJECTED / DUPLICATE / NEEDS_CONTEXT → CLOSE
 | STU-OPS-02 | 每个 inherited Stage 1 privileged action 必须映射 product outcome owner、authority、committed fact 和 failure owner | S0 action/outcome matrix 分母完整；audit completeness = 100% |
 | STU-OPS-03 | Governance Projection 必须按 role/purpose allowlist | cross-role forbidden fields = 0 |
 | STU-OPS-04 | UI 不得把 build progress、badge 或 latest 当 authority | authority 始终解析 exact ref/digest |
-| STU-OPS-05 | 所有 Stage 1 页面/报告必须邻接显示 synthetic、simulated role、non-HKEX/non-production limitation | main view、replay、export、runbook 无需展开即可见；claim-label coverage = 100% |
+| STU-OPS-05 | 所有 Stage 1 页面/报告必须邻接显示 synthetic、simulated role、non-customer/non-production limitation | main view、replay、export、runbook 无需展开即可见；claim-label coverage = 100% |
 
 ## 9. User Stories
 
-1. As a Deloitte Transcriber, I want to submit a short safe transcription and explicitly mark what is withheld, so that I am not asked to recreate the original HKEX document.
+1. As a External Reviewer Transcriber, I want to submit a short safe transcription and explicitly mark what is withheld, so that I am not asked to recreate the original customer document.
 2. As a Disclosure & Policy Approver, I want to approve the exact input proposal and allowed use, so that unapproved material cannot enter ontology work.
 3. As an Ontology Operator, I want a stable locator for every usable statement, so that every candidate field has traceable provenance.
 4. As an Ontology Operator, I want missing and conflicting definitions surfaced as concrete questions, so that I do not silently invent business meaning.
@@ -267,14 +267,14 @@ UI 状态 `TRIAGED → ACCEPTED / REJECTED / DUPLICATE / NEEDS_CONTEXT → CLOSE
 16. As a Domain Approver, I want ACCEPTED feedback to remain proposed work, so that runtime feedback never becomes truth automatically.
 17. As a Product & Delivery DRI, I want intake effort, waiting time, clarification loops and failure outcomes measured separately, so that Time to First Trusted Scenario is honest.
 18. As a Reference Truth Owner, I want only my exact preregistered selection to establish the ReferenceManifest, so that delivery pressure cannot choose the easiest truth.
-19. As an Ontology Operator, I want the same approved intake lineage projected without control targets, so that blind rebuild is real without asking Deloitte to transcribe twice.
+19. As an Ontology Operator, I want the same approved intake lineage projected without control targets, so that blind rebuild is real without asking External Reviewer to transcribe twice.
 20. As a future second-scenario discovery lead, I want the Strategy 2-semantic + 1-binding/execution evidence gate applied before any shared-core promotion.
 
 ## 10. Success Metrics
 
 ### 10.1 Product-family contribution
 
-- `Time to First Trusted Scenario`：完全引用 Product Strategy，从第一份 ClearedInput 正式登记，到预登记 must-answer suite 全部达到可信门禁；按 Companion closed schema 分报 wall-clock、`internal_active_minutes`、`deloitte_active_minutes` 与 `client_confirmation_wait_minutes`，并从 exact minutes统一派生 person-hours/hours。
+- `Time to First Trusted Scenario`：完全引用 Product Strategy，从第一份 ClearedInput 正式登记，到预登记 must-answer suite 全部达到可信门禁；按 Companion closed schema 分报 wall-clock、`internal_active_minutes`、`external-reviewer_active_minutes` 与 `client_confirmation_wait_minutes`，并从 exact minutes统一派生 person-hours/hours。
 - `Trusted Scenario Completion Rate`：完全引用 Product Strategy，以所有进入 intake 的场景为固定分母。`completion_state` 仅为 `TRUSTED_COMPLETED/NOT_COMPLETED`；未完成场景的 `strategy_reporting_category` 必须且只能为 `SCOPE_CHANGE/PAUSED/FAILED/UNSUPPORTED/CLARIFY/REFUSE` 之一；`MISSING/WITHHELD/UNCONFIRMED` 仅是正交的 `intake_condition_flags`，不能从分母删除或静默映射。
 
 First Committed Answer、First Safe SCR 和 First Revoke Proof 只可作为 subordinate milestones，不结束 North-star。Studio、Agent 与 Product-family calculator 必须对 Companion 定义的 `product-family-metric-events-v0.1` fixture 得出相同 start、stop、wall-clock、三项 effort/wait totals、completion state、denominator、六类 counts 与 intake flags；未知类别/unit或missing/null/negative duration fail closed。
@@ -314,7 +314,7 @@ First Committed Answer、First Safe SCR 和 First Revoke Proof 只可作为 subo
 
 1. 两个 ADT truth candidate 分别登记；每个 selectable candidate 有独立 ClearedInput、ControlManifest/oracle provenance；只有 R-01/E-02 获批后 Reference Truth Owner 的 exact proposal + `SELECT_REFERENCE` ALLOW 才可冻结唯一 ReferenceManifest；否则 V0 conformance blocked。
 2. 选择唯一 reference 后，blind Operator 只读 target-free projection，按 preregistered semantic-slot denominator 形成 Candidate/Trace/Decision；Trace 100%，target/control canary 0。
-3. 至少一个 Missing/Withheld path fail closed，至少一个 genuine ambiguity 有 Decision；2 名 non-author proxy 完成 common-template baseline，真实 Deloitte usability 仍为 Not Assessed。
+3. 至少一个 Missing/Withheld path fail closed，至少一个 genuine ambiguity 有 Decision；2 名 non-author proxy 完成 common-template baseline，真实 External Reviewer usability 仍为 Not Assessed。
 4. V0 形成 PublishSubject + exact Semantic Approval；V1 取得 PUBLISH AuthorityDecision 后形成 immutable GSR。
 5. 下游四个 environment gates 能从 GSR requirements 构造 exact subjects；Studio 不拥有其 PASS outcome。
 6. 五个 UNKNOWN_CONCEPT fixtures 5/5 actionable、零 forbidden-field leakage；invalid/incomplete chain zero inbox side effect；ACCEPTED 不修改 SCR 或升级真相。
@@ -346,7 +346,7 @@ Studio 的 slice contributions：V0 truth/intake/blind Candidate/Trace/Decision 
 - Reference Truth Owner / Control Reviewer：Truth Owner 独自选择并冻结 reference，Control Reviewer独立复核；Studio 只消费 ReferenceManifest，不从 runtime 反推 truth。
 - Runtime Release Operations：属于 Agent Product Domain；Studio 只交付 exact GSR，不拥有 environment binding、four-gate verdict、seal 或 Activation。
 - Stage 1 Demo & Delivery Companion：冻结共同 demo promise、minimum surface、slice RACI 和 delivery checklist；不是第三产品或 runtime authority。
-- Deloitte HK：Stage 1 不依赖真实响应；Stage 2 才验证安全转写的真实可用性和周转时间。
+- External Review Team：Stage 1 不依赖真实响应；Stage 2 才验证安全转写的真实可用性和周转时间。
 - Target Platform：IAM、ARM64/K8s、企业 registry/audit 后置，不阻塞 Stage 1 产品路径。
 
 ## 14. Risks and Controls
@@ -367,7 +367,7 @@ Studio 的 slice contributions：V0 truth/intake/blind Candidate/Trace/Decision 
 
 - Studio 长期 operating owner、buyer 与商业包装；
 - 独立 UI 还是与 Agent 共用 shell/navigation；
-- Deloitte 是否未来获得直接 portal 账号；
+- External Reviewer 是否未来获得直接 portal 账号；
 - production workflow、电子签名、retention 和 segregation of duties；
 - RDF/SHACL 是否成为目标客户区的治理交换格式；
 - 第二场景需要哪些稳定的批量编辑、impact analysis 或 catalog federation 能力。

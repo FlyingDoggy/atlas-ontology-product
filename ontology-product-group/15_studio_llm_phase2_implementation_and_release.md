@@ -29,7 +29,7 @@ Cleared ADT transcription
 - 两个独立产品入口、共享登录 session 和双向快捷跳转；
 - 同一 EC2 上可通过公网 HTTPS 使用。
 
-这仍然是 constructed-synthetic ADT `LLM Engineering Demo`，不是通用 ontology compiler、HKEX 业务验证、Stage 1 governed-evidence conformance 或生产系统。
+这仍然是 constructed-synthetic ADT `LLM Engineering Demo`，不是通用 ontology compiler、customer 业务验证、Stage 1 governed-evidence conformance 或生产系统。
 
 ## 2. 第一性原理
 

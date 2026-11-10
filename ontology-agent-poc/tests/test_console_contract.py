@@ -108,7 +108,7 @@ def test_console_has_no_second_live_adt_truth() -> None:
         "XHKG-CASH",
         "286355",
         "229799",
-        "HKEX Monthly Market Highlights",
+        "customer Monthly Market Highlights",
     ):
         assert retired_truth not in source
 

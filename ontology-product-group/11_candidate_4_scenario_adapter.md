@@ -1,7 +1,7 @@
 # Candidate 4 — ScenarioAdapter Deep Module
 
-状态：Implemented / Local Verified  
-日期：2026-08-19  
+状态：Implemented / Local Verified
+日期：2026-08-19
 范围：ADT constructed-synthetic PoC 的最小可替换 seam；不是通用 ontology compiler 或动态 plugin platform
 
 ## 1. 第一性原理
@@ -98,7 +98,7 @@ Common lifecycle independently核对 suite ID、case count、case IDs/order、ca
 - package model、formula AST、query contracts 和 evidence model 已被第二场景证明通用；
 - adapter 可动态上传、安装或运行不可信第三方代码；registry 仍是进程内受控 composition；
 - ADT implementation 已完成物理目录迁移；当前先冻结依赖方向，避免为了移动文件制造风险；
-- fixed regex resolver/DuckDB compiler 能处理开放式 HKEX 问题；
+- fixed regex resolver/DuckDB compiler 能处理开放式 customer 问题；
 - post-activation verification failure 已有 traffic hold/automatic rollback。
 
 下一次真正检验不是再抽象一层，而是选择一个足够不同、仍可合成且可验证的第二场景，用“新增场景需改哪些 common 文件”作为量化指标。若仍需修改 common lifecycle 才能接入，接口就没有通过。

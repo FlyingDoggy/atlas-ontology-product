@@ -54,7 +54,9 @@ def test_cash_solution_registration_and_editor_close_the_package() -> None:
 
     assert registration.solution_id == "ontology.exchange_analytics.cash_trading"
     assert registration.workspace_id == "workspace.cash_trading.reference"
-    assert len(registration.resources) == 36
+    assert len(registration.resources) == 32
+    assert all(not item.locator.startswith("intake/reference-source-pack/")
+               for item in registration.resources)
     assert registration.solution_version == "1.2.0"
     assert registration.semantic_source_version == "0.2.0"
     assert tuple(field.path for field in descriptor.fields) == (

@@ -2138,7 +2138,7 @@ def verify_integrated(document: dict[str, Any]) -> tuple[list[str], list[str]]:
         label = context["demo_label"]
         if label["reference_case_id"] != context["selected_case_id"] or not same(label["reference_manifest_ref"], context["reference_manifest_ref"]):
             raise VectorError("REFERENCE_DOWNSTREAM_MISMATCH")
-        if "non-hkex-validation" not in label["limitations"]:
+        if "non-customer-validation" not in label["limitations"]:
             raise VectorError("REFERENCE_DOWNSTREAM_MISMATCH")
         forbidden = [
             context["unselected_candidate_ref"], context["unselected_input_ref"],

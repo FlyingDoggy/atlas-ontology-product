@@ -6,7 +6,7 @@
 
 Decision Owner：Muyu
 
-主要读者：产品、架构、工程、数据、AI、安全、Deloitte HK 交付团队
+主要读者：产品、架构、工程、数据、AI、安全、External Review Team 交付团队
 
 上游约束：
 
@@ -14,7 +14,7 @@ Decision Owner：Muyu
 - `02_shared_product_contract.md` v0.1 Approved/Frozen；
 - `17_architecture_approval_and_stack_decision.md` Approved / Implementation Authorized；
 - 当前已部署的 constructed-synthetic ADT LLM Engineering Demo；
-- HKEX 原始业务材料默认不能离开安全区，Deloitte HK 只能按要求安全转写；
+- customer 原始业务材料默认不能离开安全区，External Review Team 只能按要求安全转写；
 - 当前推荐交付目标是 constructed-synthetic `Scenario-Portable Engineering Demo`，不是生产 IAM、完整 Knowledge Center、企业级多租户平台，也不冒充完整 Stage 1 governed-evidence conformance。`Governed General Demo / Product Target` 在同一架构中定义，但只有 exact Product-Domain PRD、Profile/Annex/vectors 获得 Approved/Frozen authority 后才可实施和宣称。
 
 ---
@@ -38,7 +38,7 @@ Decision Owner：Muyu
 
 | 层级 | 当前作用 | 可以宣称 | 不可以宣称 |
 |---|---|---|---|
-| Scenario-Portable Engineering Demo | 用 ADT + 第二 synthetic scenario 尽早证伪 component boundary；复用 current local controls | same minimal product build 在已声明 capability ceiling 内运行两个 exact scenario；constructed-synthetic engineering evidence | Stage 1 conformant、HKEX validated、production/durable、任意业务 3–7 天接入 |
+| Scenario-Portable Engineering Demo | 用 ADT + 第二 synthetic scenario 尽早证伪 component boundary；复用 current local controls | same minimal product build 在已声明 capability ceiling 内运行两个 exact scenario；constructed-synthetic engineering evidence | Stage 1 conformant、customer validated、production/durable、任意业务 3–7 天接入 |
 | Governed General Demo / Product Target | 完整实现 Frozen authority chain、durable commit、restore/revocation 和正式 Release Manager flow | 仅在 exact authority manifest、conformance 与 release gates 全部 PASS 后按其 claim ceiling 宣称 | 不能由本 architecture approval、当前 Engineering Demo 或 bundle digest 自动获得 |
 
 推荐的下一项投资是第一层，并以端到端纵向切片同时落地 React、PostgreSQL、S3-compatible Artifact Store 与 Kubernetes；不建设脱离用户路径的四条水平基础设施工程。
@@ -80,7 +80,7 @@ Decision Owner：Muyu
 7. **Agent 保留当前 typed、bounded、可审计的自研 orchestration。** 现在不创建宽泛 framework port，不引入 LangGraph/DeepAgents；未来 adapter 也不能拥有 policy、facts、evidence 或 commit authority。
 8. **LLM 只负责 open-language → closed candidate/goal、受限 next-tool selection 和 Studio observation proposal；数字、SQL、权限、发布和事实 clause 仍由 deterministic components 负责。** Scenario components只能提供 typed domain data/labels/examples，不能靠 bundle 自动改变 system prompt/tool/policy。
 9. **React + TypeScript + Vite 是前端 implementation baseline。** 迁移按 ProductContext 与 safe presentation descriptor 驱动的逐 route 纵向切片进行，不做 big-bang rewrite；browser 永远没有事实 authority。
-10. **S3-compatible exact-version object storage 与 Kubernetes 是部署 baseline。** local/test 使用 MinIO，当前自有 EC2 使用 k3s；它们提供稳定的工件与编排底座，但不自动产生 semantic authority、HA/SLA、生产 IAM 或 HKEX readiness。
+10. **S3-compatible exact-version object storage 与 Kubernetes 是部署 baseline。** local/test 使用 MinIO，当前自有 EC2 使用 k3s；它们提供稳定的工件与编排底座，但不自动产生 semantic authority、HA/SLA、生产 IAM 或 customer readiness。
 11. **产品镜像与场景 components 独立发布。** 最终 frozen image digest 必须 clean-run ADT 与第二案例；单 deployment 首版只激活一个 exact scenario context，多租户/catalog 后置。
 
 ---
@@ -692,11 +692,11 @@ Create/Open Workspace
 
 ### 7.2 Common intake
 
-继续遵守 Deloitte HK 能力前提：
+继续遵守 External Review Team 能力前提：
 
 - 需求与指标逻辑按我们提供的简单模板转写；
 - 数据模型、数据字典、sample/enums 和现有 SQL 作为文件或安全描述登记；
-- 不要求 Deloitte 填 RDF/OWL/SHACL/Formula AST；
+- 不要求 External Reviewer 填 RDF/OWL/SHACL/Formula AST；
 - 初版不要求自动解析任意 Word/Excel/SQL；
 - parser 无法确认的内容产生 `Missing/Gap/Conflict`，不能猜。
 
@@ -1103,7 +1103,7 @@ Engineering Demo保留当前HTTPS + shared demo credential + signed HttpOnly ses
 
 | Dimension | Scenario-Portable Engineering Demo wording |
 |---|---|
-| Business truth | constructed-synthetic；not HKEX/customer validated |
+| Business truth | constructed-synthetic；not customer/customer validated |
 | Governance/conformance | bounded engineering controls；not full Stage 1 governed-evidence conformant |
 | Identity/operations | shared demo account；not individual audit；temporary ingress/no SLA；not production-ready |
 | Portability | only exact ADT + exact second synthetic scenario on stated build/capability/source/presentation ceiling；not arbitrary enterprise ontology onboarding |
@@ -1232,7 +1232,7 @@ Dockerfile不再`COPY scenarios`。DistributionBundle/components在deploy/instal
 - ConfigMap仅放非敏感config，secret由Secret/external provider注入；artifact走S3-compatible API，不依赖共享hostPath；
 - 每个公开/内部workload均定义readiness、liveness、resource request/limit、security context、rollback image与migration ordering；
 - 多副本、autoscaling、跨AZ、PDB与managed database属于HA/SLA hardening，不由“已经使用K8s”自动获得；
-- 目标 HKEX cluster/network/security approval 不由当前 EC2 demo 证明。
+- 目标 customer cluster/network/security approval 不由当前 EC2 demo 证明。
 
 ### 14.4 Backup and recovery
 
@@ -1392,9 +1392,9 @@ D1 schema/API根本不包含`PORTABLE_PASS`。只有final record可使用该值�
 - fresh user can explain Studio Source → Proposal → Decision → Draft；
 - fresh user can explain Dashboard → Ask → Evidence；
 - fresh user knows LLM did not calculate the number or publish ontology；
-- fresh user knows constructed-synthetic is not HKEX validation；
+- fresh user knows constructed-synthetic is not customer validation；
 - fresh user可区分DistributionBundle与GSR/VRS/Activation authority；
-- fresh user能说出四维claim ceiling：不是HKEX truth、不是完整Stage 1（除非exact authority真的通过）、不是individual audit/production、portability只限两个exact场景与声明ceiling；
+- fresh user能说出四维claim ceiling：不是customer truth、不是完整Stage 1（除非exact authority真的通过）、不是individual audit/production、portability只限两个exact场景与声明ceiling；
 - fresh user能解释MissingCapability为何是有价值证据、Gate A只决定是否继续投资、不是PORTABLE_PASS；
 - “fresh package author无需RDF/SHACL/internal AST”在独立proxy test通过前只是future target，不是当前claim。
 
@@ -1408,8 +1408,8 @@ D1 schema/API根本不包含`PORTABLE_PASS`。只有final record可使用该值�
 
 进入任何实现前，Decision Owner先判断本轮模式：
 
-- Primary audience：HKEX/Deloitte业务、数据和技术stakeholders；
-- 唯一要支持的投资决定：是否值得进入“真实HKEX安全区内的一个场景discovery + governed productization”下一阶段；
+- Primary audience：customer/External Reviewer业务、数据和技术stakeholders；
+- 唯一要支持的投资决定：是否值得进入“真实customer安全区内的一个场景discovery + governed productization”下一阶段；
 - Engineering hero flow（15–20分钟）：Cleared synthetic input → Studio proposal/human decision/`EngineeringSemanticRelease` → Release Manager exact install/prepare/`EngineeringActivationRecord` → Agent Dashboard/Ask/Evidence/`EngineeringDemoResponseCommit` → failed candidate/old-active proof → Gate A investment decision；全程禁止GSR/VRS/Eligibility/ResultReleaseCommit命名；
 - Governed hero flow是另一份互斥脚本，只有exact Approved/Frozen authority manifest后才可选择，使用GSR→payload→five attempts→VRS→Activation/Eligibility→ResultReleaseCommit；
 - Listing MissingCapability是Engineering脚本的合法分支：展示exact missing list、query/model=0、ADT old-active仍可用、portability claim=false和下一步成本；
@@ -1560,7 +1560,7 @@ React、PostgreSQL、S3-compatible storage和Kubernetes已由Decision 17批准�
 4. **Generic Agent tracer**：descriptor-driven Dashboard + Ask + Evidence；前端不读取ADT字段名或计算公式，backend继续拥有facts/claims/release authority。
 5. **Listing falsifier**：同一build加载第二个materially-different synthetic solution，合法结果可以是完整运行或pre-query `MissingCapability`，query/model调用为0。
 6. **Dual-scenario factorization**：只有被ADT和Listing共同证明的primitive进入shared kernel；scenario-specific translation继续留在solution components。
-7. **Kubernetes release slice**：clean/in-place upgrade、migration、restart、fault injection、rollback、desktop E2E与claim audit；单EC2/k3s成功不提升HA/SLA/IAM/HKEX claim。
+7. **Kubernetes release slice**：clean/in-place upgrade、migration、restart、fault injection、rollback、desktop E2E与claim audit；单EC2/k3s成功不提升HA/SLA/IAM/customer claim。
 
 第一条slice通过后，用实际数据库迁移、object-store、React和k3s证据重新形成剩余WBS/ROM。任何slice若只能展示“组件已经安装”而没有用户/API-visible outcome，不算完成。
 
@@ -1584,7 +1584,7 @@ scenario-kit init <case>
 → Engineering prepare/CAS activate/commit，或Governed verify/seal/activate/eligibility/commit
 ```
 
-当前只承诺**core-engineer-authored two-scenario proof**。在minimum author kit与两名独立proxy test完成前，不宣称fresh author能够完成、不承诺3–7 active person-days，也不要求Deloitte填写RDF/SHACL/internal AST。
+当前只承诺**core-engineer-authored two-scenario proof**。在minimum author kit与两名独立proxy test完成前，不宣称fresh author能够完成、不承诺3–7 active person-days，也不要求External Reviewer填写RDF/SHACL/internal AST。
 
 两条路径：
 
@@ -1643,11 +1643,11 @@ scenario-kit init <case>
 ### 20.1 当前已决定
 
 - 一个产品组、两个独立 Product Domains、一个 Shared Kernel；
-- ADT 是 constructed-synthetic reference，不是 HKEX validation；
-- Deloitte HK 默认只能安全转写；
+- ADT 是 constructed-synthetic reference，不是 customer validation；
+- External Review Team 默认只能安全转写；
 - Studio/Agent 都需要 LLM，但 LLM 不拥有 truth/execution/release authority；
 - Dashboard + Ask 并存，Studio 使用治理 dashboard；
-- React + TypeScript + Vite、PostgreSQL 17、S3-compatible storage与Kubernetes是implementation baseline；当前EC2/k3s demo仍不证明HKEX target readiness、HA或SLA。
+- React + TypeScript + Vite、PostgreSQL 17、S3-compatible storage与Kubernetes是implementation baseline；当前EC2/k3s demo仍不证明customer target readiness、HA或SLA。
 
 ### 20.2 Decision Owner 已接受的实施方向
 

@@ -351,7 +351,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 - 冻结 12–15 分钟 ADT hero flow、Solution route identity、copy/lifecycle matrix、第二案例 falsification manifest；
 - 冻结 Graph Editor 的 typed-operation boundary、Candidate overlay、List/Graph 等价性和 graph-off 降级合同；不得把 Semantica raw graph 或画布坐标升级为 canonical truth；
 - 在目标 ARM/K8s 架构构建 pin exact Semantica image，只启用明确 parse/extract/proposal stage；
-- 使用当前 Deloitte 输入中的 XLSX 与现有 ADT registered sources 做只读 compatibility run；
+- 使用当前 External Reviewer 输入中的 XLSX 与现有 ADT registered sources 做只读 compatibility run；
 - 证明 Qwen 只能经过 product Model Gateway，worker 无 provider key、无任意 base URL；
 - 测量 image/startup/RSS、parse/anchor yield、model calls/tokens、candidate counts、失败与资源上限；
 - 输出 GO / NARROW / STOP 和 A1 fresh WBS。
@@ -368,7 +368,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice A1: Durable ADT mixed-risk shadow construction
 
-**User stories**: US-02, US-03, US-04  
+**User stories**: US-02, US-03, US-04
 **Estimate**: 6–10 active person-days。
 
 #### What to build
@@ -396,7 +396,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice A2: Transactional Review Center and active apply
 
-**User stories**: US-04, US-05, US-06  
+**User stories**: US-04, US-05, US-06
 **Estimate**: 5–8 active person-days。
 
 #### What to build
@@ -441,7 +441,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice B: First self-service Source Adapter
 
-**User stories**: US-02, US-03  
+**User stories**: US-02, US-03
 **Provisional estimate**: 4–7 active person-days；Gate A 后重估。
 
 #### What to build
@@ -461,7 +461,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice C: One complete analytic capability
 
-**User stories**: US-05, US-06, US-07, US-08, US-09  
+**User stories**: US-05, US-06, US-07, US-08, US-09
 **Provisional estimate**: 8–13 active person-days；Gate A 后重估。
 
 #### What to build
@@ -489,7 +489,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice D: Coverage expansion by capability
 
-**User stories**: US-05, US-06, US-07  
+**User stories**: US-05, US-06, US-07
 **Provisional estimate**: 10–18 active person-days；由 Gate A 和 Slice C actuals重估。
 
 #### What to build
@@ -510,7 +510,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice E: Consolidated validation, release and handoff
 
-**User stories**: US-08, US-09  
+**User stories**: US-08, US-09
 **Provisional estimate**: 4–7 active person-days。
 
 #### What to build
@@ -529,7 +529,7 @@ Solution switch、refresh、back/forward、多 tab 都必须保持 route 中的 
 
 ### Slice F: Blank/template onboarding and final two-case proof
 
-**User stories**: US-01, US-10  
+**User stories**: US-01, US-10
 **Provisional estimate**: 5–8 active person-days。
 
 #### What to build
@@ -620,8 +620,8 @@ Phase 0
 
 ## 10. 明确不在当前迭代范围
 
-- 企业 IAM/SSO、细粒度 RBAC 和 HKEX 生产权限集成；
-- 直接连接 HKEX 原始数据平台或从安全区外发原材料；
+- 企业 IAM/SSO、细粒度 RBAC 和 customer 生产权限集成；
+- 直接连接 customer 原始数据平台或从安全区外发原材料；
 - 手机端和小屏移动端产品适配；
 - 通用 autonomous agent framework；
 - Semantica Explorer 整体替换现有 React Studio；

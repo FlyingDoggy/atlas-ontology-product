@@ -28,7 +28,7 @@ DEMO_REQUESTED_MODEL = "qwen3.8-max"
 DEMO_INPUT_POLICY = "REGISTERED_SYNTHETIC_QUESTION_FAMILY_ONLY"
 DEMO_LABEL = (
     "LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; "
-    "not Stage 1 governed-evidence conformant; not HKEX validated; not production-ready."
+    "not Stage 1 governed-evidence conformant; not customer validated; not production-ready."
 )
 DEMO_OUTCOMES: tuple[DemoOutcome, ...] = (
     "ANSWERED",

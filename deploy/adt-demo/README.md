@@ -1,6 +1,6 @@
 # Atlas ADT Demo Edition
 
-Single-host Docker Compose release for a constructed synthetic ADT demonstration. It is a demo product surface, not an HKEX-validated system and not a production security baseline.
+Single-host Docker Compose release for a constructed synthetic ADT demonstration. It is a demo product surface, not an customer-validated system and not a production security baseline.
 
 ## Product surfaces
 
@@ -26,7 +26,7 @@ The public Engineering Demo accepts four server-registered, constructed-syntheti
 
 The Qwen key is mounted only into the internal `model-gateway` container. It is absent from the browser, Console, runtime, Studio, Agent-control, bootstrap and auth services; port 8794 is not published. Agent model input excludes SQL, physical table/column names, mappings, source locators, credentials and raw rows. Studio model input contains only the four approved text fragments, their approved source anchors, current typed values and the five-slot contract; registered SQL, data model and data dictionary files are never projected.
 
-The exact release label is: **LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; not Stage 1 governed-evidence conformant; not HKEX validated; not production-ready.**
+The exact release label is: **LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; not Stage 1 governed-evidence conformant; not customer validated; not production-ready.**
 
 All browser calls use the same public origin. The Console binds only to host loopback, the Python services remain on the Compose network, and an outbound Cloudflare Quick Tunnel provides the temporary public HTTPS address. A mobile-friendly sign-in page exchanges the shared credential for a signed `Secure`, `HttpOnly`, `SameSite=Lax` session cookie. Nginx verifies that session before serving either product or any of the three API surfaces.
 
@@ -125,11 +125,11 @@ Restarting the `tunnel` service assigns a new public hostname, so do that only w
 
 - individual IAM, SSO, MFA and per-user audit
 - stable public-domain ownership and production ingress SLA
-- customer data connectors or HKEX environment approval
+- customer data connectors or customer environment approval
 - arbitrary public free-text egress or customer material sent to Qwen
 - generic document upload/parsing, customer-material egress or automatic ontology publication
 - multi-node replicas and distributed state
 - full Shared Contract VRS/ResultReleaseCommit conformance
-- claims that the constructed ADT logic is HKEX-confirmed
+- claims that the constructed ADT logic is customer-confirmed
 
 The fixed `MarketAnalyst` role demonstrates ontology policy behavior only. The demo should be exposed for controlled sessions, not treated as an internet-facing production application.

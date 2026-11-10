@@ -4246,14 +4246,14 @@
     },
     {
       "facts": {
-        "candidate_subject_digest": "sha-256:6046fe526bb8b66166c187327da19eef95896c6c1fd37f8753bf26c01c5e3f89",
+        "candidate_subject_digest": "sha-256:c5c48bddebef9fc11cde30f98ebe0888e23f771ae11b0c1f319ff0bce29c0777",
         "classification": "PUBLIC",
         "decision_kind": "scope-period-rounding",
         "decision_outcome": "ACCEPTED",
         "decision_profile": "recorded-semantic-decision",
         "dependency_free": true,
         "scope_kind": "governance",
-        "source_cleared_input_subject_digest": "sha-256:1cd72c0b4826c4a50915a0187997d0e0fb8ca13da2a9c2b0a4246db97fa70902",
+        "source_cleared_input_subject_digest": "sha-256:531a2901dbfa2d0a063e90e5425550d407e62c1397d54a84229d82ef2871cb34",
         "status": "ACTIVE",
         "trace_subject_digest": "sha-256:6c9af686f671432f198adf189088ebda2cf7e1787ae1f24248a1944a56d692fe"
       },
@@ -4270,7 +4270,7 @@
           "tenant_id": "local-synthetic",
           "workspace_id": "adt-poc"
         },
-        "subject_digest": "sha-256:cc5a81936525a55b343683bd1491c5606fd86e2d215592ad8c2781ee16709b44",
+        "subject_digest": "sha-256:3423c9597693aa69092c0b22f921f6f82afed9fe1f390bdb754cd00df9f3744b",
         "subject_schema": "semantic-decision-leaf/1"
       },
       "scope": {
@@ -4280,14 +4280,14 @@
     },
     {
       "facts": {
-        "candidate_subject_digest": "sha-256:8a91dbe611351d5ca38c41ffdda35b4e6bd97ef976f84703ceae59945f92deaa",
+        "candidate_subject_digest": "sha-256:213102f29656c132677a5e546631cc5f687dd951c71895b5271c7555273e211f",
         "classification": "PUBLIC",
         "decision_kind": "scope-period-rounding",
         "decision_outcome": "ACCEPTED",
         "decision_profile": "recorded-semantic-decision",
         "dependency_free": true,
         "scope_kind": "governance",
-        "source_cleared_input_subject_digest": "sha-256:4f88bad3977c2ed82fad65b7dfbffa44dea4a465a72b40a91bea856a509fb632",
+        "source_cleared_input_subject_digest": "sha-256:ff1fdfa184f83071ebe286e824ad97558187ae3a2d352f83995565ad76f26af0",
         "status": "ACTIVE",
         "trace_subject_digest": "sha-256:c6c36ab6c2a1b5bb1ef476e9627c3d2ea3c6102f327b83d296074b54bfbf9dd1"
       },
@@ -4304,7 +4304,7 @@
           "tenant_id": "local-synthetic",
           "workspace_id": "adt-poc"
         },
-        "subject_digest": "sha-256:095241172b22f85884135185a06203220ede46e9f7869b87ba02e4b611c059eb",
+        "subject_digest": "sha-256:56f073c95368354b2d0699ccc5398615cc6d3f6b6838b80fb9e6fb762134b0f2",
         "subject_schema": "semantic-decision-leaf/1"
       },
       "scope": {

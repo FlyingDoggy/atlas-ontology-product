@@ -1,9 +1,9 @@
 # Shared Product Contract — Technical & Conformance Annex
 
-Annex ID：`shared-contract-technical-profile/0.1`  
-状态：Approved/Frozen  
-日期：2026-08-18  
-批准记录：随 Shared Product Contract v0.1 于 2026-08-19 冻结  
+Annex ID：`shared-contract-technical-profile/0.1`
+状态：Approved/Frozen
+日期：2026-08-18
+批准记录：随 Shared Product Contract v0.1 于 2026-08-19 冻结
 Normative parents：`../02_shared_product_contract.md`、`01_synthetic_trusted_flow_core.md`
 
 ## 1. Purpose and Precedence
@@ -249,7 +249,7 @@ Stage 1 registry closure：
 | Field family | Exact accepted values |
 |---|---|
 | `allowed_uses` | subset of `ontology_build`, `synthetic_demo` |
-| `limitations` | subset of `local-authority`, `synthetic-data`, `constructed-target-coupled`, `non-hkex-validation`, `no-raw-question`, `synthetic-scope` |
+| `limitations` | subset of `local-authority`, `synthetic-data`, `constructed-target-coupled`, `non-customer-validation`, `no-raw-question`, `synthetic-scope` |
 | `allowed_claims` | `reviewed-constructed-synthetic-conformance` only |
 | `purpose` | `ontology-build`, `governed-analysis-demo`, `semantic-change-triage` |
 | `obligations` | subset of `ENFORCE_SCOPE`, `WRITE_AUDIT`, `NO_RAW_QUESTION`, `REAUTHORIZE_REFS` |
@@ -564,7 +564,7 @@ User messages expose only safe outcome/reason family/correlation ID. Internal de
 - SCR cannot auto-confirm/publish；
 - role-combination validator enforces oracle claim ceiling；
 - fixture/runtime cannot import expected targets；suite denominator mutation creates new digest；
-- all reports visibly state synthetic/simulated/non-HKEX-validation limitation。
+- all reports visibly state synthetic/simulated/non-customer-validation limitation。
 
 ## 15. Migration and Recovery Requirements
 

@@ -9,4 +9,4 @@ This chart requires two pre-created secrets:
   {{ .Values.auth.existingSecret }}          Demo login verifier and session secret
 
 This is the single-node engineering-demo profile. It does not claim HA, enterprise IAM,
-HKEX validation, or production operational readiness.
+customer validation, or production operational readiness.

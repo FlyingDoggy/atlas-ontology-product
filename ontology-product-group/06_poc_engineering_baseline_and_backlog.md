@@ -1,8 +1,8 @@
 # Ontology Product Family — PoC 工程基线、差距与实施 Backlog v0.1
 
-状态：Engineering Working Baseline  
-日期：2026-08-19  
-范围：ADT synthetic reference PoC；不是生产架构、HKEX 真实口径或 Knowledge Center 方案
+状态：Engineering Working Baseline
+日期：2026-08-19
+范围：ADT synthetic reference PoC；不是生产架构、customer 真实口径或 Knowledge Center 方案
 
 ## 1. 结论
 
@@ -13,7 +13,7 @@
 - **Intake → Ontology Draft 仍未实现**：需求/流程、指标逻辑、数据模型、数据字典和现有 SQL 都只是文件；当前 `package.yaml` 是人工手写，无法证明 common template 能被稳定加工成 ontology candidate。
 - **前端和后端存在两套业务真相**：Console 使用 `XHKG-CASH` 和一套 public-reference-style 数字；backend 使用 `SYNTH-CASH` 和完整的 constructed-synthetic ADT oracle。两者的 ADT、交易日数、板块和贡献率都不同，不能直接拼接。
 - **当前 snapshot 还不是两个产品之间的便携合同**：publisher 把生产者源码/测试、OS/Python/dependency identity、数据集和 golden controls 一起绑定；Agent 又在消费端按本机环境重算。它目前只能在同一代码/镜像中自发自用，无法证明独立 Studio 发布、独立 Agent 消费。
-- **ARM/K8s 仍是配置级准备，不是目标环境验证**：本机是 arm64，Docker client 与 manifest 已有；Docker daemon 未运行、kubectl 无 context，所以 Linux arm64 image 和 HKEX K8s 尚未 smoke test。
+- **ARM/K8s 仍是配置级准备，不是目标环境验证**：本机是 arm64，Docker client 与 manifest 已有；Docker daemon 未运行、kubectl 无 context，所以 Linux arm64 image 和 customer K8s 尚未 smoke test。
 
 因此，第一条开发主线应当是：
 
@@ -219,7 +219,7 @@ PoC 用 filesystem registry 和一个显式 active pointer 即可。发布与激
 
 ### 6.3 Golden/control 的位置
 
-ADT 有完整 constructed-synthetic oracle，应该继续作为 ADT certification profile。普通 Deloitte 场景可能只有部分 expected result 或没有可导出的 golden data，因此：
+ADT 有完整 constructed-synthetic oracle，应该继续作为 ADT certification profile。普通 External Reviewer 场景可能只有部分 expected result 或没有可导出的 golden data，因此：
 
 - semantic release validation 不强制存在 golden directory；
 - 可执行 demo readiness 可以要求一个明确的 certification profile；
@@ -236,7 +236,7 @@ ADT 有完整 constructed-synthetic oracle，应该继续作为 ADT certificatio
 - ADT：130,317.4603 / 110,491.8033 HKD mn per trading day；
 - Leading segment：Main Board；net-change contribution 81.6327%；
 - Decomposition：calendar-first，residual 0，non-causal；
-- Claim ceiling：constructed synthetic；not HKEX validated。
+- Claim ceiling：constructed synthetic；not customer validated。
 
 Console 当前的 `XHKG-CASH`、65/61 天、286,355.57/229,799.79 ADT 和 public-source wording 只能作为旧 presentation evidence；接入 backend 时必须删除或明确隔离，不能与 canonical sample 静默混用。
 
@@ -290,7 +290,7 @@ Shared Kernel：
 - LLM 自动生成 authoritative ontology 或 SQL；
 - full GSR/VRS/attestation/authority/revocation state machine；
 - production IAM、Catalog、object storage、warehouse、audit/SLA；
-- second scenario、Knowledge Center、real HKEX data；
+- second scenario、Knowledge Center、real customer data；
 - 对外暴露原始 SQL、parameters、rows 或文件路径。
 
 ## 9. 第一条切片验收标准
@@ -310,7 +310,7 @@ Shared Kernel：
 
 ## 10. 实施 Backlog
 
-以下是单工程师口径的粗略 ROM，不含 Deloitte/HKEX 等待时间。
+以下是单工程师口径的粗略 ROM，不含 External Reviewer/customer 等待时间。
 
 | 顺序 | Work package | 主要产出 | DoD | ROM |
 |---:|---|---|---|---:|
@@ -328,7 +328,7 @@ Shared Kernel：
 
 E1 已完成本地实现与功能验证：portable release、Agent-local prepare/certification、显式 activation、active-only runtime loading、data contract/location split、三套独立 API surface 和 container init/runtime split 均已落地。43 项 pytest 全绿，另有一次全新临时 registry 的 CLI black-box flow 验证 `release → prepare → activate → analyze` 成功。
 
-E1 尚未包含 Linux ARM64 image build/run 或 HKEX 目标 K8s 实机验证；这些仍属于 E6。Filesystem lock/active pointer 是单环境 PoC mechanism，不称为生产 authority。完整接口和测试边界见 `07_candidate_1_portable_release_runtime_binding_rfc.md`。
+E1 尚未包含 Linux ARM64 image build/run 或 customer 目标 K8s 实机验证；这些仍属于 E6。Filesystem lock/active pointer 是单环境 PoC mechanism，不称为生产 authority。完整接口和测试边界见 `07_candidate_1_portable_release_runtime_binding_rfc.md`。
 
 ### 10.2 E2 当前实施状态（2026-08-19）
 
@@ -426,7 +426,7 @@ src/ontology_agent/
 - **Why coupled**：开发期 oracle、普通 semantic 发布门、runtime readiness 和每次请求检查混在一起，导致没有完整 golden 的场景无法发布。
 - **Dependency category**：Local-substitutable。
 - **Test impact**：ADT mutation/oracle tests 移入 explicit certification suite；普通 release tests 证明无 oracle 也可发布；request tests 不重跑完整 oracle。
-- **价值**：让 common template 可用于现实中“不可能提供完整 control data”的 Deloitte/HKEX 场景，同时保留 ADT 的强验证。
+- **价值**：让 common template 可用于现实中“不可能提供完整 control data”的 External Reviewer/customer 场景，同时保留 ADT 的强验证。
 
 推荐顺序：**Candidate 1 → Candidate 2 → Candidate 3 → Candidate 4**；Candidate 5 作为 Candidate 1 的必要子任务一并完成。
 

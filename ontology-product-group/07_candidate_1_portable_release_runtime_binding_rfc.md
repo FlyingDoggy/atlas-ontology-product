@@ -1,7 +1,7 @@
 # Candidate 1 RFC：Portable Release / Runtime Binding
 
-状态：Implemented；local functional verification PASS，Linux ARM64/目标 K8s 待 E6 实机验证  
-决策日期：2026-08-19  
+状态：Implemented；local functional verification PASS，Linux ARM64/目标 K8s 待 E6 实机验证
+决策日期：2026-08-19
 范围：Ontology Studio → Ontology Analytic Agent 的最小可移植交付边界
 
 ## Problem
@@ -88,4 +88,4 @@ active = agent.open_active(environment_id="adt-poc")
 
 验证证据：43 项 pytest PASS；独立临时 registry 的 `release → prepare → activate → analyze` CLI black-box flow 返回 `PASS / PASS / PASS / ANSWERED`。唯一测试 warning 是 Starlette 对当前 TestClient/httpx 组合的 deprecation warning，不影响行为。
 
-仍未声明：Linux ARM64 image build/run、HKEX K8s 集群、object/OCI registry、签名/IAM/审批/撤销、warehouse connector、第二业务场景和通用 compiler。
+仍未声明：Linux ARM64 image build/run、customer K8s 集群、object/OCI registry、签名/IAM/审批/撤销、warehouse connector、第二业务场景和通用 compiler。

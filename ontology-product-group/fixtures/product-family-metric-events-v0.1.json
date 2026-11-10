@@ -13,7 +13,7 @@
       "strategy_reporting_category": null,
       "intake_condition_flags": [],
       "internal_active_minutes": 960,
-      "deloitte_active_minutes": 240,
+      "external-reviewer_active_minutes": 240,
       "client_confirmation_wait_minutes": 1440
     },
     {
@@ -24,7 +24,7 @@
       "strategy_reporting_category": "CLARIFY",
       "intake_condition_flags": [],
       "internal_active_minutes": 120,
-      "deloitte_active_minutes": 60,
+      "external-reviewer_active_minutes": 60,
       "client_confirmation_wait_minutes": 180
     },
     {
@@ -35,7 +35,7 @@
       "strategy_reporting_category": "REFUSE",
       "intake_condition_flags": [],
       "internal_active_minutes": 90,
-      "deloitte_active_minutes": 0,
+      "external-reviewer_active_minutes": 0,
       "client_confirmation_wait_minutes": 0
     },
     {
@@ -46,7 +46,7 @@
       "strategy_reporting_category": "PAUSED",
       "intake_condition_flags": ["WITHHELD"],
       "internal_active_minutes": 60,
-      "deloitte_active_minutes": 30,
+      "external-reviewer_active_minutes": 30,
       "client_confirmation_wait_minutes": 2880
     },
     {
@@ -57,7 +57,7 @@
       "strategy_reporting_category": "FAILED",
       "intake_condition_flags": [],
       "internal_active_minutes": 180,
-      "deloitte_active_minutes": 0,
+      "external-reviewer_active_minutes": 0,
       "client_confirmation_wait_minutes": 120
     },
     {
@@ -68,7 +68,7 @@
       "strategy_reporting_category": "UNSUPPORTED",
       "intake_condition_flags": [],
       "internal_active_minutes": 45,
-      "deloitte_active_minutes": 0,
+      "external-reviewer_active_minutes": 0,
       "client_confirmation_wait_minutes": 0
     },
     {
@@ -79,7 +79,7 @@
       "strategy_reporting_category": "PAUSED",
       "intake_condition_flags": [],
       "internal_active_minutes": 75,
-      "deloitte_active_minutes": 15,
+      "external-reviewer_active_minutes": 15,
       "client_confirmation_wait_minutes": 720
     },
     {
@@ -90,7 +90,7 @@
       "strategy_reporting_category": "SCOPE_CHANGE",
       "intake_condition_flags": [],
       "internal_active_minutes": 30,
-      "deloitte_active_minutes": 30,
+      "external-reviewer_active_minutes": 30,
       "client_confirmation_wait_minutes": 60
     }
   ],
@@ -126,8 +126,8 @@
       "coefficient": "2600",
       "scale": 2
     },
-    "total_deloitte_active_minutes": 375,
-    "total_deloitte_active_person_hours": {
+    "total_external-reviewer_active_minutes": 375,
+    "total_external-reviewer_active_person_hours": {
       "coefficient": "625",
       "scale": 2
     },
@@ -167,7 +167,7 @@
     },
     {
       "case_id": "missing-effort-field",
-      "omitted_field": "deloitte_active_minutes",
+      "omitted_field": "external-reviewer_active_minutes",
       "expected_result": "REJECT_MISSING_EFFORT_FIELD"
     },
     {

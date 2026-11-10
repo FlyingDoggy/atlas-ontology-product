@@ -319,7 +319,7 @@ function Limitations({ context }: { context: ProductContext }) {
       <span className="section-index">BOUNDARY / 01</span>
       <h2 id="limitations-heading">这份上下文能说明什么</h2>
       <p>
-        它证明产品正在读取一个明确的 ADT synthetic solution 与 active runtime；它不证明 HKEX
+        它证明产品正在读取一个明确的 ADT synthetic solution 与 active runtime；它不证明 customer
         业务口径、生产安全或企业级可用性。
       </p>
       <ul>
@@ -1567,7 +1567,7 @@ function StudioAboutPage({
       </section>
       <section className="studio-about-card is-note">
         <div className="studio-panel-heading"><div><span>数据与版本说明</span><h2>当前参考数据的适用范围</h2></div></div>
-        <p>当前安装的数据集为构造型参考数据，用于展示从材料整理、语义建模到分析运行的完整流程；它不代表 HKEX 的最终业务口径或生产结论。</p>
+        <p>当前安装的数据集为构造型参考数据，用于展示从材料整理、语义建模到分析运行的完整流程；它不代表 customer 的最终业务口径或生产结论。</p>
         <ul>{solution.limitations.map((item) => <li key={item}>{item}</li>)}</ul>
       </section>
     </div>

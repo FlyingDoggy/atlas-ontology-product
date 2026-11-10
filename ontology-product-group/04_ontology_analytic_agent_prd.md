@@ -1,14 +1,14 @@
 # Ontology Analytic Agent Product-Domain PRD v0.1
 
-Document ID：`ontology-analytic-agent-prd/0.1`  
-状态：Revised Candidate；Pending Fresh-reader Closure and R-01 Decision；not implementation authority  
-日期：2026-08-19  
-Decision Owner：Muyu  
-Accountable Product Owner：Agent Domain Owner（V1 前落实人名）  
-规范性父级：`01_product_group_strategy.md` v1.0、`02_shared_product_contract.md` v0.1 Approved/Frozen  
-当前冻结 Profile：`synthetic-trusted-flow/core@1`（ADT synthetic reference tracer）  
-待决 Profile revision：`synthetic-trusted-flow/core@1.1` Revision Pack R-01（E-01 `CONCEPT_NOT_BOUND` + E-02 `SELECT_REFERENCE`）  
-共同产品附件：`stage1-demo-delivery-companion/0.1`；file digest `sha-256:800d15d41fb2ad9143eac14d0f13a9297f18afe6bf704e1bce4e8b466e4a8b74`  
+Document ID：`ontology-analytic-agent-prd/0.1`
+状态：Revised Candidate；Pending Fresh-reader Closure and R-01 Decision；not implementation authority
+日期：2026-08-19
+Decision Owner：Muyu
+Accountable Product Owner：Agent Domain Owner（V1 前落实人名）
+规范性父级：`01_product_group_strategy.md` v1.0、`02_shared_product_contract.md` v0.1 Approved/Frozen
+当前冻结 Profile：`synthetic-trusted-flow/core@1`（ADT synthetic reference tracer）
+待决 Profile revision：`synthetic-trusted-flow/core@1.1` Revision Pack R-01（E-01 `CONCEPT_NOT_BOUND` + E-02 `SELECT_REFERENCE`）
+共同产品附件：`stage1-demo-delivery-companion/0.1`；file digest `sha-256:800d15d41fb2ad9143eac14d0f13a9297f18afe6bf704e1bce4e8b466e4a8b74`
 评审裁决：`reviews/product-prds-round-2-adjudication.md`
 
 ## 0. 如何阅读
@@ -31,7 +31,7 @@ Accountable Product Owner：Agent Domain Owner（V1 前落实人名）
 | Formal handoff | committed User Evidence Projection/ExecutionEvidence；typed UNKNOWN_CONCEPT SCR to Studio |
 | Fail closed | wrong/no activation、ineligible dependencies/context、unsupported semantics、policy denial、execution/release/evidence failure、invalid feedback chain |
 | Must never happen | 读 Studio draft/bare GSR、caller自报权限、模型写 authoritative SQL/数字、latest/legacy fallback、commit前泄露 analytic bytes、feedback自动改Ontology |
-| Stage 1 promise | 用 constructed-synthetic ADT 证明 exact runtime release → governed answer/evidence → revoke → safe triage；不证明 HKEX truth 或 production platform |
+| Stage 1 promise | 用 constructed-synthetic ADT 证明 exact runtime release → governed answer/evidence → revoke → safe triage；不证明 customer truth 或 production platform |
 
 ## 1. Product Decision
 
@@ -98,7 +98,7 @@ Agent 只消费已密封、已激活且当次 eligibility 为 ALLOW 的 VRS。�
 - 支持 VRS 以外的 component/GSR/attestation transitive revocation；
 - 支持 `UNKNOWN_CONCEPT` 之外的 product feedback 或 incident lifecycle；
 - 建设 production IAM、DLP、PKI、KMS、HA、SLA 或 enterprise audit platform；
-- 证明 HKEX 业务定义正确、生产安全要求已满足或 PoC 已 production-ready；
+- 证明 customer 业务定义正确、生产安全要求已满足或 PoC 已 production-ready；
 - 决定最终商业 SKU、顶层 UI、repository 或 deployment 数量。
 - 建设 production release portal 或完整 Studio/Agent operations workbench。
 
@@ -113,7 +113,7 @@ Agent 只消费已密封、已激活且当次 eligibility 为 ALLOW 的 VRS。�
 | Release & Activation Manager | 用 exact refs 准备 runtime、显式选择 attempts、请求 seal/activate/revoke | authoritative receipt 或 stable fail-closed result；Stage 1 可用 controlled CLI/API/internal view |
 | Agent Domain Owner | 对运行行为、fail-closed、projection 和 release quality 负责 | 可验收的 governed runtime product |
 
-Stage 1 中 authority、policy 和用户身份可由明确标注的 local/simulated registry 提供。它用于证明产品 workflow enforcement，不可描述为 HKEX production IAM 或真实职责分离。
+Stage 1 中 authority、policy 和用户身份可由明确标注的 local/simulated registry 提供。它用于证明产品 workflow enforcement，不可描述为 customer production IAM 或真实职责分离。
 
 ## 5. Current Baseline and Reuse Policy
 
@@ -318,7 +318,7 @@ Stage 1 中 authority、policy 和用户身份可由明确标注的 local/simula
 | AGT-OPS-02 | readiness | governed route 无 eligible VRS 时 readiness 明确失败，不偷偷回退 legacy |
 | AGT-OPS-03 | complete audit | S0 inherited action/outcome matrix 中每个 command 都有 product owner、authority、committed fact、conformance family 和 failure owner；audit completeness = 100% |
 | AGT-OPS-04 | safe console | console 只调用真实 allowlisted governed API；browser mock 不能显示为 live evidence |
-| AGT-OPS-05 | honest labels | main result、replay、export、runbook 邻接显示 constructed-synthetic/simulated/local/non-HKEX/non-production limitation；不依赖 hover/drawer |
+| AGT-OPS-05 | honest labels | main result、replay、export、runbook 邻接显示 constructed-synthetic/simulated/local/non-customer/non-production limitation；不依赖 hover/drawer |
 
 ## 9. User Stories
 
@@ -349,7 +349,7 @@ Stage 1 中 authority、policy 和用户身份可由明确标注的 local/simula
 
 ### 10.1 Product-family metric
 
-- `Time to First Trusted Scenario`：完全引用 Product Strategy，从第一份 ClearedInput 正式登记，到预登记 must-answer suite 全部达到可信门禁；按 Companion closed schema 分报 wall-clock、`internal_active_minutes`、`deloitte_active_minutes` 与 `client_confirmation_wait_minutes`，并从 exact minutes统一派生 person-hours/hours。
+- `Time to First Trusted Scenario`：完全引用 Product Strategy，从第一份 ClearedInput 正式登记，到预登记 must-answer suite 全部达到可信门禁；按 Companion closed schema 分报 wall-clock、`internal_active_minutes`、`external-reviewer_active_minutes` 与 `client_confirmation_wait_minutes`，并从 exact minutes统一派生 person-hours/hours。
 - `Trusted Scenario Completion Rate`：完全引用 Product Strategy，以所有进入 intake 的场景为固定分母。`completion_state` 仅为 `TRUSTED_COMPLETED/NOT_COMPLETED`；未完成场景的 `strategy_reporting_category` 必须且只能为 `SCOPE_CHANGE/PAUSED/FAILED/UNSUPPORTED/CLARIFY/REFUSE` 之一；`MISSING/WITHHELD/UNCONFIRMED` 仅是正交的 `intake_condition_flags`，不能从分母删除或静默映射。
 
 Activated VRS to First Committed Answer、First Safe SCR 和 First Revoke Proof 只作为 subordinate milestones，不能结束 North-star。Studio、Agent 与 Product-family calculator 必须对 Companion 定义的 `product-family-metric-events-v0.1` fixture 产生相同 start、stop、wall-clock、三项 effort/wait totals、completion state、denominator、六类 counts 与 intake flags；未知类别/unit或missing/null/negative duration fail closed。
@@ -421,7 +421,7 @@ Agent 依赖 V0 产出的 exact GSR PublishSubject/Semantic Approval 和 V1 的 
 - ADT mutation tests：冻结现有7项 + datetime fail-closed + duplicate fact key/grain + zero/missing trading-day denominator；100% kill，不声明通用 compiler。
 - SCR tests：5 frozen non-constant fixtures、complete-chain mutation、wrong scope/audience/expiry、DISCLOSURE_BLOCKED as subordinate not-created reason、idempotency、outbox recovery/outcome independence。
 - Regression：保留现有 deterministic calculator/compiler、33 tests、33 checks；legacy path只是shadow comparator，不能提供Control PASS；不得因新合同重写算法口径。
-- Reader/task tests：Analyst 能解释 Clarify；Reviewer 能复述 evidence meaning；Demo Presenter 不把 synthetic oracle 说成 HKEX validation。
+- Reader/task tests：Analyst 能解释 Clarify；Reviewer 能复述 evidence meaning；Demo Presenter 不把 synthetic oracle 说成 customer validation。
 
 ## 13. Dependencies and Product Interfaces
 
@@ -431,7 +431,7 @@ Agent 依赖 V0 产出的 exact GSR PublishSubject/Semantic Approval 和 V1 的 
 - Stage 1 Demo & Delivery Companion：冻结共同 demo promise、minimum surface、slice RACI 和 delivery checklist；不是 runtime authority。
 - Query Engine / data platform：只接受获准 plan/query 和 binding；不把 physical schema 暴露给用户 projection。
 - Data Approver / Control Reviewer / Runtime Capability Owner：分别对 binding/data、control 和 operator compatibility 形成 exact attempts。
-- Reference Truth Owner：冻结 synthetic oracle 的 claim ceiling；Agent 不得扩大为真实 HKEX truth。
+- Reference Truth Owner：冻结 synthetic oracle 的 claim ceiling；Agent 不得扩大为真实 customer truth。
 - Target Platform：ARM64 VM、Docker/K8s、目标数据库与企业 IAM 是后续技术/部署设计；Stage 1 先证明环境无关的产品合同和 local conformant path。
 
 ## 14. Risks and Controls

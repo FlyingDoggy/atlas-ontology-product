@@ -1,11 +1,11 @@
 # Ontology Analytics Product Family 总体规划
 
-状态：Approved Baseline  
-版本：1.0  
-日期：2026-08-18  
-Decision Owner：Muyu  
-批准记录：Muyu 于 2026-08-18 明确批准 v0.6 Reviewed Candidate，转为 v1.0 Baseline  
-主要读者：内部产品、解决方案、工程、Deloitte HK 协作团队
+状态：Approved Baseline
+版本：1.0
+日期：2026-08-18
+Decision Owner：Muyu
+批准记录：Muyu 于 2026-08-18 明确批准 v0.6 Reviewed Candidate，转为 v1.0 Baseline
+主要读者：内部产品、解决方案、工程、External Review Team 协作团队
 
 ## 1. Executive Decision
 
@@ -54,7 +54,7 @@ North-star 使用一对指标，而不是对象数量或聊天次数：
 
 - wall-clock elapsed time；
 - 我方 active person-hours；
-- Deloitte active effort；
+- External Reviewer active effort；
 - client confirmation wait；
 - scope change、paused、failed、unsupported、clarify 和 refuse 的固定分母。
 
@@ -64,7 +64,7 @@ North-star 使用一对指标，而不是对象数量或聊天次数：
 
 | 维度 | Ontology Studio | Ontology Analytic Agent |
 |---|---|---|
-| 主要用户 | Deloitte Transcriber/Coordinator、Ontology Operator、Domain/Data Reviewer、Approver | Analyst、Business User、Executive、Auditor、Application Consumer |
+| 主要用户 | External Reviewer Transcriber/Coordinator、Ontology Operator、Domain/Data Reviewer、Approver | Analyst、Business User、Executive、Auditor、Application Consumer |
 | 主要任务 | Intake、Compile、Review、Resolve、Validate、Approve、Publish、Change | Ask、Clarify、Plan、Execute、Explain、Trace、Refuse |
 | 核心对象 | Source Record、Candidate、Gap、Decision、Semantic Release | Runtime Snapshot、Plan、Fact、Claim、Execution、Answer |
 | 写权限 | 写 draft 和 decision；按授权发布语义 | 只写 interaction、execution 和 feedback；不写 Ontology |
@@ -87,11 +87,11 @@ North-star 使用一对指标，而不是对象数量或聊天次数：
 
 把不完整、受限、需要人工转写和多轮确认的业务知识，转化为有来源、有 Decision、有独立验证和签署的 `GovernedSemanticRelease`。
 
-### 4.2 当前 HKEX intake 前提
+### 4.2 当前 customer intake 前提
 
-当前 PoC 不假设任何 HKEX 原始业务材料可以离开其安全环境。当前设计假设 Deloitte HK 可以按模板完成安全转写，但该能力和周转时间尚未通过真实往返验证：
+当前 PoC 不假设任何 customer 原始业务材料可以离开其安全环境。当前设计假设 External Review Team 可以按模板完成安全转写，但该能力和周转时间尚未通过真实往返验证：
 
-- Deloitte HK 按简单模板人工转写需求、业务过程、分析流程、多条期望输出和指标逻辑；
+- External Review Team 按简单模板人工转写需求、业务过程、分析流程、多条期望输出和指标逻辑；
 - 数据模型、metadata/data dictionary、枚举、sample 结构和现有 SQL，只能以明确获准的安全重写、脱敏描述或客户区 locator 进入流程；
 - 原始文档、原始数据、原始 SQL 和未获批准的 sample 不进入我方离线 PoC；
 - 无法转写或无法确认的内容必须标为 `Missing / Withheld / Unconfirmed`，不能由模型补齐；
@@ -105,14 +105,14 @@ North-star 使用一对指标，而不是对象数量或聊天次数：
 
 | 角色 | Primary job | 交接物 |
 |---|---|---|
-| Deloitte Transcriber / Coordinator | 安全转写、说明边界、协调客户区确认 | Cleared Input、Question ID、状态 |
+| External Reviewer Transcriber / Coordinator | 安全转写、说明边界、协调客户区确认 | Cleared Input、Question ID、状态 |
 | Ontology Operator | 把输入人工编译为 Candidate，并暴露 Gap/Conflict | Candidate、Trace、Gap Queue |
 | Domain Approver（业务 Domain Owner / Reviewer） | 确认定义、流程、例外、问题和预期边界 | Semantic Decision / Approval |
 | Data Approver（Data Owner / Steward） | 确认 grain、binding、join、enum 和 data quality 含义 | Binding/Data Attestation |
 | Disclosure & Policy Approver | 决定哪些内容可进入 runtime 和用户 evidence | Disclosure/Policy Attestation |
 | Release & Activation Manager | 校验必需签署，发布不可变语义版本 | GovernedSemanticRelease |
 
-具体人名是 Stage 1 implementation entry gate；本规划不虚构 HKEX 的组织安排。
+具体人名是 Stage 1 implementation entry gate；本规划不虚构 customer 的组织安排。
 
 ### 4.4 MVP capability domains
 
@@ -203,7 +203,7 @@ compatibility result
 - 不用固定 demo role 冒充生产 IAM；
 - 不把无 Claim 的自然语言当成事实；
 - 不承诺回答 Snapshot 未注册的任意问题；
-- 不把 synthetic control 称为 HKEX 业务验证。
+- 不把 synthetic control 称为 customer 业务验证。
 
 ## 6. Shared Semantic Contracts & Kernel
 
@@ -236,7 +236,7 @@ RDF/JSON-LD 可以作为治理投影，SHACL 可以用于结构约束；OWL reas
 ### 7.1 Downstream chain
 
 ```text
-Cleared Input（Deloitte安全转写/获批附件）
+Cleared Input（External Reviewer安全转写/获批附件）
                          ↓
                 Ontology Studio
                          ↓
@@ -346,10 +346,10 @@ Semantic Change Request 必须是异步、强类型、最小披露和不可信�
 
 ### 8.1 新场景
 
-1. Deloitte 提交 cleared transcription，并将不能提供的信息标记为 Missing/Withheld；
+1. External Reviewer 提交 cleared transcription，并将不能提供的信息标记为 Missing/Withheld；
 2. Ontology Operator 从该输入人工编译 Candidate，不从预制 Package 冒充构建；
 3. Studio 展示 input-to-candidate trace、Gap 和 Conflict；
-4. Deloitte 协调 Domain Approver / Data Approver 在客户区确认，记录 Decision 与 control boundary；
+4. External Reviewer 协调 Domain Approver / Data Approver 在客户区确认，记录 Decision 与 control boundary；
 5. Domain Approver 出具 Semantic Approval；
 6. Release & Activation Manager 发布 GovernedSemanticRelease；
 7. activation pipeline 绑定 synthetic/target environment，构建未激活的 RuntimeSnapshotCandidate；
@@ -426,24 +426,24 @@ Stage 1 可使用 simulated principals、内容寻址文件、projection allowli
 
 | 能力 | 当前证据 | 结论 |
 |---|---|---|
-| Intake | 中英文简单模板和 ADT filled reference | 可试填；尚未经历真实 Deloitte 往返和独立 operator 编译 |
+| Intake | 中英文简单模板和 ADT filled reference | 可试填；尚未经历真实 External Reviewer 往返和独立 operator 编译 |
 | Studio UI | `ontology-console` Studio/Semantic Layer 页面 | 静态内存 demo；刷新丢状态，无真实 intake/candidate/review/publish API |
 | Semantic package | typed YAML/Pydantic、validation、RDF projection | ADT adapter 可用；不是跨场景通用 compiler |
 | Runtime | immutable snapshot reference、AQC/Plan、DuckDB、Claim、API | ADT vertical slice 可运行 |
-| Evaluation | 33 tests、33 validation checks、8 Golden Questions | 证明 constructed synthetic regression；不是 HKEX business validation |
+| Evaluation | 33 tests、33 validation checks、8 Golden Questions | 证明 constructed synthetic regression；不是 customer business validation |
 | ADT reference | public-style workbook/console 与 backend synthetic oracle | 两套数字和交易日冲突；当前均不能称 canonical business truth |
 | Security/IAM | logical policy、API sanitization、demo principal | 无企业 IAM、真实职责分离、multi-workspace 或正式 audit |
-| ARM/K8s | macOS ARM64 本机通过 | Linux ARM64、container image 和 HKEX K8s 未验证 |
+| ARM/K8s | macOS ARM64 本机通过 | Linux ARM64、container image 和 customer K8s 未验证 |
 
 成熟度判断：Agent runtime 比 Studio 更接近可运行 vertical slice。下一轮实现价值不在继续堆 Agent 能力，而在补一条真实 `cleared intake → candidate/decision → SemanticRelease → RuntimeSnapshot → answer/change` 链。
 
 ### 11.1 当前 ADT candidate 与证据定位
 
-下表路径均相对 workspace root：`/Users/muyuyang/Desktop/Muyu-AI-Projects/BD Support/HKEX`。
+下表路径均相对 workspace root：`<workspace>`。
 
 | Candidate | 已知差异 | 当前用途 | Evidence locator |
 |---|---|---|---|
-| `adt.public.reference.candidate` | Workbook：Q3 65日、ADT 286,355.553846；Q4 61日、ADT 229,799.803279。Console 因分类值舍入，显示 286,355.569231 / 229,799.786885。 | 仅 illustrative public-style reference | `outputs/hkex_ontology_intake_20260818/HKEX_ADT_Filled_Example_v0.1.xlsx`；`ontology-console/app.js` |
+| `adt.public.reference.candidate` | Workbook：Q3 65日、ADT 286,355.553846；Q4 61日、ADT 229,799.803279。Console 因分类值舍入，显示 286,355.569231 / 229,799.786885。 | 仅 illustrative public-style reference | `outputs/atlas_ontology_intake_20260818/customer_ADT_Filled_Example_v0.1.xlsx`；`ontology-console/app.js` |
 | `adt.synthetic.v1` | Q3 63日、ADT 130,317.460317；Q4 61日、ADT 110,491.803279。 | 当前 backend regression baseline | `ontology-agent-poc/scenarios/adt/golden/oracle.json`；`ontology-agent-poc/scenarios/adt/ontology/package.yaml` |
 
 两者不是舍入即可解释的同一真相。Console 还存在自己的计算/发布逻辑，Stage 1 必须改为消费统一 API/Snapshot，不再保留第二套事实引擎。
@@ -464,7 +464,7 @@ Stage 1 可使用 simulated principals、内容寻址文件、projection allowli
 
 当前 `questions.yaml` 中 8 个 case（4 Answered + 1 Clarify + 3 Refused）是迁移起点，不另建第二套并行 Golden truth。Stage 1 将其重编并冻结为唯一的 `adt.tracer.v1.suite`；任何内容变化都产生新 `suite_checksum`。
 
-即使最后选择 public-source control，synthetic fixture 对齐它也只证明执行链符合冻结 control，不构成 HKEX 内部业务验证。
+即使最后选择 public-source control，synthetic fixture 对齐它也只证明执行链符合冻结 control，不构成 customer 内部业务验证。
 
 ## 12. 现在能做与不能做
 
@@ -476,17 +476,17 @@ Stage 1 可使用 simulated principals、内容寻址文件、projection allowli
 - 统一 ADT reference 的选择流程和跨工件 identity；
 - 用人工 compilation 构建 synthetic、single-user、端到端 tracer；
 - 用轻量机制验证五类 gate、projection、activation/revocation 和 change loop；
-- 用 Deloitte 的下一份安全转写做 bounded discovery 和 gap analysis。
+- 用 External Reviewer 的下一份安全转写做 bounded discovery 和 gap analysis。
 
 ### 现在还不能做或不能声称
 
-- 不能确定 HKEX 最终场景、指标定义、binding、control result 或业务正确性；
-- 不能证明 Deloitte 的真实转写能在目标时限内完成；
+- 不能确定 customer 最终场景、指标定义、binding、control result 或业务正确性；
+- 不能证明 External Reviewer 的真实转写能在目标时限内完成；
 - 不能证明跨场景通用 compiler 或 Shared Platform；
 - 不能确定两个商业 SKU、最终 UI 入口或采购模式；
 - 不能承诺生产 IAM、审计、数据权限、Linux ARM64/K8s 或 SLA；
 - 不能设计完整企业 Knowledge Center 或与 Catalog/MDM 的最终分工；
-- 不能把 synthetic/public reference demo 称为 HKEX 真实业务验证。
+- 不能把 synthetic/public reference demo 称为 customer 真实业务验证。
 
 ## 13. Roadmap and decision gates
 
@@ -526,7 +526,7 @@ Step 0: §11.2 truth pre-registration
 → typed Semantic Change Request visible and triaged in Studio
 ```
 
-范围假设：单一 ADT、单环境、single-user、file/local persistence、simulated principals、无企业 IAM/DB/K8s。Stage 1 不依赖 HKEX/Deloitte 响应；Domain Approver / Data Approver 由明确标为“非客户验证”的模拟角色执行。
+范围假设：单一 ADT、单环境、single-user、file/local persistence、simulated principals、无企业 IAM/DB/K8s。Stage 1 不依赖 customer/External Reviewer 响应；Domain Approver / Data Approver 由明确标为“非客户验证”的模拟角色执行。
 
 初步工作量：`16–24 person-days ROM`，low-to-medium confidence，约 `±35%`；不是交付承诺。先用 1–2 person-days 完成 reuse/slice spike、DRI 和 interface，随后重估。
 
@@ -545,11 +545,11 @@ Stage 1 exit gate：
 - revoked digest 的 Query Engine 访问次数为 0；projection 与 Change Request 的 secret-canary 泄漏数为 0；
 - publish、activate、revoke、execute、change/triage 的 event completeness 为 100%；
 - 浏览器刷新后 Candidate、Decision、Release、Activation 和 Change Request 状态不丢；
-- UI、报告和 runbook 明示 synthetic reference、simulated roles、非 HKEX 业务验证。
+- UI、报告和 runbook 明示 synthetic reference、simulated roles、非 customer 业务验证。
 
-### Stage 2 — Deloitte HK validation-scenario discovery and adapter
+### Stage 2 — External Review Team validation-scenario discovery and adapter
 
-这是相对于 ADT synthetic reference 的首个 Deloitte/HKEX discovery 场景。先做 3–5 天 bounded discovery，不在场景未知时给 25–50 人日假精度。Build readiness 至少需要：
+这是相对于 ADT synthetic reference 的首个 External Reviewer/customer discovery 场景。先做 3–5 天 bounded discovery，不在场景未知时给 25–50 人日假精度。Build readiness 至少需要：
 
 - 明确场景、业务决策和 3–5 条优先问题；
 - 至少一条 clarify/refuse；
@@ -594,7 +594,7 @@ Stage 1 exit gate：
 | Reference Truth Owner | Truth Owner | 选择并冻结 reference case | 必需、落实人名 | **不得**与 Independent Control Reviewer 为同一自然人 |
 | Independent Control Reviewer | Control Reviewer | 独立重算；`Control / Golden Evaluation` gate | 必需、落实第二人 | 不得实现 fixture/oracle，也不得兼任 Truth Owner |
 | Release & Activation Manager | Release Manager | 检查 gates、publish、activate、revoke | 必需、可模拟 | 生产高风险变更与 author/approver 分离 |
-| Deloitte Coordination Lead | Deloitte Lead | 转写协调和客户区确认往返 | Stage 2 必需 | Stage 1 不依赖其响应 |
+| External Reviewer Coordination Lead | External Reviewer Lead | 转写协调和客户区确认往返 | Stage 2 必需 | Stage 1 不依赖其响应 |
 | Target Platform Owner | HK Platform Owner | ARM/K8s、IAM、Query Engine 和环境准入 | Stage 3 必需 | 当前不得伪造人选 |
 
 Stage 1 中“可模拟”表示同一自然人可切换显式测试 principal，用来证明 workflow enforcement，不代表真实职责分离。除 Reference Truth Owner 与 Independent Control Reviewer 必须为不同自然人、Fixture & Adapter Author 不得兼任 Independent Control Reviewer 外，其他分离在 production scope 才强制。Ontology Operator 的“independent”最低含义是 blind rebuild：Candidate 冻结前没有 Package/oracle/fixture/expected runtime result 的读取路径，并留下访问与输入清单；它不自动要求新增第三位自然人。每个合同、gate、SLO 和事故类别仍只能有一个 accountable role。
@@ -603,7 +603,7 @@ Stage 1 中“可模拟”表示同一自然人可切换显式测试 principal�
 
 | 风险 | 当前控制 | 下一证据 | 决策角色 |
 |---|---|---|---|
-| 安全转写不足以构建场景 | 简单模板、Missing/Withheld、Gap/Decision流程 | 独立operator完成ADT，再由Deloitte Coordination Lead协作真实场景 | Product & Delivery DRI |
+| 安全转写不足以构建场景 | 简单模板、Missing/Withheld、Gap/Decision流程 | 独立operator完成ADT，再由External Reviewer Coordination Lead协作真实场景 | Product & Delivery DRI |
 | Studio变成复杂技术编辑器 | 五个MVP task，内部schema与外部输入分离 | proxy user task test | Studio Domain Owner |
 | 两个PRD产生不同合同 | Shared Product Contract先行 | cross-PRD contract review | Shared Contract Owner |
 | ADT双真相损害demo | truth pre-registration和唯一reference ID | cross-artifact consistency tests | Reference Truth Owner |
@@ -634,7 +634,7 @@ Stage 1 中“可模拟”表示同一自然人可切换显式测试 principal�
 - 企业 Registry、workflow、policy、audit 的具体技术；
 - 第二场景所需 operator 和 shared-core 变化；
 - 生产容量、SLA、成本和 support model；
-- HKEX 真实职责分离和审批角色。
+- customer 真实职责分离和审批角色。
 
 ### 16.3 明确否决
 

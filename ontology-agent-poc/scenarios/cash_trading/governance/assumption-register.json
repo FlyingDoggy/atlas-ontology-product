@@ -15,13 +15,13 @@
       "decision_id": "CT-ASM-001",
       "type": "SOURCE_CLASSIFICATION",
       "status": "CONFIRMED_BY_SOURCE",
-      "statement": "Treat all supplied sample rows, metric results and inferred controls as constructed synthetic and not HKEX-validated.",
+      "statement": "Treat all supplied sample rows, metric results and inferred controls as constructed synthetic and not customer-validated.",
       "chosen_rule": "classification=constructed_synthetic; claim_ceiling=illustrative_demo_only",
-      "rationale": "The Deloitte email explicitly labels the sample as generated/synthetic and explains that HKEX materials cannot be exported.",
+      "rationale": "The External Reviewer email explicitly labels the sample as generated/synthetic and explains that customer materials cannot be exported.",
       "source_refs": ["SRC-EMAIL-001", "SRC-SAMPLE-001"],
       "affects": ["all_artifacts", "all_answers", "all_controls"],
       "external_confirmation": "NOT_REQUIRED",
-      "risk_and_limitations": "The PoC proves product behavior against an internally controlled case, not correctness against HKEX production data.",
+      "risk_and_limitations": "The PoC proves product behavior against an internally controlled case, not correctness against customer production data.",
       "owner": "PoC Product & Domain Team"
     },
     {
@@ -151,7 +151,7 @@
       "source_refs": ["SRC-REQ-001:02_Metric_Logic!A6:E6", "SRC-SAMPLE-001:order_activity"],
       "affects": ["order_rejection_rate", "order_to_trade_ratio"],
       "external_confirmation": "REQUESTED_NON_BLOCKING",
-      "risk_and_limitations": "This is an internal executable convention for the incomplete one-week sample, not an HKEX definition.",
+      "risk_and_limitations": "This is an internal executable convention for the incomplete one-week sample, not an customer definition.",
       "owner": "PoC Product & Domain Team"
     },
     {
@@ -216,20 +216,20 @@
       "source_refs": ["SRC-REQ-001:01_Requirements_Process!A13:D13"],
       "affects": ["agent_policy", "evidence_projection", "exports"],
       "external_confirmation": "REQUESTED_NON_BLOCKING",
-      "risk_and_limitations": "This does not represent production IAM, database row-level security or HKEX policy approval.",
+      "risk_and_limitations": "This does not represent production IAM, database row-level security or customer policy approval.",
       "owner": "PoC Product & Domain Team"
     },
     {
       "decision_id": "CT-ASM-017",
       "type": "DERIVED_CONTROL",
       "status": "DERIVED_FROM_SYNTHETIC",
-      "statement": "Generate known-correct controls independently from typed derived data; do not label compiler-generated SQL or derived answers as Deloitte/HKEX-provided controls.",
+      "statement": "Generate known-correct controls independently from typed derived data; do not label compiler-generated SQL or derived answers as External Reviewer/customer-provided controls.",
       "chosen_rule": "control_provenance=internal_independent_recomputation; sql_provenance=compiler_generated_reference",
       "rationale": "No existing SQL or independently approved expected results were supplied.",
       "source_refs": ["SRC-REQ-001:01_Requirements_Process!A16:D16", "SRC-EMAIL-001"],
       "affects": ["golden_controls", "reference_sql", "evaluation_claims"],
       "external_confirmation": "REQUESTED_NON_BLOCKING",
-      "risk_and_limitations": "The control proves internal consistency of the synthetic case, not HKEX business correctness.",
+      "risk_and_limitations": "The control proves internal consistency of the synthetic case, not customer business correctness.",
       "owner": "PoC Product & Domain Team"
     },
     {

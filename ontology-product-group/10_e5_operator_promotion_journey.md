@@ -1,7 +1,7 @@
 # E5 — Governed Agent Runtime Promotion Journey
 
-状态：Implemented / Local Verified  
-日期：2026-08-19  
+状态：Implemented / Local Verified
+日期：2026-08-19
 范围：ADT constructed-synthetic single-environment PoC；不是生产 release orchestration、IAM 或 multi-cluster rollout
 
 ## 1. 第一性原理
@@ -94,10 +94,10 @@ Semantic Layer 新增一个最小 `Agent activation` tab，只展示四格状态
 
 - 这是生产 promotion workflow、审批系统或 deployment controller；
 - filesystem CAS 可以替代 K8s/DB/object-store 下的分布式事务；
-- 8-case synthetic oracle 等于 HKEX 业务验收；
+- 8-case synthetic oracle 等于 customer 业务验收；
 - snapshot 之外的 mutable external warehouse 已获得一致性隔离；
 - post-activation verification 失败会自动 rollback 或在切流前完成 traffic hold；当前 PoC 只把失败标记为 NO-GO；
-- ARM64 image 和 HKEX K8s 环境已经实测。
+- ARM64 image 和 customer K8s 环境已经实测。
 
 ## 7. 下一步
 

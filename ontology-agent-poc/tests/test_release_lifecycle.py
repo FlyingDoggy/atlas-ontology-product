@@ -51,7 +51,7 @@ def _prepare_certified(
 ):
     published = studio.publish(
         package,
-        limitations=("constructed synthetic; not HKEX validated",),
+        limitations=("constructed synthetic; not customer validated",),
     )
     prepared = agent.prepare(
         published.ref,

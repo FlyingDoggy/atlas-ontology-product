@@ -1,13 +1,13 @@
 # Stage 1 Demo & Delivery Companion v0.1
 
-Document ID：`stage1-demo-delivery-companion/0.1`  
-状态：Revised Candidate；Pending Fresh-reader Closure；not approval authority  
-日期：2026-08-19  
-Decision Owner：Muyu  
-Accountable Owner：Product & Delivery DRI  
-适用产品：Ontology Studio + Ontology Analytic Agent  
-当前冻结基线：`synthetic-trusted-flow/core@1`  
-待决 Profile revision：`synthetic-trusted-flow/core@1.1` Revision Pack R-01（E-01 `CONCEPT_NOT_BOUND` + E-02 `SELECT_REFERENCE`）  
+Document ID：`stage1-demo-delivery-companion/0.1`
+状态：Revised Candidate；Pending Fresh-reader Closure；not approval authority
+日期：2026-08-19
+Decision Owner：Muyu
+Accountable Owner：Product & Delivery DRI
+适用产品：Ontology Studio + Ontology Analytic Agent
+当前冻结基线：`synthetic-trusted-flow/core@1`
+待决 Profile revision：`synthetic-trusted-flow/core@1.1` Revision Pack R-01（E-01 `CONCEPT_NOT_BOUND` + E-02 `SELECT_REFERENCE`）
 当前阻断：R-01 未批准/实现/独立验证前，V0 reference-selection conformance、V4 conformance、Delivery Readiness PASS 与 external demo GO 均禁止。
 
 ## 0. 文档性质与优先级
@@ -22,13 +22,13 @@ Accountable Owner：Product & Delivery DRI
 
 ### 1.1 Audience and decision enabled
 
-Primary audience：评估是否值得继续投入 bounded client-specific discovery 的 HKEX/Deloitte business、analytics、data 和 governance stakeholders。
+Primary audience：评估是否值得继续投入 bounded client-specific discovery 的 customer/External Reviewer business、analytics、data 和 governance stakeholders。
 
 Stage 1 只支持以下决定：
 
 > 这条 constructed-synthetic evidence 是否足以支持进入一个真实客户场景的受控 discovery 与 PoC 设计？
 
-Stage 1 不支持采购、production deployment、HKEX ADT business validation、production security approval 或 general ontology platform decision。
+Stage 1 不支持采购、production deployment、customer ADT business validation、production security approval 或 general ontology platform decision。
 
 ### 1.2 Hero flow
 
@@ -52,7 +52,7 @@ Presenter 必须明确：“driver/为什么”在本 Stage 只表示按获批�
 
 以下 limitation 必须邻接 primary scenario/result identity，并在 main view、replay、export 和 runbook 中无需 hover/展开即可看到：
 
-> Constructed-synthetic reference case; simulated/local roles and controls; not HKEX business validation; not production-ready.
+> Constructed-synthetic reference case; simulated/local roles and controls; not customer business validation; not production-ready.
 
 不得把 SCR `ACCEPTED` 描述为自动学习、Ontology 已更新或新能力已生效。没有新的人工 Decision、GSR、VRS 和 Activation，同一问题保持原 boundary outcome。
 
@@ -139,7 +139,7 @@ Effort/wait 使用同一 closed duration schema：
 |---|---|---|
 | `measurement_cutoff_at` | UTC millisecond timestamp | 未完成 scenario 的 wall-clock stop；不得早于 `intake_registered_at` |
 | `internal_active_minutes` | non-negative safe integer / minute | 我方 active effort；required，explicit `0` 表示已记录为零，null/missing不等于零 |
-| `deloitte_active_minutes` | non-negative safe integer / minute | Deloitte active effort；required，规则同上 |
+| `external-reviewer_active_minutes` | non-negative safe integer / minute | External Reviewer active effort；required，规则同上 |
 | `client_confirmation_wait_minutes` | non-negative safe integer / minute | client confirmation wait；required，规则同上 |
 
 `duration_unit` 固定为 `MINUTE`；其他值、负数、missing/null 均 fail closed。每个 scenario 的 wall-clock elapsed = `intake_registered_at` 到 `trusted_at`（已完成）或 `measurement_cutoff_at`（未完成）的 calendar minutes。Product-family effort/wait 对固定分母逐项求和；person-hours/hours 只由 exact minutes ÷ 60 派生，以 decimal scale 2、HALF_UP 显示，不得反向覆盖 minutes。`Time to First Trusted Scenario` 从分母中最早 intake 到最早 trusted stop；尚无 trusted scenario 时 duration 为 null并明确 `NOT_YET_TRUSTED`，不能填零。
@@ -172,14 +172,14 @@ Closure test：Studio、Agent 和 Product-family calculator 使用同一 event l
 
 ## 7. Proxy Intake Protocol
 
-PRD approval冻结协议；V0 执行。真实 Deloitte usability 继续标记 `Not Assessed`，直到 Stage 2。
+PRD approval冻结协议；V0 执行。真实 External Reviewer usability 继续标记 `Not Assessed`，直到 Stage 2。
 
 - Participants：至少 2 名未参与 ADT Package、safe sample 或 template authoring 的 business proxy；
 - Inputs：blank common template + guidance + fictional explanatory material + optional safe metadata/SQL artifact refs；
 - Required task：形成可登记 proposal，明确 Missing/Withheld/Unconfirmed，不填 RDF/OWL/SHACL/AST/internal schema；
 - Hard pass：安全 metadata完整；猜测补齐=0；internal schema填写=0；blind Operator只用获准 projection 可形成 Candidate 和具体 Gap list；
 - Recorded baseline：active time、guidance clarification、返工、无法理解字段、错误分类；
-- No arbitrary SLO：Stage 1 不以 `120 minutes / 2 clarifications` 作通用 trust gate；Stage 2 根据真实 Deloitte evidence 设 target。
+- No arbitrary SLO：Stage 1 不以 `120 minutes / 2 clarifications` 作通用 trust gate；Stage 2 根据真实 External Reviewer evidence 设 target。
 
 ## 8. Demo Comprehension Protocol
 
@@ -189,7 +189,7 @@ V5 rehearsal 至少使用 3 名未参与材料编写的 proxy viewer。3/3 必�
 2. 哪个 segment 的 computed contribution 最大，且这不等于因果结论；
 3. period、unit 与一个 limitation；
 4. evidence 为什么可追到 exact semantic/runtime/data identity；
-5. 为什么结果不是 HKEX validation 或 production approval；
+5. 为什么结果不是 customer validation 或 production approval；
 6. 下一步只能是 bounded client discovery，而不是直接上线。
 
 这个小样本只证明演示没有明显误导，不声称统计性 usability。
@@ -233,7 +233,7 @@ V5 rehearsal 至少使用 3 名未参与材料编写的 proxy viewer。3/3 必�
 ## 11. Deferred Productization
 
 - accepted SCR → human Decision → new GSR/VRS → changed answer 的完整 co-work loop；
-- real Deloitte common-template SLO 与 in-zone dereference；
+- real External Reviewer common-template SLO 与 in-zone dereference；
 - detailed second-scenario core-change ledger，只有 Strategy 的 2 semantic + 1 binding/execution 差异条件满足后才启动；
 - production Studio workbench、release portal、IAM/DLP/audit、target ARM64/K8s、Knowledge Center、SKU/UI/deployment packaging。
 

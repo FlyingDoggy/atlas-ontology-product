@@ -1,8 +1,8 @@
 # Candidate 2 — Console → Governed Agent API Cutover
 
-状态：Implemented / Local Verified  
-日期：2026-08-19  
-范围：ADT constructed-synthetic PoC；不是 HKEX 业务验证或生产安全架构
+状态：Implemented / Local Verified
+日期：2026-08-19
+范围：ADT constructed-synthetic PoC；不是 customer 业务验证或生产安全架构
 
 ## 1. Outcome
 
@@ -11,7 +11,7 @@ Analysis Workspace 的 live path 已从浏览器内 evaluator 切到真实 Agent
 已经消除的双重真相包括：
 
 - live path 不再使用 `SOURCE_FIXTURES`、浏览器 regex resolver、browser policy、compiler 或 evaluator；
-- 旧 `XHKG-CASH`、286,355 / 229,799 和 HKEX public-reference wording 已退出 Console；
+- 旧 `XHKG-CASH`、286,355 / 229,799 和 customer public-reference wording 已退出 Console；
 - canonical truth 只剩 `ontology.exchange_analytics.adt@1.2.0`、`SYNTH-CASH`、constructed synthetic；
 - 浏览器内 Publish 按钮不能修改 active runtime；发布和激活仍属于 backend control surfaces；
 - backend unavailable 时显式 unavailable，browser analysis fallback 保持 0。

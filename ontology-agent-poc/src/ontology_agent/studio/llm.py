@@ -312,7 +312,7 @@ class StudioClearedInputProjection(StudioLLMModel):
     base_draft_checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
     intake_submission_id: Literal["submission.reference.adt.v1"]
     intake_checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
-    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED"]
+    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED"]
     slots: tuple[StudioProjectionSlot, ...] = Field(min_length=5, max_length=5)
     declared_gap_ids: tuple[str, ...]
 

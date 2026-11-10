@@ -4,7 +4,7 @@ This deployment runs two constructed-synthetic release-to-answer paths on the sa
 product kernel:
 
 - ADT reference analytics;
-- Cash-market order and trading activity monitoring compiled from the Deloitte HK
+- Cash-market order and trading activity monitoring compiled from the External Review Team
   transcription, with every correction, assumption and open confirmation retained.
 
 Both use:
@@ -29,7 +29,7 @@ Both use:
   while every number, fact, answer clause and evidence record remains deterministic
   and snapshot-bound.
 
-It is a constructed-synthetic engineering tracer, not a production/HKEX readiness claim.
+It is a constructed-synthetic engineering tracer, not a production/customer readiness claim.
 
 ## Local run
 
@@ -64,7 +64,7 @@ Trading links are:
 - `/ontology-agent/?solution=ontology.exchange_analytics.cash_trading`
 - `/ontology-studio/?solution=ontology.exchange_analytics.cash_trading`
 
-Deloitte confirmations are deliberately non-blocking for this PoC. A later answer is
+External Reviewer confirmations are deliberately non-blocking for this PoC. A later answer is
 recorded as a new source/decision and produces a new candidate version; it never silently
 changes the active snapshot.
 

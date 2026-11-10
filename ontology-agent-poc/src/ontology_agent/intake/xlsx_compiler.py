@@ -719,7 +719,7 @@ def compile_tabular_xlsx(
         },
         "tables": table_outputs,
         "limitations": [
-            "Constructed-synthetic sample; not HKEX validated",
+            "Constructed-synthetic sample; not customer validated",
             "Physical production schemas and business controls remain unconfirmed",
             "All provisional transformations are identified by the assumption register checksum",
         ],

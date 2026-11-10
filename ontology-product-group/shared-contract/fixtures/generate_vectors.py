@@ -133,7 +133,7 @@ def positive_subjects() -> list[tuple[str, dict[str, Any]]]:
     objects: list[tuple[str, dict[str, Any]]] = []
 
     s = base("cleared-input-proposal-subject/1", "cleared-input-proposal", "input.adt.reference.proposal", "1.0.0", g)
-    s.update(classification="PUBLIC", origin="manual_transcription", allowed_uses=["ontology_build", "synthetic_demo"], safe_content_ref=ref("safe-content.adt"), opaque_source_locator_ref=ref("opaque-source.001"), limitations=["non-hkex-validation"])
+    s.update(classification="PUBLIC", origin="manual_transcription", allowed_uses=["ontology_build", "synthetic_demo"], safe_content_ref=ref("safe-content.adt"), opaque_source_locator_ref=ref("opaque-source.001"), limitations=["non-customer-validation"])
     objects.append(("P01a-cleared-input-proposal", s))
 
     s = base("cleared-input-subject/1", "cleared-input", "input.adt.reference", "1.0.0", g)
@@ -161,7 +161,7 @@ def positive_subjects() -> list[tuple[str, dict[str, Any]]]:
     objects.append(("P06-reference-manifest", s))
 
     s = base("control-manifest-subject/1", "control-manifest", "control.adt", "1.0.0", g)
-    s.update(reference_case_id="adt.synthetic.v1", oracle_class="CONSTRUCTED_SYNTHETIC", oracle_provenance_refs=[ref("oracle.adt")], formula_ref=ref("formula.adt"), period_profile_ref=ref("period.quarter"), population_profile_ref=ref("population.trades"), unit_ref=ref("unit.hkd-million"), rounding_profile_ref=ref("rounding.scale6"), expected_result_refs=[ref("expected.q3"), ref("expected.q4")], tolerance_profile_ref=ref("tolerance.exact-scale6"), expected_value_author_ref=ref("principal.truth-owner"), fixture_author_ref=ref("principal.truth-owner"), reviewer_ref=ref("principal.control-reviewer"), truth_frozen_before_fixture=True, allowed_claims=["reviewed-constructed-synthetic-conformance"], limitations=["constructed-target-coupled", "non-hkex-validation"], frozen_at="2026-08-18T00:00:00.000Z")
+    s.update(reference_case_id="adt.synthetic.v1", oracle_class="CONSTRUCTED_SYNTHETIC", oracle_provenance_refs=[ref("oracle.adt")], formula_ref=ref("formula.adt"), period_profile_ref=ref("period.quarter"), population_profile_ref=ref("population.trades"), unit_ref=ref("unit.hkd-million"), rounding_profile_ref=ref("rounding.scale6"), expected_result_refs=[ref("expected.q3"), ref("expected.q4")], tolerance_profile_ref=ref("tolerance.exact-scale6"), expected_value_author_ref=ref("principal.truth-owner"), fixture_author_ref=ref("principal.truth-owner"), reviewer_ref=ref("principal.control-reviewer"), truth_frozen_before_fixture=True, allowed_claims=["reviewed-constructed-synthetic-conformance"], limitations=["constructed-target-coupled", "non-customer-validation"], frozen_at="2026-08-18T00:00:00.000Z")
     objects.append(("P07-control-manifest", s))
 
     s = base("suite-manifest-subject/1", "suite-manifest", "adt.tracer.v1.suite", "1.0.0", g)
@@ -259,7 +259,7 @@ def positive_subjects() -> list[tuple[str, dict[str, Any]]]:
     objects.append(("P29b-scr", s))
 
     s = base("canonical-test-subject/1", "canonical-test", "canonical.features", "1.0.0", g)
-    s.update(chinese_nfc="港交所", escaped="quote=\" slash=/ backslash=\\ newline=\n", decimal_value={"coefficient": "100", "scale": 2}, nullable=None, ordered_values=["q4", "q3"], enabled=True)
+    s.update(chinese_nfc="示例交易所", escaped="quote=\" slash=/ backslash=\\ newline=\n", decimal_value={"coefficient": "100", "scale": 2}, nullable=None, ordered_values=["q4", "q3"], enabled=True)
     objects.append(("P30-canonical-features", s))
     return objects
 

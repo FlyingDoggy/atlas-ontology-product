@@ -1696,7 +1696,7 @@ def publish_control() -> dict[str, Any]:
     try:
         publication = _studio_releases().publish(
             package,
-            limitations=("constructed synthetic; not HKEX validated",),
+            limitations=("constructed synthetic; not customer validated",),
         )
     except PublicationError as exc:
         raise HTTPException(status_code=409, detail="Publication blocked") from exc

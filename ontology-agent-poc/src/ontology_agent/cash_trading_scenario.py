@@ -375,7 +375,7 @@ def _binding_checks(
         and all(path is not None and path.is_file() for path in analytic_paths.values())
         and len(exact_paths) == 1
         and next(iter(exact_paths)).name == "reference_controls.sql"
-        and "not Deloitte/HKEX-provided SQL"
+        and "not External Reviewer/customer-provided SQL"
         in next(iter(exact_paths)).read_text(encoding="utf-8")[:500]
     )
     checks.append(

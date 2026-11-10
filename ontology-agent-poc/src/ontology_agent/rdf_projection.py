@@ -10,7 +10,7 @@ from rdflib import Graph, Literal, Namespace, RDF, RDFS, URIRef, XSD
 from .models import FormulaNode, OntologyPackage, ValidationCheck
 
 
-BASE = "https://example.org/hkex/ontology/"
+BASE = "https://example.org/atlas/ontology/"
 EX = Namespace(BASE)
 
 

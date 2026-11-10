@@ -1,8 +1,8 @@
 # Ontology Product Group 通用产品重置方案 v3
 
-状态：候选方案，待 Product Owner 确认  
-日期：2026-08-22  
-范围：Ontology Studio、Ontology Analytic Agent，以及二者之间的 Solution Package 合同  
+状态：候选方案，待 Product Owner 确认
+日期：2026-08-22
+范围：Ontology Studio、Ontology Analytic Agent，以及二者之间的 Solution Package 合同
 上一版：`ontology-studio-product-reset-v2.md`
 
 ## 1. 一句话结论
@@ -159,7 +159,7 @@ Studio 首页默认提供三种入口：
 - 现有 SQL；
 - 其他说明、报告或补充材料。
 
-针对 Deloitte HK 只能人工转写的现实，Studio 要同时支持：
+针对 External Review Team 只能人工转写的现实，Studio 要同时支持：
 
 - 按我们的 Excel 模板转写的需求和指标逻辑；
 - 直接提供的数据模型、数字字典和 SQL 文件；

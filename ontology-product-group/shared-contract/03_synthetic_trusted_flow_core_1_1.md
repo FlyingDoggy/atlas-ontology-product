@@ -1,15 +1,15 @@
 # Synthetic Trusted Flow Core — Stage 1 Profile 1.1
 
-Profile ID：`synthetic-trusted-flow/core@1.1`  
-状态：Draft for independent conformance review；not implementation authority  
-日期：2026-08-19  
-Revision direction：R-01 `APPROVE_RECOMMENDED`；record `../reviews/r01-decision-record.md`；file digest `sha-256:33f7a7e0b2abfa3aae31d89af36d188c597bfe35707fe20fa9a157cdd3a0ea4a`  
-Frozen predecessor：`synthetic-trusted-flow/core@1`；不得原地修改；本 revision 只有在 exact Profile/Annex/vectors 独立通过并由 Decision Owner 另行冻结后才 supersede其用于 Stage 1 V0/V4  
-上位合同：`../02_shared_product_contract.md` v0.1 Approved/Frozen  
-Normative Annex candidate：`04_technical_conformance_annex_1_1.md`  
-Machine contract candidate：`fixtures/core-profile-conformance-manifest-1.1.json`  
-Pinned external-leaf candidate：`fixtures/external-leaf-manifest-1.1.json`  
-Fixed vectors / verifier / report：`fixtures/canonical-json-v1.0-core-1.1-vectors.json`、`fixtures/verify_vectors_core_1_1.py`、`fixtures/core-1.1-conformance-report.json`  
+Profile ID：`synthetic-trusted-flow/core@1.1`
+状态：Draft for independent conformance review；not implementation authority
+日期：2026-08-19
+Revision direction：R-01 `APPROVE_RECOMMENDED`；record `../reviews/r01-decision-record.md`；file digest `sha-256:33f7a7e0b2abfa3aae31d89af36d188c597bfe35707fe20fa9a157cdd3a0ea4a`
+Frozen predecessor：`synthetic-trusted-flow/core@1`；不得原地修改；本 revision 只有在 exact Profile/Annex/vectors 独立通过并由 Decision Owner 另行冻结后才 supersede其用于 Stage 1 V0/V4
+上位合同：`../02_shared_product_contract.md` v0.1 Approved/Frozen
+Normative Annex candidate：`04_technical_conformance_annex_1_1.md`
+Machine contract candidate：`fixtures/core-profile-conformance-manifest-1.1.json`
+Pinned external-leaf candidate：`fixtures/external-leaf-manifest-1.1.json`
+Fixed vectors / verifier / report：`fixtures/canonical-json-v1.0-core-1.1-vectors.json`、`fixtures/verify_vectors_core_1_1.py`、`fixtures/core-1.1-conformance-report.json`
 场景：ADT synthetic reference tracer
 
 ## 1. Profile Purpose
@@ -27,7 +27,7 @@ safe intake
 → safe UNKNOWN_CONCEPT feedback and human triage
 ```
 
-它验证产品合同能否工作，不证明 HKEX 业务定义、生产安全、通用 ontology compiler 或 Knowledge Center 已经成立。
+它验证产品合同能否工作，不证明 customer 业务定义、生产安全、通用 ontology compiler 或 Knowledge Center 已经成立。
 
 Core Contract 优先于本 Profile。本 Profile 未列出的类型、target、mode、version 或 workflow 一律 unsupported/fail closed，不得按“差不多”处理。
 
@@ -36,7 +36,7 @@ Core Contract 优先于本 Profile。本 Profile 未列出的类型、target、m
 1. E-02：把已存在的 Reference Truth Owner selection 变成 closed、acyclic、one-candidate-set-one-commit 的 `SELECT_REFERENCE` transaction；
 2. E-01：把 known semantic area 中 zero binding 映射为 `REFUSED/CONCEPT_NOT_BOUND/query_count=0`，并允许安全、可选的 UNKNOWN_CONCEPT feedback side effect。
 
-不变项：two Product Domains、five analytic outcomes、five runtime gates、`adt.tracer.v1.suite` 的 8-case/4+1+3 denominator、ADT arithmetic、constructed-synthetic claim ceiling、16–24 pd parent ROM 和 external-demo gate。新业务场景、SCR type、outcome、生产部署/IAM/K8s、full UI、generic compiler、Knowledge Center 与真实 HKEX 材料不属于本 revision。
+不变项：two Product Domains、five analytic outcomes、five runtime gates、`adt.tracer.v1.suite` 的 8-case/4+1+3 denominator、ADT arithmetic、constructed-synthetic claim ceiling、16–24 pd parent ROM 和 external-demo gate。新业务场景、SCR type、outcome、生产部署/IAM/K8s、full UI、generic compiler、Knowledge Center 与真实 customer 材料不属于本 revision。
 
 ## 2. Fixed Scope and Assumptions
 
@@ -51,12 +51,12 @@ Core Contract 优先于本 Profile。本 Profile 未列出的类型、target、m
 | transaction contract before freeze | fixed logical state-machine traces；不声称 registrar/file/fsync 已实现 |
 | V0b implementation target | local, append-only, crash-detectable framed journal；one process / single writer；仍执行 expected-head/series CAS |
 | compatibility | exact-match tuple only |
-| data | synthetic/reference artifact only；no raw HKEX data |
+| data | synthetic/reference artifact only；no raw customer data |
 | response | buffered；no streaming |
 | replay | `evidence_only` |
 | runtime | reuse current deterministic calculator/compiler where safe |
 
-Profile 假设：无 production IAM、DB、HA、K8s、real Query Engine、real HKEX network、client-origin business material 或 second scenario。
+Profile 假设：无 production IAM、DB、HA、K8s、real Query Engine、real customer network、client-origin business material 或 second scenario。
 
 ## 3. Stage 1 Claim
 
@@ -74,7 +74,7 @@ Profile 假设：无 production IAM、DB、HA、K8s、real Query Engine、real H
 
 > 该 deterministic flow 符合一套预先冻结、由第二人复核的 constructed-synthetic control set。
 
-禁止使用：`independent oracle`、`independently derived business truth`、`HKEX validated`、`HKEX correct`、`production ready` 或含义相同的表达。
+禁止使用：`independent oracle`、`independently derived business truth`、`customer validated`、`customer correct`、`production ready` 或含义相同的表达。
 
 如果能满足三人分离或 independently frozen authoritative source，必须产生新的 ControlManifest/oracle class/allowed-claims digest，不能只改 demo 文案。
 
@@ -450,7 +450,7 @@ V0b DoD complete
 | Runtime | 8 cases dual-path parity；all numeric/direction/ranking/limitation direct Claim coverage 100% |
 | SCR | immutable ConceptResolutionEvidence → ExecutionEvidence/2 → ResultReleaseCommit → Payload/2 exact chain；`REFUSED/CONCEPT_NOT_BOUND/query_count=0`；5/5 actionable；payload-bound disclosure；idempotent；unreleased/contradictory/role-policy-denied source产生 zero SCR；forbidden-field leakage 0；feedback failure不改outcome；no auto truth |
 | Audit/recovery | publish/seal/activate/revoke/execute/release/SCR/triage complete；chain/tail mutation detected；refresh retains state |
-| Claim wording | oracle class/limitations visible；no HKEX validation or production claim |
+| Claim wording | oracle class/limitations visible；no customer validation or production claim |
 
 Correctness reporting 必须分报：supported-answer correctness、coverage、Clarify、Refuse、unsupported/failed、Claim coverage、mutation kill rate、projection leakage。不得通过删除 frozen cases 改善指标。
 
@@ -473,7 +473,7 @@ Owner：Studio Domain Owner。Required participants：Ontology Operator、Refere
 - produces immutable GSR PublishSubject and exact-subject Semantic Approval PASS，ready for V1 publication；
 - only after verified CommitReceipt，Fixture/Adapter Author may construct/adapt runtime fixture。
 
-V0 includes internal product/engineering effort for the synthetic ADT truth gate and second-person review。It excludes client/Deloitte waiting and any real HKEX truth validation。
+V0 includes internal product/engineering effort for the synthetic ADT truth gate and second-person review。It excludes client/External Reviewer waiting and any real customer truth validation。
 
 ### S0 — Change-map / safety spike（1–2 pd）
 
@@ -545,13 +545,13 @@ V3 and V4 may run in parallel after V2 when separate owners are available；V5 d
 
 Range bridge：`13–19` 只覆盖 contract mechanics；`3–5` 覆盖 synthetic truth/intake/blind rebuild。按 low/low 与 high/high 配对形成父级唯一 full Stage 1 range `16–24`，不是再把 13–19 加到 16–24 上。置信度：spike 前 low；S0 后对 V0 和所有 mechanics slices 重新给 best/likely/worst，重新基线父级 16–24。
 
-ROM 不含新的真实 HKEX fixture、Deloitte 人工转写等待、真实网络/DB/IAM/K8s、第二场景、production UI、independent security assessment 或客户业务 truth review。
+ROM 不含新的真实 customer fixture、External Reviewer 人工转写等待、真实网络/DB/IAM/K8s、第二场景、production UI、independent security assessment 或客户业务 truth review。
 
 触发重估：RuntimePackageView/evidence DTO 不是 shallow adapter；console 不能复用；加入 multiwriter/DB/IAM；需要 component transitive revoke；新增 SCR type；换/新增 runtime adapter；重造 fixture；接真实环境/材料。
 
 ## 13. Explicit Out of Scope
 
-1. HKEX 原始材料、真实业务正确性或生产适用性证明；
+1. customer 原始材料、真实业务正确性或生产适用性证明；
 2. production IAM/SSO/MFA、KMS/PKI、真实职责分离；
 3. multi-tenant/multi-workspace service、multiwriter/distributed ledger、HA；
 4. component/GSR/attestation target or transitive revoke、three enforcement modes、cache freshness；
@@ -559,7 +559,7 @@ ROM 不含新的真实 HKEX fixture、Deloitte 人工转写等待、真实网络
 6. UNKNOWN_CONCEPT 之外的 SCR 和 complete incident/product-feedback lifecycle；
 7. arbitrary metric/SQL/operator、generic ontology compiler、second scenario；
 8. historical data re-execution、production audit retention/legal hold；
-9. full Studio authoring UI、Deloitte portal、自动抽取真实文档；
+9. full Studio authoring UI、External Reviewer portal、自动抽取真实文档；
 10. real Query Engine/network、Linux ARM64/K8s delivery；
 11. Knowledge Center 与 commercial packaging。
 
@@ -583,4 +583,4 @@ Go/no-go：
 - S0 begins only through the §10 named-owner/approval entry chain；
 - V1 begins only after Product & Delivery DRI records the S0 re-estimate、Decision Owner accepts the rebaseline in a separate record、V0a/V0b complete and all V1 roles named；
 - external governed-evidence demo requires V0 + V1–V5 DoD all PASS，contract resolver and live console governed route cut over，33/33 tests + 33/33 checks + frozen suite + critical fault/mutation suite PASS，physical-binding/secret leakage = 0，persist/revoke-before-commit answer bytes = 0，oracle limitation/claim label visible，and Product & Delivery DRI records GO；
-- production/HKEX claims require separate evidence and are outside this profile。
+- production/customer claims require separate evidence and are outside this profile。

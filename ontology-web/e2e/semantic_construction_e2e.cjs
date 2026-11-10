@@ -65,7 +65,7 @@ async function main() {
 
     await page.getByRole("heading", { name: "全部解决方案", exact: true }).waitFor();
 
-    // The installed Cash reference has its own durable Deloitte source library.
+    // The installed Cash reference has its own durable External Reviewer source library.
     // Prove that its source-backed catalogs are plural before testing an
     // isolated template clone.  The clone starts from the canonical package;
     // its construction may reference installed template inputs without

@@ -15,10 +15,10 @@
   --foundation-color-red-600: #b52d2a;
   /* Manrope is the distributable fallback for hosts without the licensed EIX
      corporate fonts; CJK glyphs continue through the EIX Chinese fallbacks. */
-  --foundation-font-family-display: "MBCorpoATitle", "Avenir Next Condensed", "Arial Narrow", "Manrope Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --foundation-font-family-heading: "MBCorpoSTitle", "Avenir Next", "Manrope Variable", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
-  --foundation-font-family-body: "MBCorpoSText", "Avenir Next", "Manrope Variable", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
-  --foundation-font-family-numeric: "MBCorpoSText", "Avenir Next", "Manrope Variable", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --foundation-font-family-display: "Avenir Next Condensed", "Arial Narrow", "Manrope Variable", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --foundation-font-family-heading: "Avenir Next", "Manrope Variable", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --foundation-font-family-body: "Avenir Next", "Manrope Variable", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --foundation-font-family-numeric: "Avenir Next", "Manrope Variable", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
   --foundation-font-family-utility: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
   font-family: var(--foundation-font-family-body);
   color: #171a1d;

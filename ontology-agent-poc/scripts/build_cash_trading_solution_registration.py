@@ -101,7 +101,7 @@ def main() -> None:
         components=components,
         resources=resources,
         limitations=(
-            "Constructed-synthetic reference derived from Deloitte HK transcriptions; not HKEX validated",
+            "Constructed-synthetic reference derived from External Review Team transcriptions; not customer validated",
             "Unconfirmed business rules remain linked to the assumption and external-confirmation registers",
             "Registration is a delivery/catalog record, not release or activation authority",
         ),

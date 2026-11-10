@@ -10,7 +10,7 @@
 
 ## 1. 本次到底发布了什么
 
-这是 Agent-first 的 constructed-synthetic ADT `LLM Engineering Demo`，不是完整通用产品，也不是 HKEX 业务验证。
+这是 Agent-first 的 constructed-synthetic ADT `LLM Engineering Demo`，不是完整通用产品，也不是 customer 业务验证。
 
 - Ontology Agent 的 **ADT overview** 继续使用 deterministic runtime 生成 dashboard、claims 和 evidence；
 - **Ask the Agent** 使用 Qwen 3.8 Max 做 closed goal grounding 和 bounded next-tool selection；
@@ -21,7 +21,7 @@
 
 对外标签固定为：
 
-> **LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; not Stage 1 governed-evidence conformant; not HKEX validated; not production-ready.**
+> **LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; not Stage 1 governed-evidence conformant; not customer validated; not production-ready.**
 
 ## 2. 第一性原理与执行链
 
@@ -129,7 +129,7 @@ Quick Tunnel 是临时公网入口；tunnel container 重建会改变 hostname�
 ## 8. 仍然没有做的事情
 
 - Studio LLM extraction/observation/human disposition workflow；
-- shared-account arbitrary free text 或任何 HKEX/客户材料外发；
+- shared-account arbitrary free text 或任何 customer/客户材料外发；
 - full VRS-bound LLM profile、Frozen Core ResultReleaseCommit 或 Stage 1 conformance；
 - individual IAM/SSO/MFA/per-user audit；
 - stable owned domain、production ingress、multi-node state 和 HA；

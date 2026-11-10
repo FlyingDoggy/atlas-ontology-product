@@ -46,7 +46,7 @@ class CapturingWorkspaceStore:
 
 def test_revision_identity_treats_legacy_missing_optional_operations_as_null() -> None:
     identity = WorkspaceIdentity(
-        solution_id="hkex.adt.reference",
+        solution_id="atlas.adt.reference",
         solution_version="1.2.0",
         workspace_id="workspace.adt.reference",
         studio_adapter_id="studio.adapter.adt@1",
@@ -121,7 +121,7 @@ def test_intake_creates_a_traced_fixed_adt_draft(
     }
     sql = next(asset for asset in intake.assets if asset.kind == "sql")
     assert sql.processing_mode == "REGISTERED_NOT_PARSED"
-    assert intake.claim_ceiling == "CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED"
+    assert intake.claim_ceiling == "CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED"
     assert all(len(asset.checksum) == 64 for asset in intake.assets)
     assert all(gap.status == "OPEN" for gap in intake.gaps)
     assert workspace.modified_fields == ()

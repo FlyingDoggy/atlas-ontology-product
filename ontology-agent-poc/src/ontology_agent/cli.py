@@ -151,7 +151,7 @@ def _bootstrap_scenario(
         if replace_different_release and current.release.version != package.version:
             release = studio.publish(
                 package,
-                limitations=("constructed synthetic; not HKEX validated",),
+                limitations=("constructed synthetic; not customer validated",),
             )
             prepared = agent.prepare(
                 release.ref,
@@ -206,7 +206,7 @@ def _bootstrap_scenario(
 
     release = studio.publish(
         package,
-        limitations=("constructed synthetic; not HKEX validated",),
+        limitations=("constructed synthetic; not customer validated",),
     )
     prepared = agent.prepare(
         release.ref,
@@ -330,7 +330,7 @@ def main() -> None:
         try:
             release = studio.publish(
                 package,
-                limitations=("constructed synthetic; not HKEX validated",),
+                limitations=("constructed synthetic; not customer validated",),
             )
         except PublicationError as exc:
             _print({"status": "FAIL", "error": str(exc)})

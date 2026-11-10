@@ -709,7 +709,7 @@ class DraftWorkspaceService:
             publication = self.releases.publish(
                 package,
                 limitations=(
-                    "constructed synthetic; not HKEX validated",
+                    "constructed synthetic; not customer validated",
                     "existing SQL registered for human comparison; not automatically reconciled",
                 ),
             )

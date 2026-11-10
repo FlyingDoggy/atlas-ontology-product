@@ -1,5 +1,5 @@
 [project]
-name = "hkex-ontology-agent-poc"
+name = "atlas-ontology-agent-poc"
 version = "0.3.0"
 description = "Executable ontology-based analytic agent reference POC"
 requires-python = ">=3.11"

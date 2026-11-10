@@ -228,40 +228,40 @@ processes:
 sources:
 - id: source.requirements
   source_type: requirement_transcription
-  title: Deloitte HK requirements transcription
+  title: External Review Team requirements transcription
   locator: intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf
-  owner: Deloitte HK
+  owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: secondary
-  notes: Transcribed business context; not an exported HKEX source document.
+  notes: Transcribed business context; not an exported customer source document.
 - id: source.metric_logic
   source_type: metric_transcription
-  title: Deloitte HK metric logic transcription
+  title: External Review Team metric logic transcription
   locator: intake/source-manifest.json#SRC-REQ-001 sha256=fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf
-  owner: Deloitte HK
+  owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: secondary
   notes: Common metric examples; definitions remain subject to confirmation.
 - id: source.data_dictionary
   source_type: data_dictionary
-  title: Deloitte HK generated data dictionary
+  title: External Review Team generated data dictionary
   locator: intake/source-manifest.json#SRC-DICT-001 sha256=2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a
-  owner: Deloitte HK
+  owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: secondary
   notes: Generated and field-existence cross-checked; physical production names may differ.
 - id: source.sample_data
   source_type: sample_data
-  title: Deloitte HK constructed-synthetic sample data
+  title: External Review Team constructed-synthetic sample data
   locator: intake/source-manifest.json#SRC-SAMPLE-001 sha256=d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018
-  owner: Deloitte HK
+  owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: assumption
-  notes: One-week constructed-synthetic sample; not HKEX production data.
+  notes: One-week constructed-synthetic sample; not customer production data.
 - id: source.assumption_register
   source_type: assumption_register
   title: PoC cash-trading assumption and decision register
-  locator: governance/assumption-register.json sha256=846c64265d5391a08e93046e0706f4892fce68c5bd66903d851d156e6675760c
+  locator: governance/assumption-register.json sha256=ebddb32234c43f1341855360f68d5f3f53224f064bd918ffb72111f056c6999a
   owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: assumption
@@ -269,15 +269,15 @@ sources:
 - id: source.derived_oracle
   source_type: derived_control
   title: Independent constructed-synthetic golden controls
-  locator: golden/oracle.json sha256=dc842cc1f27dbf3fa80c3f18aa1a6c1e26e64614df6d8c1ceb6793edcc815fe0
+  locator: golden/oracle.json sha256=2fed13a01861fc1f5bcb7d9dbf513eb6b324ebf991b7ca93b2f1334fd0f16d5c
   owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: assumption
-  notes: Independently recomputed from typed Parquet; not Deloitte/HKEX known-correct evidence.
+  notes: Independently recomputed from typed Parquet; not External Reviewer/customer known-correct evidence.
 - id: source.compiler_sql
   source_type: sql
   title: Compiler-generated Cash Trading reference SQL
-  locator: sql/reference_controls.sql sha256=32457c30e9853c48ccea851322e7892e74e7a074ba2d45af80650741d6bcfdd5
+  locator: sql/reference_controls.sql sha256=ef0466a5ea7bbacc1ddbb96e6dfe637441328ffca999ee8aaab3ba3792e6cc85
   owner: PoC Product & Domain Team
   captured_on: '2026-08-20'
   trust: assumption
@@ -286,8 +286,8 @@ decisions:
 - id: decision.source_classification
   question: What claim can be made from the supplied packet?
   options:
-  - HKEX validated
-  - Deloitte confirmed
+  - customer validated
+  - External Reviewer confirmed
   - Constructed synthetic only
   decision: Treat the case as constructed synthetic and illustrative only.
   decided_by: actor.cash_trading_domain_owner

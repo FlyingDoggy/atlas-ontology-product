@@ -7,7 +7,7 @@
       "kind": "semantic_source",
       "locator": "ontology/package.yaml",
       "media_type": "application/yaml",
-      "sha256": "9246ca57f83b13b814a5a04ad59db7a685ab897418d319ad4476ade3c34f0ad8"
+      "sha256": "42b306e64c57ff4d35bac9ff9b2ca07f86b688b2c8e396b4c44b9655200a92c4"
     },
     {
       "component_id": "component.cash-trading.authoring-profile",
@@ -37,7 +37,7 @@
     "zh": "现金市场订单与成交活动监控"
   },
   "limitations": [
-    "Constructed-synthetic reference derived from Deloitte HK transcriptions; not HKEX validated",
+    "Constructed-synthetic reference derived from External Review Team transcriptions; not customer validated",
     "Unconfirmed business rules remain linked to the assumption and external-confirmation registers",
     "Registration is a delivery/catalog record, not release or activation authority"
   ],
@@ -45,8 +45,8 @@
     {
       "locator": "README.md",
       "media_type": "text/markdown",
-      "sha256": "dcba962156f55a79905513354dce2b9b364e39dbe3bbd254877f6aed202b09f2",
-      "size_bytes": 833
+      "sha256": "ffa25866e01f92dd256be5bb16545411073d13cd58e5eb9a7b57c996ffceb5a2",
+      "size_bytes": 845
     },
     {
       "locator": "authoring/editor-descriptor.json",
@@ -75,8 +75,8 @@
     {
       "locator": "data/manifest.json",
       "media_type": "application/json",
-      "sha256": "d36803f6781bf10e515859acbc184e594533e6c86286bf8d95e8bb23ade2226b",
-      "size_bytes": 3026
+      "sha256": "89b2153d164d3a44d73b755bddd5f48d752834e0e847afde661bde04cc43de82",
+      "size_bytes": 3847
     },
     {
       "locator": "data/order_activity.parquet",
@@ -93,14 +93,14 @@
     {
       "locator": "data/quality-report.json",
       "media_type": "application/json",
-      "sha256": "e5b79f9882f8728ba7fa5ab39845c669c64bc087d2ae703bdcacafb749293abf",
-      "size_bytes": 10747
+      "sha256": "498d2aa8975f237062bd3c10437f467d3a2d3c098309f516fe299d937bea78ba",
+      "size_bytes": 15288
     },
     {
       "locator": "data/schema.json",
       "media_type": "application/json",
-      "sha256": "db6a04509cb8cee31d7cf7c44d5e06f6f6d9ea20a06ae225af76e7bb83c0ea7f",
-      "size_bytes": 92947
+      "sha256": "469fda97ea138a4d84b8d4b69a0f8f495fa53683777dc8569ad4c672d5451cb3",
+      "size_bytes": 126552
     },
     {
       "locator": "data/trading_activity.parquet",
@@ -117,8 +117,8 @@
     {
       "locator": "golden/oracle.json",
       "media_type": "application/json",
-      "sha256": "dc842cc1f27dbf3fa80c3f18aa1a6c1e26e64614df6d8c1ceb6793edcc815fe0",
-      "size_bytes": 3670
+      "sha256": "2fed13a01861fc1f5bcb7d9dbf513eb6b324ebf991b7ca93b2f1334fd0f16d5c",
+      "size_bytes": 3684
     },
     {
       "locator": "golden/questions.yaml",
@@ -129,20 +129,20 @@
     {
       "locator": "governance/assumption-register.json",
       "media_type": "application/json",
-      "sha256": "846c64265d5391a08e93046e0706f4892fce68c5bd66903d851d156e6675760c",
-      "size_bytes": 18959
+      "sha256": "ebddb32234c43f1341855360f68d5f3f53224f064bd918ffb72111f056c6999a",
+      "size_bytes": 19005
     },
     {
-      "locator": "governance/deloitte-confirmation-register.json",
+      "locator": "governance/external-confirmation-register.json",
       "media_type": "application/json",
-      "sha256": "99b220c54a1d705f20f31edd9382a34916bfa78cf1508b1e397cb78a87f4cb29",
-      "size_bytes": 9768
+      "sha256": "cc2f1ea6d6a8ce7c7cb017038794381b528372c50cfd4b7c70a1ee763ede8b3b",
+      "size_bytes": 9785
     },
     {
       "locator": "governance/reviewed-baseline.json",
       "media_type": "application/json",
-      "sha256": "6b498671013fa37dd5759e9efca2b778e2b5a9472330b48b33906702a871a3de",
-      "size_bytes": 5244
+      "sha256": "8152f631bcb7c98533aa158af7a061dddfa08d2d359de52d53c659dd2cdbe2a6",
+      "size_bytes": 5252
     },
     {
       "locator": "intake/compile-spec.json",
@@ -153,44 +153,20 @@
     {
       "locator": "intake/construction-profile.json",
       "media_type": "application/json",
-      "sha256": "24442abf69bd1685ecc3a715d0a0ad9141e3c53825f015de5b52ce71c6d6bb56",
-      "size_bytes": 1747
-    },
-    {
-      "locator": "intake/reference-source-pack/HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
-      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "sha256": "fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
-      "size_bytes": 34495
-    },
-    {
-      "locator": "intake/reference-source-pack/cash_trading_sample_data.xlsx",
-      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "sha256": "d301e6b6bc5a2f80237917370d4e41b960d44692e37bca245300dcc814a4a018",
-      "size_bytes": 837951
-    },
-    {
-      "locator": "intake/reference-source-pack/email screenshot.jpeg",
-      "media_type": "image/jpeg",
-      "sha256": "488ed1d5b718337236bca5b812bd6606d73888e5028d347671c2569bc798fb9c",
-      "size_bytes": 318582
-    },
-    {
-      "locator": "intake/reference-source-pack/order_trade_activities_data_dictionary.xlsx",
-      "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "sha256": "2004452fe7030770756b1b6fca76605c20c280ea53b8c9fc0bb45fea10cca29a",
-      "size_bytes": 52796
+      "sha256": "a782872b63fff78b34ecfa9373ce39c530af823072aab3ce185579d1e46e25d2",
+      "size_bytes": 1763
     },
     {
       "locator": "intake/reference-source-pack.json",
       "media_type": "application/json",
-      "sha256": "1af7d0cc95203a0eac342318df0344687062d0676343b97627581f743db47cd0",
-      "size_bytes": 3426
+      "sha256": "2f126cceef6d899f1ab409ad9f843067c9484a4ee4ddc067c0d7422e5c9f4ee5",
+      "size_bytes": 3462
     },
     {
       "locator": "intake/source-manifest.json",
       "media_type": "application/json",
-      "sha256": "a11a5f75452cce8983aaa89c7959949f02e9070fdfe4059d52012cfd10716827",
-      "size_bytes": 3214
+      "sha256": "80dc85bd26f5d9969070e699af5fecd228788abb926e1410d7f98e223dc06076",
+      "size_bytes": 3250
     },
     {
       "locator": "llm/engineering-profile.json",
@@ -231,8 +207,8 @@
     {
       "locator": "llm/studio/prompts.json",
       "media_type": "application/json",
-      "sha256": "7429cb96a1075a5e0a36b5addd6ca14fe05cc8857a727b646df2a5b86c4b16f0",
-      "size_bytes": 859
+      "sha256": "032fee43a70006275423af71d1eb5aa023f3e23d74a5ae3e9c4f9cf13d5bccca",
+      "size_bytes": 863
     },
     {
       "locator": "llm/studio/semantic-slot-manifest.json",
@@ -249,14 +225,14 @@
     {
       "locator": "ontology/package.yaml",
       "media_type": "application/yaml",
-      "sha256": "9246ca57f83b13b814a5a04ad59db7a685ab897418d319ad4476ade3c34f0ad8",
-      "size_bytes": 162432
+      "sha256": "42b306e64c57ff4d35bac9ff9b2ca07f86b688b2c8e396b4c44b9655200a92c4",
+      "size_bytes": 162558
     },
     {
       "locator": "sql/reference_controls.sql",
       "media_type": "text/sql",
-      "sha256": "32457c30e9853c48ccea851322e7892e74e7a074ba2d45af80650741d6bcfdd5",
-      "size_bytes": 9708
+      "sha256": "ef0466a5ea7bbacc1ddbb96e6dfe637441328ffca999ee8aaab3ba3792e6cc85",
+      "size_bytes": 9721
     }
   ],
   "scenario_id": "scenario.cash_trading_activity_monitoring",

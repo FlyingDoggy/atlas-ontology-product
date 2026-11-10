@@ -221,8 +221,8 @@ describe("mature Studio product views", () => {
       intake={{
         assets: [],
         reference_source_pack: {
-          pack_id: "cash-trading.deloitte-hk.reference.20260820",
-          title: "Deloitte HK Cash Trading reference source pack",
+          pack_id: "cash-trading.external-review.reference.20260820",
+          title: "External Review Team Cash Trading reference source pack",
           physical_file_count: 4,
           registrations: Array.from({ length: 6 }, (_, index) => ({ source_id: `asset.cash_${index}` })),
           limitations: ["No source SQL supplied"],

@@ -153,7 +153,7 @@ def _source_ref(
         "source_type": source_type,
         "title": title,
         "locator": locator,
-        "owner": "Deloitte HK" if "Deloitte" in title else "PoC Product & Domain Team",
+        "owner": "External Review Team" if "External Reviewer" in title else "PoC Product & Domain Team",
         "captured_on": "2026-08-20",
         "trust": trust,
         "notes": notes,
@@ -715,7 +715,7 @@ def main() -> None:
     )
 
     decision_defs = [
-        ("decision.source_classification", "What claim can be made from the supplied packet?", ["HKEX validated", "Deloitte confirmed", "Constructed synthetic only"], "Treat the case as constructed synthetic and illustrative only.", ["scenario.cash_trading_activity_monitoring", *[item["id"] for item in raw_data_sources]]),
+        ("decision.source_classification", "What claim can be made from the supplied packet?", ["customer validated", "External Reviewer confirmed", "Constructed synthetic only"], "Treat the case as constructed synthetic and illustrative only.", ["scenario.cash_trading_activity_monitoring", *[item["id"] for item in raw_data_sources]]),
         ("decision.cancel_spelling", "Which cancellation status spelling is canonical?", ["CANCELED", "CANCELLED"], "Use CANCELED and accept CANCELLED only as an input alias.", ["property.order.order_status"]),
         ("decision.order_lifecycle", "What is the observed order lifecycle key?", ["order_id", "venue/date/order", "activity_id"], "Use venue_code + trading_date + order_id and disclose incomplete observed timelines.", ["entity.order_activity", "property.order.order_id"]),
         ("decision.self_trade_candidate", "What constitutes the first demo self-trade candidate?", ["same normalized side participants", "same account", "business-defined surveillance model"], "Use same normalized buy and sell participant IDs as a triage candidate only.", ["property.trade.has_both_participant_ids", "property.trade.is_potential_self_trade", "rule.potential_self_trade", "metric.potential_self_trade_count", "metric.potential_self_trade_rate"]),
@@ -749,12 +749,12 @@ def main() -> None:
 
     source_file_index = {item["source_id"]: item for item in source_manifest["files"]}
     sources = [
-        _source_ref("source.requirements", "requirement_transcription", "Deloitte HK requirements transcription", f"intake/source-manifest.json#SRC-REQ-001 sha256={source_file_index['SRC-REQ-001']['sha256']}", "secondary", "Transcribed business context; not an exported HKEX source document."),
-        _source_ref("source.metric_logic", "metric_transcription", "Deloitte HK metric logic transcription", f"intake/source-manifest.json#SRC-REQ-001 sha256={source_file_index['SRC-REQ-001']['sha256']}", "secondary", "Common metric examples; definitions remain subject to confirmation."),
-        _source_ref("source.data_dictionary", "data_dictionary", "Deloitte HK generated data dictionary", f"intake/source-manifest.json#SRC-DICT-001 sha256={source_file_index['SRC-DICT-001']['sha256']}", "secondary", "Generated and field-existence cross-checked; physical production names may differ."),
-        _source_ref("source.sample_data", "sample_data", "Deloitte HK constructed-synthetic sample data", f"intake/source-manifest.json#SRC-SAMPLE-001 sha256={source_file_index['SRC-SAMPLE-001']['sha256']}", "assumption", "One-week constructed-synthetic sample; not HKEX production data."),
+        _source_ref("source.requirements", "requirement_transcription", "External Review Team requirements transcription", f"intake/source-manifest.json#SRC-REQ-001 sha256={source_file_index['SRC-REQ-001']['sha256']}", "secondary", "Transcribed business context; not an exported customer source document."),
+        _source_ref("source.metric_logic", "metric_transcription", "External Review Team metric logic transcription", f"intake/source-manifest.json#SRC-REQ-001 sha256={source_file_index['SRC-REQ-001']['sha256']}", "secondary", "Common metric examples; definitions remain subject to confirmation."),
+        _source_ref("source.data_dictionary", "data_dictionary", "External Review Team generated data dictionary", f"intake/source-manifest.json#SRC-DICT-001 sha256={source_file_index['SRC-DICT-001']['sha256']}", "secondary", "Generated and field-existence cross-checked; physical production names may differ."),
+        _source_ref("source.sample_data", "sample_data", "External Review Team constructed-synthetic sample data", f"intake/source-manifest.json#SRC-SAMPLE-001 sha256={source_file_index['SRC-SAMPLE-001']['sha256']}", "assumption", "One-week constructed-synthetic sample; not customer production data."),
         _source_ref("source.assumption_register", "assumption_register", "PoC cash-trading assumption and decision register", f"governance/assumption-register.json sha256={file_checksum(assumption_path)}", "assumption", "Every correction, provisional definition and derived-control convention is versioned here."),
-        _source_ref("source.derived_oracle", "derived_control", "Independent constructed-synthetic golden controls", f"golden/oracle.json sha256={file_checksum(oracle_path)}", "assumption", "Independently recomputed from typed Parquet; not Deloitte/HKEX known-correct evidence."),
+        _source_ref("source.derived_oracle", "derived_control", "Independent constructed-synthetic golden controls", f"golden/oracle.json sha256={file_checksum(oracle_path)}", "assumption", "Independently recomputed from typed Parquet; not External Reviewer/customer known-correct evidence."),
         _source_ref("source.compiler_sql", "sql", "Compiler-generated Cash Trading reference SQL", f"sql/reference_controls.sql sha256={file_checksum(sql_path)}", "assumption", "Generated reference SQL; no existing SQL was supplied."),
     ]
 

@@ -82,7 +82,7 @@ class IntakeSubmission(IntakeModel):
     schema_version: Literal["adt-intake-submission/v1"] = INTAKE_SCHEMA
     submission_id: str
     registered_at: datetime
-    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED"]
+    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED"]
     assets: tuple[IntakeAsset, ...]
     anchors: tuple[SourceAnchor, ...]
     gaps: tuple[IntakeGap, ...]
@@ -238,8 +238,8 @@ class ADTIntakeRegistry:
         )
         gaps = (
             IntakeGap(
-                gap_id="gap.real_hkex_definition_unconfirmed",
-                description="The extracted definition is synthetic reference content, not an HKEX-confirmed business definition.",
+                gap_id="gap.real_atlas_definition_unconfirmed",
+                description="The extracted definition is synthetic reference content, not an customer-confirmed business definition.",
                 blocks_synthetic_reference=False,
             ),
             IntakeGap(
@@ -251,7 +251,7 @@ class ADTIntakeRegistry:
         payload = {
             "schema_version": INTAKE_SCHEMA,
             "submission_id": REFERENCE_SUBMISSION_ID,
-            "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED",
+            "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED",
             "assets": [asset.model_dump(mode="json") for asset in assets],
             "anchors": [anchor.model_dump(mode="json") for anchor in anchors],
             "gaps": [gap.model_dump(mode="json") for gap in gaps],

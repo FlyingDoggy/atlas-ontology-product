@@ -53,7 +53,7 @@ class ProductContextSubjectV1(StrictModel):
     active_runtime: ActiveRuntimeContext
     navigation: ProductRouteLinks = ProductRouteLinks()
     limitations: tuple[str, ...] = (
-        "Constructed synthetic reference; not HKEX validated",
+        "Constructed synthetic reference; not customer validated",
         "Engineering demo; not production-ready",
     )
 

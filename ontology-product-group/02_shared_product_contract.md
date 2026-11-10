@@ -1,10 +1,10 @@
 # Shared Product Contract v0.1
 
-状态：Approved/Frozen  
-日期：2026-08-18  
-批准记录：Muyu 于 2026-08-19 指示继续进入下一阶段，批准 v0.1 Reviewed Candidate 转为 Approved/Frozen  
-父级基线：`01_product_group_strategy.md` v1.0 Approved Baseline  
-Decision Owner：Muyu  
+状态：Approved/Frozen
+日期：2026-08-18
+批准记录：Muyu 于 2026-08-19 指示继续进入下一阶段，批准 v0.1 Reviewed Candidate 转为 Approved/Frozen
+父级基线：`01_product_group_strategy.md` v1.0 Approved Baseline
+Decision Owner：Muyu
 主要消费者：Ontology Studio、Ontology Analytic Agent、Shared Contracts & Kernel
 
 ## 0. 如何阅读这套合同
@@ -51,7 +51,7 @@ SemanticChangeRequest → Ontology Studio triage
 7. Governance、Runtime Service 与 User Evidence 使用确定性 allowlist projection；projection 可以隐藏、脱敏或按批准规则格式化，但不能暗中改写业务含义。
 8. 答案在证据、最终 eligibility 与 release commit 耐久化前不得释放；LLM 不能绕过该边界。
 9. SCR 是最小披露、强类型、不可信的 proposed input；它不能自动成为 Ontology Candidate、Claim 或业务真相。
-10. HKEX 原始材料默认不离开其安全区；离线 PoC 只接受被批准的 ClearedInput，不由模型补齐 Missing、Withheld 或 Unconfirmed 内容。
+10. customer 原始材料默认不离开其安全区；离线 PoC 只接受被批准的 ClearedInput，不由模型补齐 Missing、Withheld 或 Unconfirmed 内容。
 
 ## 2. Contract Scope
 
@@ -362,7 +362,7 @@ ProductFeedback、OperationalIncident/Telemetry 与 Revocation/Capability contro
 
 最低规则：Truth Owner 与 Independent Control Reviewer 必须是不同自然人；Fixture Author 不能是 Reviewer；runtime output 不能反向生成 expected value；fixture generator/runtime 不得 import frozen expected targets；suite denominator、expected status/value、tolerance 或 case 内容变化产生新 digest；不得 post-run 删除/重标失败；top-line totals、comparisons/decompositions、Answered/Clarify/Refuse 与 mutation behavior 都必须被 control 明确断言。
 
-两人配置中 Truth Owner 可兼任 Fixture Author，但只能声称“independently reviewed constructed-synthetic workflow/runtime conformance”。称 independent oracle 至少需要三人分离，或 independently frozen authoritative source + independent verifier。没有 HKEX-authorized source/owner 时，任何配置均不能声称 HKEX business validation。
+两人配置中 Truth Owner 可兼任 Fixture Author，但只能声称“independently reviewed constructed-synthetic workflow/runtime conformance”。称 independent oracle 至少需要三人分离，或 independently frozen authoritative source + independent verifier。没有 customer-authorized source/owner 时，任何配置均不能声称 customer business validation。
 
 ## 15. Failure and Fail-Closed Rules
 
@@ -444,7 +444,7 @@ Production IAM/PKI/KMS、enterprise policy engine、WORM audit；multiwriter/dis
 - [x] fresh delivery reader 能在无隐藏假设下排 S0/V0/V1–V5 与 external demo go/no-go；
 - [x] Muyu 批准 Reviewed Candidate。
 
-批准前本文件不得作为已冻结 implementation authority，也不得用来宣称当前 PoC conformant、production-ready 或 HKEX-validated。
+批准前本文件不得作为已冻结 implementation authority，也不得用来宣称当前 PoC conformant、production-ready 或 customer-validated。
 
 ## Appendix — Canonical glossary
 

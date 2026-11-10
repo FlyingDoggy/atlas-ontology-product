@@ -57,7 +57,7 @@ reviews/
 
 # Customer material, infrastructure credentials, and large local media
 AWS info/
-HKEX DTT Input/
+private-inputs/
 ontology-agent-poc/scenarios/cash_trading/intake/reference-source-pack/
 *.pptx
 *.mov
@@ -70,7 +70,10 @@ ontology-e2e-demo/
 ontology-system-design/
 user-manual/
 fm-agent-ontology.html
-build_hkex_ontology_workbooks.mjs
-build_hkex_simple_intake.mjs
-build_hkex_transcription_pack.mjs
-translate_hkex_intake_en.mjs
+build_atlas_ontology_workbooks.mjs
+build_atlas_simple_intake.mjs
+build_atlas_transcription_pack.mjs
+translate_atlas_intake_en.mjs
+
+# Generated local releases and runtime snapshots
+/ontology-agent-poc/published/

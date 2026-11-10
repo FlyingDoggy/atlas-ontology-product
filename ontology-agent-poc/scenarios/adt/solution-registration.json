@@ -18,7 +18,7 @@
       "kind": "semantic_source",
       "locator": "ontology/package.yaml",
       "media_type": "application/yaml",
-      "sha256": "4a793fb970ee1558bc2c6d0a124259f34fe572a8f5beb4da4a659162b3c61fb3"
+      "sha256": "c6dbdcae83692d2c6059602f5133d3de0fc409a5acd4c76f7b3acbf90e4c0df8"
     },
     {
       "component_id": "component.adt.authoring-profile",
@@ -43,32 +43,147 @@
     }
   ],
   "resources": [
-    {"locator": "authoring/editor-descriptor.json", "media_type": "application/json", "sha256": "89cd44dfaf6bfe5ccc9e09c4f2c70fb883ff2076095240df95da676d6d9b5f5f", "size_bytes": 3803},
-    {"locator": "data/instrument_dim.csv", "media_type": "text/csv", "sha256": "70a79f3bd71940041fa1fdadce54fdfdf78054cd1a0747d80ac37a643246cff5", "size_bytes": 173},
-    {"locator": "data/manifest.json", "media_type": "application/json", "sha256": "e8d16ce0e310856d3b2269102b962d201be77e7e99f54d6d67a85d0cdf72f632", "size_bytes": 511},
-    {"locator": "data/trade_fact.csv", "media_type": "text/csv", "sha256": "125dbabc95053fb2dd58e615b88cde164f1908818b9227cec451481fd7ce9355", "size_bytes": 7373},
-    {"locator": "data/trading_calendar.csv", "media_type": "text/csv", "sha256": "3006881fd9d791de4ea30d28aa10d54d5006a0c3123ce5ac23910b83ed69663a", "size_bytes": 6734},
-    {"locator": "golden/oracle.json", "media_type": "application/json", "sha256": "9b0866da7bffc2aa929e04a529b3a483b3276891a9ad4610bed9ad6466e8f35e", "size_bytes": 1217},
-    {"locator": "golden/questions.yaml", "media_type": "application/yaml", "sha256": "df178ca00d67f24b618e6cd0cfc4548837a0dc4e4acc5e57765bd0e5cc3ce416", "size_bytes": 1438},
-    {"locator": "input/README.md", "media_type": "text/markdown", "sha256": "b766d6524d8d864270e430477133eb01b0d4208b919e1a9398ce092d1d9c0bf7", "size_bytes": 777},
-    {"locator": "input/data_dictionary.csv", "media_type": "text/csv", "sha256": "fe0af2b2f676d95556d4d6519128a909258ea090e4f9c4d0a50755c41a654798", "size_bytes": 1514},
-    {"locator": "input/data_model.md", "media_type": "text/markdown", "sha256": "241796c0c8bc72542ecb95ec311132cde9eb3fe7b662e8ab7284abfe92b35a0d", "size_bytes": 964},
-    {"locator": "input/metric_logic.md", "media_type": "text/markdown", "sha256": "c50d17b0244ba9e074e93946f9208f8751884b6c18227135b47564639ca99fc3", "size_bytes": 3212},
-    {"locator": "input/requirements_and_process.md", "media_type": "text/markdown", "sha256": "779fa4986172b8ef159f5914c0b03a9cacaa6ee9f89c4c76ead0b7fc33c1560c", "size_bytes": 4451},
-    {"locator": "llm/engineering-profile.json", "media_type": "application/json", "sha256": "9fabd5a3b5be75cf0f8345d1f1d665bfba1eb4cd5be592935ba0d7470b465aa3", "size_bytes": 1870},
-    {"locator": "llm/projection-policy.json", "media_type": "application/json", "sha256": "a7ea2c6865287707d8b86f7356ae669985731eef14b33c40f9d13c3a7a123c8c", "size_bytes": 786},
-    {"locator": "llm/prompts.json", "media_type": "application/json", "sha256": "23da832d5dce144e676d6f193db89b085606140c45fe84310c16610554772875", "size_bytes": 1099},
-    {"locator": "llm/question-family.json", "media_type": "application/json", "sha256": "d9e8311f6da9742a2ab4cf6a268e43ff3b6ea35a444305cbc2bb75ee320afebe", "size_bytes": 1354},
-    {"locator": "llm/studio/engineering-profile.json", "media_type": "application/json", "sha256": "16c5dd86d6006da35a451255b6b0f5dd13e470068bfd210bc0edf3d5ce732690", "size_bytes": 905},
-    {"locator": "llm/studio/projection-policy.json", "media_type": "application/json", "sha256": "7035cdad6b3671eebfb020f4b1ea8ed5e578c005e025c755da6441586f212064", "size_bytes": 645},
-    {"locator": "llm/studio/prompts.json", "media_type": "application/json", "sha256": "606b11814ae3c40ebe84f913b00efd73f74591319e4c7e0e6131b516c5f801ac", "size_bytes": 645},
-    {"locator": "llm/studio/semantic-slot-manifest.json", "media_type": "application/json", "sha256": "20cbcd2af47a7f19b7f563ff9d51930e350620495abd5eed507ebf90ffbe3c0b", "size_bytes": 1378},
-    {"locator": "llm/tool-registry.json", "media_type": "application/json", "sha256": "254922bc3d90aa60320dd89764197cc4d479febde83ea25dcdd5e16c8a85552a", "size_bytes": 1081},
-    {"locator": "ontology/package.yaml", "media_type": "application/yaml", "sha256": "4a793fb970ee1558bc2c6d0a124259f34fe572a8f5beb4da4a659162b3c61fb3", "size_bytes": 36039},
-    {"locator": "sql/existing_adt.sql", "media_type": "text/sql", "sha256": "892e091bf3104b09a407789afd987e5086441be80eebdf206f2121acff80a5cf", "size_bytes": 1125}
+    {
+      "locator": "authoring/editor-descriptor.json",
+      "media_type": "application/json",
+      "sha256": "89cd44dfaf6bfe5ccc9e09c4f2c70fb883ff2076095240df95da676d6d9b5f5f",
+      "size_bytes": 3803
+    },
+    {
+      "locator": "data/instrument_dim.csv",
+      "media_type": "text/csv",
+      "sha256": "70a79f3bd71940041fa1fdadce54fdfdf78054cd1a0747d80ac37a643246cff5",
+      "size_bytes": 173
+    },
+    {
+      "locator": "data/manifest.json",
+      "media_type": "application/json",
+      "sha256": "e8d16ce0e310856d3b2269102b962d201be77e7e99f54d6d67a85d0cdf72f632",
+      "size_bytes": 511
+    },
+    {
+      "locator": "data/trade_fact.csv",
+      "media_type": "text/csv",
+      "sha256": "125dbabc95053fb2dd58e615b88cde164f1908818b9227cec451481fd7ce9355",
+      "size_bytes": 7373
+    },
+    {
+      "locator": "data/trading_calendar.csv",
+      "media_type": "text/csv",
+      "sha256": "3006881fd9d791de4ea30d28aa10d54d5006a0c3123ce5ac23910b83ed69663a",
+      "size_bytes": 6734
+    },
+    {
+      "locator": "golden/oracle.json",
+      "media_type": "application/json",
+      "sha256": "9b0866da7bffc2aa929e04a529b3a483b3276891a9ad4610bed9ad6466e8f35e",
+      "size_bytes": 1217
+    },
+    {
+      "locator": "golden/questions.yaml",
+      "media_type": "application/yaml",
+      "sha256": "df178ca00d67f24b618e6cd0cfc4548837a0dc4e4acc5e57765bd0e5cc3ce416",
+      "size_bytes": 1438
+    },
+    {
+      "locator": "input/README.md",
+      "media_type": "text/markdown",
+      "sha256": "a1e31880fad882b4a607d48abe701c1cc23b84da5b6a83cd167bf464b8513856",
+      "size_bytes": 794
+    },
+    {
+      "locator": "input/data_dictionary.csv",
+      "media_type": "text/csv",
+      "sha256": "fe0af2b2f676d95556d4d6519128a909258ea090e4f9c4d0a50755c41a654798",
+      "size_bytes": 1514
+    },
+    {
+      "locator": "input/data_model.md",
+      "media_type": "text/markdown",
+      "sha256": "241796c0c8bc72542ecb95ec311132cde9eb3fe7b662e8ab7284abfe92b35a0d",
+      "size_bytes": 964
+    },
+    {
+      "locator": "input/metric_logic.md",
+      "media_type": "text/markdown",
+      "sha256": "c50d17b0244ba9e074e93946f9208f8751884b6c18227135b47564639ca99fc3",
+      "size_bytes": 3212
+    },
+    {
+      "locator": "input/requirements_and_process.md",
+      "media_type": "text/markdown",
+      "sha256": "0f8ab44f50bf2624b12bc992896a8d2b18ed2893b3171dec722a08a9ced3da32",
+      "size_bytes": 4455
+    },
+    {
+      "locator": "llm/engineering-profile.json",
+      "media_type": "application/json",
+      "sha256": "9fabd5a3b5be75cf0f8345d1f1d665bfba1eb4cd5be592935ba0d7470b465aa3",
+      "size_bytes": 1870
+    },
+    {
+      "locator": "llm/projection-policy.json",
+      "media_type": "application/json",
+      "sha256": "a7ea2c6865287707d8b86f7356ae669985731eef14b33c40f9d13c3a7a123c8c",
+      "size_bytes": 786
+    },
+    {
+      "locator": "llm/prompts.json",
+      "media_type": "application/json",
+      "sha256": "23da832d5dce144e676d6f193db89b085606140c45fe84310c16610554772875",
+      "size_bytes": 1099
+    },
+    {
+      "locator": "llm/question-family.json",
+      "media_type": "application/json",
+      "sha256": "d9e8311f6da9742a2ab4cf6a268e43ff3b6ea35a444305cbc2bb75ee320afebe",
+      "size_bytes": 1354
+    },
+    {
+      "locator": "llm/studio/engineering-profile.json",
+      "media_type": "application/json",
+      "sha256": "16c5dd86d6006da35a451255b6b0f5dd13e470068bfd210bc0edf3d5ce732690",
+      "size_bytes": 905
+    },
+    {
+      "locator": "llm/studio/projection-policy.json",
+      "media_type": "application/json",
+      "sha256": "7035cdad6b3671eebfb020f4b1ea8ed5e578c005e025c755da6441586f212064",
+      "size_bytes": 645
+    },
+    {
+      "locator": "llm/studio/prompts.json",
+      "media_type": "application/json",
+      "sha256": "606b11814ae3c40ebe84f913b00efd73f74591319e4c7e0e6131b516c5f801ac",
+      "size_bytes": 645
+    },
+    {
+      "locator": "llm/studio/semantic-slot-manifest.json",
+      "media_type": "application/json",
+      "sha256": "20cbcd2af47a7f19b7f563ff9d51930e350620495abd5eed507ebf90ffbe3c0b",
+      "size_bytes": 1378
+    },
+    {
+      "locator": "llm/tool-registry.json",
+      "media_type": "application/json",
+      "sha256": "254922bc3d90aa60320dd89764197cc4d479febde83ea25dcdd5e16c8a85552a",
+      "size_bytes": 1081
+    },
+    {
+      "locator": "ontology/package.yaml",
+      "media_type": "application/yaml",
+      "sha256": "c6dbdcae83692d2c6059602f5133d3de0fc409a5acd4c76f7b3acbf90e4c0df8",
+      "size_bytes": 36061
+    },
+    {
+      "locator": "sql/existing_adt.sql",
+      "media_type": "text/sql",
+      "sha256": "892e091bf3104b09a407789afd987e5086441be80eebdf206f2121acff80a5cf",
+      "size_bytes": 1125
+    }
   ],
   "limitations": [
-    "Constructed synthetic reference; not HKEX validated",
+    "Constructed synthetic reference; not customer validated",
     "Registration is a delivery/catalog record, not release or activation authority",
     "The ADT Studio adapter remains scenario-specific"
   ]

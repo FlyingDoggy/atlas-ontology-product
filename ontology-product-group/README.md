@@ -2,7 +2,7 @@
 
 当前状态：产品组总体规划 v1.0 与 Shared Product Contract v0.1 均已获 Muyu 批准并置为 `Approved/Frozen`。Ontology Studio 与 Ontology Analytic Agent 两份 Product-Domain PRD 已完成两轮 adversarial critic review、主审修订及三路 fresh-reader final closure：Product PASS 0/0/0，Correctness/Security PASS 0/0/0，Delivery PASS 0/0/1（仅 frozen `core@1` 的非阻断历史措辞，留待 `core@1.1` 澄清）。两份 PRD/Companion 仍是 Revised Candidate，不是 implementation authority。R-01 的方向已获 Decision Owner 批准，但后续 exact `core@1.1` freeze packet 尚未通过独立 conformance gate，因此不得冒充 Frozen Core authority。
 
-与该正式 Stage 1 gate 分开，constructed-synthetic `LLM Engineering Demo` 的 Agent-first Phase 1 与 Studio Phase 2 均已实现并部署到 EC2。Agent 使用 Qwen 3.8 Max 做 closed goal binding 和 bounded tool choice，事实仍由 deterministic ontology tools 与 closed renderer 产生；Studio 使用 Qwen 从批准的 ADT 转写中提出五个 typed observations，经人工逐项 disposition 后才可能形成 draft，且不能直接 publish。其明确标签为非 Stage 1 conformant、非 HKEX validated、非 production-ready。这个独立 demo class 不解除双 PRD formal approval 或完整 Product Target 的 blocker。
+与该正式 Stage 1 gate 分开，constructed-synthetic `LLM Engineering Demo` 的 Agent-first Phase 1 与 Studio Phase 2 均已实现并部署到 EC2。Agent 使用 Qwen 3.8 Max 做 closed goal binding 和 bounded tool choice，事实仍由 deterministic ontology tools 与 closed renderer 产生；Studio 使用 Qwen 从批准的 ADT 转写中提出五个 typed observations，经人工逐项 disposition 后才可能形成 draft，且不能直接 publish。其明确标签为非 Stage 1 conformant、非 customer validated、非 production-ready。这个独立 demo class 不解除双 PRD formal approval 或完整 Product Target 的 blocker。
 
 ## 文档序列
 

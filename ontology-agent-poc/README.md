@@ -3,9 +3,9 @@
 这是一个完全使用合成数据、可执行的多 solution 工程演示。当前安装两个彼此独立的 ontology package：
 
 - `ontology.exchange_analytics.adt`：ADT reference case；
-- `ontology.exchange_analytics.cash_trading`：由 Deloitte HK 转写材料编译出的 Cash Trading case。
+- `ontology.exchange_analytics.cash_trading`：由 External Review Team 转写材料编译出的 Cash Trading case。
 
-两者复用同一套 Studio、发布生命周期、Agent 运行时、PostgreSQL/S3 持久化和 React 产品界面。它证明的是“新增 case 主要增加 package、adapter 与 controls，而不是复制产品”的闭环，不宣称已经得到 HKEX 真实业务口径或达到生产就绪：
+两者复用同一套 Studio、发布生命周期、Agent 运行时、PostgreSQL/S3 持久化和 React 产品界面。它证明的是“新增 case 主要增加 package、adapter 与 controls，而不是复制产品”的闭环，不宣称已经得到 customer 真实业务口径或达到生产就绪：
 
 ```text
 人工转写/附件
@@ -140,7 +140,7 @@ docker run --rm -p 8790:8790 \
 kubectl apply -f k8s/deployment-arm64.yaml
 ```
 
-Dockerfile 使用 `uv.lock` 的 frozen 安装，但不在 image build 中发布或激活。正式的 common-product composition 位于 `../deploy/common-product`，包含 React、FastAPI、PostgreSQL、S3-compatible MinIO、共享账号登录和 Helm chart；初始化 job 会幂等安装 ADT 与 Cash Trading。它仍是 PoC composition，不是生产发布 authority。示例已区分 liveness 与 readiness；Linux ARM64 镜像已在本地 ARM64 Docker 构建并通过干净环境启动，HKEX 目标集群仍需实机验证。
+Dockerfile 使用 `uv.lock` 的 frozen 安装，但不在 image build 中发布或激活。正式的 common-product composition 位于 `../deploy/common-product`，包含 React、FastAPI、PostgreSQL、S3-compatible MinIO、共享账号登录和 Helm chart；初始化 job 会幂等安装 ADT 与 Cash Trading。它仍是 PoC composition，不是生产发布 authority。示例已区分 liveness 与 readiness；Linux ARM64 镜像已在本地 ARM64 Docker 构建并通过干净环境启动，customer 目标集群仍需实机验证。
 
 ## 关键可信边界
 
@@ -153,7 +153,7 @@ Dockerfile 使用 `uv.lock` 的 frozen 安装，但不在 image build 中发布�
 - 真实模型调用必须通过独立 `model-gateway`，同时匹配 egress decision、closed projection、registered question family、profile、rollout 与 frozen evaluation manifest；API key 只存在于该内部服务。
 - 所有展示数字、方向、排名和限制都从 typed claim 与 closed AnswerClause 渲染，并链接 snapshot、plan、tool、evidence、obligation 与 atomic demo commit。
 - provider/schema/tool/deadline/revocation 任一失败均丢弃 private answer buffer；不展示 partial analytic answer。
-- 当前模式准确称为 `LLM Engineering Demo`，不是 Stage 1 governed-evidence conformance、HKEX validation 或 production readiness。
+- 当前模式准确称为 `LLM Engineering Demo`，不是 Stage 1 governed-evidence conformance、customer validation 或 production readiness。
 
 ## 目录
 
@@ -162,13 +162,13 @@ src/ontology_agent/     元模型、能力、校验、发布、计划、执行�
 src/ontology_agent/studio/ 通用 editor/store contracts、intake compatibility 与 workspace lifecycle
 src/ontology_agent/solution_adapters/ ADT 与 Cash Trading 的 draft translation adapters
 scenarios/adt/authoring/ exact editor descriptor 与 semantic-slot binding
-scenarios/adt/input/    Deloitte 转写与附件的安全模拟输入
+scenarios/adt/input/    External Reviewer 转写与附件的安全模拟输入
 scenarios/adt/ontology/ 内部 typed package
 scenarios/adt/data/     合成交易、证券和交易日历数据
 scenarios/adt/golden/   构造的合成 control oracle 与完整问题集
 scenarios/adt/sql/      现有 SQL 样例及对照查询
 scenarios/adt/llm/      Engineering profile、prompt/tool/projection 与 registered question contracts
-scenarios/cash_trading/ Deloitte 输入登记、显式假设、typed package、合成数据、controls 与 LLM contracts
+scenarios/cash_trading/ External Reviewer 输入登记、显式假设、typed package、合成数据、controls 与 LLM contracts
 published/releases/     Studio portable immutable releases
 published/runtime/      Agent-local snapshots、certifications 与 active pointer
 src/ontology_agent/llm_*.py   goal/binder/tool/answer/commit 的 closed runtime

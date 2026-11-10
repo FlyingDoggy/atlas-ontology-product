@@ -185,7 +185,7 @@ class ReferenceSourcePackV1(StrictModel):
     pack_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
     title: str = Field(min_length=1, max_length=500)
     classification: Literal["constructed_synthetic"]
-    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED"]
+    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED"]
     physical_file_count: int = Field(ge=1, le=64)
     files: tuple[ReferenceSourcePackFileV1, ...] = Field(min_length=1, max_length=64)
     registrations: tuple[ReferenceSourcePackRegistrationV1, ...] = Field(

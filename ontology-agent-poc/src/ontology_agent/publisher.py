@@ -78,7 +78,7 @@ def publish_package(
     studio, agent = _composition(published_root.resolve(), scenario_dir.resolve())
     release = studio.publish(
         package,
-        limitations=("constructed synthetic; not HKEX validated",),
+        limitations=("constructed synthetic; not customer validated",),
     )
     prepared = agent.prepare(
         release.ref,

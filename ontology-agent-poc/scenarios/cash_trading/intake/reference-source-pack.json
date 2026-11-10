@@ -1,15 +1,15 @@
 {
   "contract": "ontology-reference-source-pack/v1",
-  "pack_id": "cash-trading.deloitte-hk.reference.20260820",
-  "title": "Deloitte HK Cash Trading reference source pack",
+  "pack_id": "cash-trading.external-review.reference.20260820",
+  "title": "External Review Team Cash Trading reference source pack",
   "classification": "constructed_synthetic",
-  "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED",
+  "claim_ceiling": "CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED",
   "physical_file_count": 4,
   "files": [
     {
       "file_id": "SRC-REQ-001",
-      "locator": "intake/reference-source-pack/HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
-      "original_name": "HKEX_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "locator": "intake/reference-source-pack/Example_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
+      "original_name": "Example_Analytics_Scenario_Input_Template_with_ADT_Reference_v20260819.xlsx",
       "media_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "sha256": "fc0452d06258c8bc6c5ffce1475604fe6dc9cb8706672a257e5582e1badc5fbf",
       "size_bytes": 34495
@@ -78,7 +78,7 @@
     }
   ],
   "limitations": [
-    "The pack contains Deloitte transcriptions and constructed-synthetic data, not exported HKEX source documents or production data.",
+    "The pack contains External Reviewer transcriptions and constructed-synthetic data, not exported customer source documents or production data.",
     "One physical workbook is deliberately registered twice because it supplies two independently governed semantic roles: requirements and metric logic.",
     "The source packet contains no existing calculation SQL; compiler-generated reference SQL is a derived artifact and is not installed as source evidence."
   ]

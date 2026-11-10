@@ -1,1 +1,600 @@
-{"assumption_register_checksum":"4de9878c977a403250c96bcb4f8404e7cb146b6de021a9b287b7120eeb8eaebb","build_id":"cash-trading.synthetic.20260820.v1","checks":[{"check_id":"schema.headers.order_activity","decision_ids":[],"evidence":{"field_count":68},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.order_activity","decision_ids":["CT-ASM-019"],"evidence":{"actual":68,"overview":70},"message":"Overview field count differs from the exact detailed dictionary and sample headers","status":"WARN"},{"check_id":"types.convert.order_activity","decision_ids":[],"evidence":{"row_count":2000},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.order_activity","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.order_activity","decision_ids":[],"evidence":{"columns":["activity_id"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"enum.order_activity.activity_type","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"enum.order_activity.execution_type","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"enum.order_activity.order_status","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"enum.order_activity.side","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"schema.headers.trading_activity","decision_ids":[],"evidence":{"field_count":45},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.trading_activity","decision_ids":["CT-ASM-019"],"evidence":{"actual":45,"overview":47},"message":"Overview field count differs from the exact detailed dictionary and sample headers","status":"WARN"},{"check_id":"types.convert.trading_activity","decision_ids":[],"evidence":{"row_count":200},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.trading_activity","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.trading_activity","decision_ids":[],"evidence":{"columns":["trading_activity_id"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"enum.trading_activity.activity_type","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"enum.trading_activity.execution_type","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"enum.trading_activity.trade_status","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"schema.headers.instrument_reference","decision_ids":[],"evidence":{"field_count":28},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.instrument_reference","decision_ids":[],"evidence":{"field_count":28},"message":"Overview field count matches the detailed dictionary","status":"PASS"},{"check_id":"types.convert.instrument_reference","decision_ids":[],"evidence":{"row_count":5},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.instrument_reference","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.instrument_reference","decision_ids":[],"evidence":{"columns":["instrument_id"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"enum.instrument_reference.asset_class","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"enum.instrument_reference.instrument_status","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"schema.headers.account_reference","decision_ids":[],"evidence":{"field_count":21},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.account_reference","decision_ids":[],"evidence":{"field_count":21},"message":"Overview field count matches the detailed dictionary","status":"PASS"},{"check_id":"types.convert.account_reference","decision_ids":[],"evidence":{"row_count":20},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.account_reference","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.account_reference","decision_ids":[],"evidence":{"columns":["participant_id"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"enum.account_reference.participant_type","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"schema.headers.trading_calendar","decision_ids":[],"evidence":{"field_count":23},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.trading_calendar","decision_ids":[],"evidence":{"field_count":23},"message":"Overview field count matches the detailed dictionary","status":"PASS"},{"check_id":"types.convert.trading_calendar","decision_ids":[],"evidence":{"row_count":7},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.trading_calendar","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.trading_calendar","decision_ids":[],"evidence":{"columns":["calendar_code","business_date"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"schema.headers.order_type_reference","decision_ids":[],"evidence":{"field_count":18},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.order_type_reference","decision_ids":[],"evidence":{"field_count":18},"message":"Overview field count matches the detailed dictionary","status":"PASS"},{"check_id":"types.convert.order_type_reference","decision_ids":[],"evidence":{"row_count":6},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.order_type_reference","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.order_type_reference","decision_ids":[],"evidence":{"columns":["order_type_code"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"schema.headers.exchange_rate","decision_ids":[],"evidence":{"field_count":18},"message":"Sample headers exactly match the ordered dictionary fields","status":"PASS"},{"check_id":"schema.overview_count.exchange_rate","decision_ids":[],"evidence":{"field_count":18},"message":"Overview field count matches the detailed dictionary","status":"PASS"},{"check_id":"types.convert.exchange_rate","decision_ids":[],"evidence":{"row_count":8},"message":"All values converted to the dictionary types","status":"PASS"},{"check_id":"required.not_null.exchange_rate","decision_ids":[],"evidence":{"null_counts":{}},"message":"All required columns are populated","status":"PASS"},{"check_id":"primary_key.exchange_rate","decision_ids":[],"evidence":{"columns":["exchange_rate_id"],"duplicate_count":0,"null_key_count":0},"message":"Primary key is complete and unique","status":"PASS"},{"check_id":"enum.exchange_rate.quality_status","decision_ids":[],"evidence":{"invalid_values":[],"null_count":0},"message":"Enum values are valid","status":"PASS"},{"check_id":"reference.order.instrument","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.order.order_type","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.order.participant","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.order.calendar","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.instrument","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.participant","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.buy_participant","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.sell_participant","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.buy_order","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.sell_order","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.trade.calendar","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"},{"check_id":"reference.fx.calendar","decision_ids":[],"evidence":{"examples":[],"failure_count":0},"message":"Reference integrity is valid","status":"PASS"}],"compilation_spec_checksum":"180790fac91666c0cc1cddb4ccacae9e55fe9c5713031e78bd78e9ae52455e1f","compiler":{"id":"ontology-agent.tabular-xlsx-compiler","version":"1.0.0"},"contract":"tabular-data-quality-report/v1","source_manifest_checksum":"bb4afa06dd30fca8859ab5e4d65140c3af1e63c27abf01ee41a613f222c070c3","status":"WARN","summary":{"fail":0,"pass":56,"value_normalizations":{},"warn":2}}
+{
+  "assumption_register_checksum": "867d49c6b4ca8983c3ebe2ccc798144119dcf6106178c94eb3c97a65ba141f06",
+  "build_id": "cash-trading.synthetic.20260820.v1",
+  "checks": [
+    {
+      "check_id": "schema.headers.order_activity",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 68
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.order_activity",
+      "decision_ids": [
+        "CT-ASM-019"
+      ],
+      "evidence": {
+        "actual": 68,
+        "overview": 70
+      },
+      "message": "Overview field count differs from the exact detailed dictionary and sample headers",
+      "status": "WARN"
+    },
+    {
+      "check_id": "types.convert.order_activity",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 2000
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.order_activity",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.order_activity",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "activity_id"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.order_activity.activity_type",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.order_activity.execution_type",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.order_activity.order_status",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.order_activity.side",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.headers.trading_activity",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 45
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.trading_activity",
+      "decision_ids": [
+        "CT-ASM-019"
+      ],
+      "evidence": {
+        "actual": 45,
+        "overview": 47
+      },
+      "message": "Overview field count differs from the exact detailed dictionary and sample headers",
+      "status": "WARN"
+    },
+    {
+      "check_id": "types.convert.trading_activity",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 200
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.trading_activity",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.trading_activity",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "trading_activity_id"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.trading_activity.activity_type",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.trading_activity.execution_type",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.trading_activity.trade_status",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.headers.instrument_reference",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 28
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.instrument_reference",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 28
+      },
+      "message": "Overview field count matches the detailed dictionary",
+      "status": "PASS"
+    },
+    {
+      "check_id": "types.convert.instrument_reference",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 5
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.instrument_reference",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.instrument_reference",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "instrument_id"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.instrument_reference.asset_class",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.instrument_reference.instrument_status",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.headers.account_reference",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 21
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.account_reference",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 21
+      },
+      "message": "Overview field count matches the detailed dictionary",
+      "status": "PASS"
+    },
+    {
+      "check_id": "types.convert.account_reference",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 20
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.account_reference",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.account_reference",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "participant_id"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.account_reference.participant_type",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.headers.trading_calendar",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 23
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.trading_calendar",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 23
+      },
+      "message": "Overview field count matches the detailed dictionary",
+      "status": "PASS"
+    },
+    {
+      "check_id": "types.convert.trading_calendar",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 7
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.trading_calendar",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.trading_calendar",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "calendar_code",
+          "business_date"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.headers.order_type_reference",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 18
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.order_type_reference",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 18
+      },
+      "message": "Overview field count matches the detailed dictionary",
+      "status": "PASS"
+    },
+    {
+      "check_id": "types.convert.order_type_reference",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 6
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.order_type_reference",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.order_type_reference",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "order_type_code"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.headers.exchange_rate",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 18
+      },
+      "message": "Sample headers exactly match the ordered dictionary fields",
+      "status": "PASS"
+    },
+    {
+      "check_id": "schema.overview_count.exchange_rate",
+      "decision_ids": [],
+      "evidence": {
+        "field_count": 18
+      },
+      "message": "Overview field count matches the detailed dictionary",
+      "status": "PASS"
+    },
+    {
+      "check_id": "types.convert.exchange_rate",
+      "decision_ids": [],
+      "evidence": {
+        "row_count": 8
+      },
+      "message": "All values converted to the dictionary types",
+      "status": "PASS"
+    },
+    {
+      "check_id": "required.not_null.exchange_rate",
+      "decision_ids": [],
+      "evidence": {
+        "null_counts": {}
+      },
+      "message": "All required columns are populated",
+      "status": "PASS"
+    },
+    {
+      "check_id": "primary_key.exchange_rate",
+      "decision_ids": [],
+      "evidence": {
+        "columns": [
+          "exchange_rate_id"
+        ],
+        "duplicate_count": 0,
+        "null_key_count": 0
+      },
+      "message": "Primary key is complete and unique",
+      "status": "PASS"
+    },
+    {
+      "check_id": "enum.exchange_rate.quality_status",
+      "decision_ids": [],
+      "evidence": {
+        "invalid_values": [],
+        "null_count": 0
+      },
+      "message": "Enum values are valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.order.instrument",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.order.order_type",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.order.participant",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.order.calendar",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.instrument",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.participant",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.buy_participant",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.sell_participant",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.buy_order",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.sell_order",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.trade.calendar",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    },
+    {
+      "check_id": "reference.fx.calendar",
+      "decision_ids": [],
+      "evidence": {
+        "examples": [],
+        "failure_count": 0
+      },
+      "message": "Reference integrity is valid",
+      "status": "PASS"
+    }
+  ],
+  "compilation_spec_checksum": "180790fac91666c0cc1cddb4ccacae9e55fe9c5713031e78bd78e9ae52455e1f",
+  "compiler": {
+    "id": "ontology-agent.tabular-xlsx-compiler",
+    "version": "1.0.0"
+  },
+  "contract": "tabular-data-quality-report/v1",
+  "source_manifest_checksum": "4b462ab4422c9017cd136b1b3017c32edd05213f38d485dffc5f9cf9f2d232cd",
+  "status": "WARN",
+  "summary": {
+    "fail": 0,
+    "pass": 56,
+    "value_normalizations": {},
+    "warn": 2
+  }
+}

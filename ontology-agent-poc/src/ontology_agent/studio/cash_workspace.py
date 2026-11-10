@@ -143,7 +143,7 @@ class CashIntakeSummary(CashWorkspaceModel):
     reference_source_pack: dict[str, Any]
     construction_profile: dict[str, Any]
     reviewed_baseline: dict[str, Any]
-    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED"]
+    claim_ceiling: Literal["CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED"]
 
 
 def _utc_now() -> datetime:
@@ -304,7 +304,7 @@ class CashTradingDraftWorkspaceService:
         )
         assumptions_path = self.scenario_dir / "governance" / "assumption-register.json"
         confirmations_path = (
-            self.scenario_dir / "governance" / "deloitte-confirmation-register.json"
+            self.scenario_dir / "governance" / "external-confirmation-register.json"
         )
         reviewed_path = self.scenario_dir / "governance" / "reviewed-baseline.json"
         try:
@@ -413,7 +413,7 @@ class CashTradingDraftWorkspaceService:
             }
         )
         return CashIntakeSummary(
-            submission_id="cash-trading.deloitte-transcription.v0.2",
+            submission_id="cash-trading.external-reviewer-transcription.v0.2",
             content_checksum=content_checksum,
             classification="constructed_synthetic",
             source_file_count=len(files),
@@ -424,7 +424,7 @@ class CashTradingDraftWorkspaceService:
             reference_source_pack=reference_pack,
             construction_profile=construction_profile,
             reviewed_baseline=reviewed,
-            claim_ceiling="CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED",
+            claim_ceiling="CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED",
         )
 
     def _read(self, workspace_id: str) -> CashDraftWorkspace | None:
@@ -835,8 +835,8 @@ class CashTradingDraftWorkspaceService:
             publication = self.releases.publish(
                 materialize_cash_package(self._base(), current),
                 limitations=(
-                    "constructed synthetic; not HKEX validated",
-                    "Deloitte/HKEX confirmation remains open and is not runtime authority",
+                    "constructed synthetic; not customer validated",
+                    "External Reviewer/customer confirmation remains open and is not runtime authority",
                 ),
             )
             updated = current.model_copy(

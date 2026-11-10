@@ -37,3 +37,11 @@ See [`deploy/common-product/README.md`](deploy/common-product/README.md). The de
 ## Security boundary
 
 This repository intentionally excludes customer inputs, cloud credentials, model API keys, runtime state, generated artifacts, recordings, and local deployment secrets.
+
+## Public demo data
+
+Customer-specific labels and local environment paths have been generalized. The
+reference cases remain explicitly constructed-synthetic and do not claim customer
+validation. Generated release bundles are excluded from source control; create fresh
+ones from the sanitized source using the lifecycle commands in
+[`ontology-agent-poc/README.md`](ontology-agent-poc/README.md).

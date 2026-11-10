@@ -1,9 +1,0 @@
-{
-  "dataset_id": "adt-fixture-v1",
-  "files": {
-    "data/instrument_dim.csv": "70a79f3bd71940041fa1fdadce54fdfdf78054cd1a0747d80ac37a643246cff5",
-    "data/trade_fact.csv": "125dbabc95053fb2dd58e615b88cde164f1908818b9227cec451481fd7ce9355",
-    "data/trading_calendar.csv": "3006881fd9d791de4ea30d28aa10d54d5006a0c3123ce5ac23910b83ed69663a"
-  },
-  "manifest_sha256": "e8d16ce0e310856d3b2269102b962d201be77e7e99f54d6d67a85d0cdf72f632"
-}

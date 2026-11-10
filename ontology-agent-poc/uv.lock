@@ -257,7 +257,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hkex-ontology-agent-poc"
+name = "atlas-ontology-agent-poc"
 version = "0.3.0"
 source = { editable = "." }
 dependencies = [

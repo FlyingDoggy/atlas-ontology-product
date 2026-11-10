@@ -100,7 +100,7 @@ def _rollout_payload(
         ) if active else None,
         "label_digest": sha256_value(
             "LLM Engineering Demo — constructed-synthetic ADT; bounded engineering controls; "
-            "not Stage 1 governed-evidence conformant; not HKEX validated; not production-ready."
+            "not Stage 1 governed-evidence conformant; not customer validated; not production-ready."
         ),
         "auto_off_triggers": [
             "PROFILE_MISMATCH",
@@ -246,7 +246,7 @@ def test_llm_status_is_an_explicit_safe_engineering_demo_contract() -> None:
         ],
         "label": (
             "LLM Engineering Demo — constructed-synthetic ADT; bounded engineering "
-            "controls; not Stage 1 governed-evidence conformant; not HKEX validated; "
+            "controls; not Stage 1 governed-evidence conformant; not customer validated; "
             "not production-ready."
         ),
     }
@@ -853,7 +853,7 @@ def test_studio_solution_catalog_exposes_exact_registered_components() -> None:
     )
     assert cash["workspace_id"] == "workspace.cash_trading.reference"
     assert cash["studio_adapter_id"] == "studio-adapter.cash-trading.reference@1"
-    assert cash["resource_count"] == 36
+    assert cash["resource_count"] == 32
 
 
 def test_operator_rollback_is_an_explicit_expected_head_activation(

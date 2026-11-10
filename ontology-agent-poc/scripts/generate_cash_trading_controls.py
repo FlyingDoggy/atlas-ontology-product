@@ -210,7 +210,7 @@ def main() -> None:
             },
         },
         "limitations": [
-            "Internally derived from the constructed-synthetic packet; not a Deloitte/HKEX known-correct control",
+            "Internally derived from the constructed-synthetic packet; not an external-reviewer/customer known-correct control",
             "Potential self-trade is a deterministic triage candidate and not a market-abuse conclusion",
             "No latency SLA or breach classification is assumed",
             "Order timelines are observed-event timelines and may be incomplete",

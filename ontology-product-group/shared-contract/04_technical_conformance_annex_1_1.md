@@ -1,10 +1,10 @@
 # Shared Product Contract — Technical & Conformance Annex 1.1
 
-Annex ID：`shared-contract-technical-profile/0.1.1`  
-状态：Draft for independent conformance review；not implementation authority  
-日期：2026-08-19  
-Revision direction：R-01 `APPROVE_RECOMMENDED`；record `../reviews/r01-decision-record.md`；file digest `sha-256:33f7a7e0b2abfa3aae31d89af36d188c597bfe35707fe20fa9a157cdd3a0ea4a`  
-Frozen predecessor：`shared-contract-technical-profile/0.1`；不得原地修改  
+Annex ID：`shared-contract-technical-profile/0.1.1`
+状态：Draft for independent conformance review；not implementation authority
+日期：2026-08-19
+Revision direction：R-01 `APPROVE_RECOMMENDED`；record `../reviews/r01-decision-record.md`；file digest `sha-256:33f7a7e0b2abfa3aae31d89af36d188c597bfe35707fe20fa9a157cdd3a0ea4a`
+Frozen predecessor：`shared-contract-technical-profile/0.1`；不得原地修改
 Normative parents：`../02_shared_product_contract.md`、`03_synthetic_trusted_flow_core_1_1.md`
 Normative machine contract candidate：`fixtures/core-profile-conformance-manifest-1.1.json`
 Pinned external-leaf candidate：`fixtures/external-leaf-manifest-1.1.json`
@@ -274,7 +274,7 @@ Stage 1 registry closure：
 | Field family | Exact accepted values |
 |---|---|
 | `allowed_uses` | subset of `ontology_build`, `synthetic_demo` |
-| `limitations` | subset of `local-authority`, `synthetic-data`, `constructed-target-coupled`, `non-hkex-validation`, `no-raw-question`, `public-style-synthetic`, `synthetic-scope` |
+| `limitations` | subset of `local-authority`, `synthetic-data`, `constructed-target-coupled`, `non-customer-validation`, `no-raw-question`, `public-style-synthetic`, `synthetic-scope` |
 | `allowed_claims` | `reviewed-constructed-synthetic-conformance` only |
 | `purpose` | `ontology-build`, `governed-analysis-demo`, `semantic-change-triage` |
 | `obligations` | subset of `ENFORCE_SCOPE`, `WRITE_AUDIT`, `NO_RAW_QUESTION`, `REAUTHORIZE_REFS` |
@@ -727,7 +727,7 @@ User messages expose only safe outcome/reason family/correlation ID. Internal de
 - SCR cannot auto-confirm/publish；
 - role-combination validator enforces oracle claim ceiling；
 - fixture/runtime cannot import expected targets；suite denominator mutation creates new digest；
-- all reports visibly state synthetic/simulated/non-HKEX-validation limitation。
+- all reports visibly state synthetic/simulated/non-customer-validation limitation。
 
 ## 15. Migration and Recovery Requirements
 

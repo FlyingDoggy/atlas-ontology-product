@@ -1,8 +1,8 @@
 # LLM-enabled Ontology Studio & Analytic Agent 架构候选 v0.1
 
-状态：Superseded Draft Candidate — 已由 `13_llm_enabled_products_reviewed_candidate.md` 取代  
-日期：2026-08-19  
-范围：可公开演示的 constructed-synthetic ADT Demo Edition；不声称 HKEX 业务验证或生产就绪
+状态：Superseded Draft Candidate — 已由 `13_llm_enabled_products_reviewed_candidate.md` 取代
+日期：2026-08-19
+范围：可公开演示的 constructed-synthetic ADT Demo Edition；不声称 customer 业务验证或生产就绪
 
 > 本文件保留为 Round 1 输入与审计记录，不再作为当前方案。两轮 critic review 后的收敛版本见 [`13_llm_enabled_products_reviewed_candidate.md`](13_llm_enabled_products_reviewed_candidate.md)。
 
@@ -147,7 +147,7 @@ flowchart LR
 
 ### 5.1 Intake Copilot
 
-输入：经 Disclosure 审批后的安全转写或获准内容 projection；不是原始 HKEX 材料。  
+输入：经 Disclosure 审批后的安全转写或获准内容 projection；不是原始 customer 材料。
 输出：受 closed schema 约束的 `IntakeObservation[]`。
 
 可做：
@@ -353,7 +353,7 @@ User question
 - Model ID：`qwen3.8-max`；
 - Secret：使用 operator 已提供并已验证的 Qwen API Key；仅以 server-side secret 注入；
 - Browser：永远不接触 API Key，也不直连模型；
-- Scope：只允许 constructed-synthetic ADT demo content。真实 HKEX content 必须经过单独的数据出境、部署区域和安全审批。
+- Scope：只允许 constructed-synthetic ADT demo content。真实 customer content 必须经过单独的数据出境、部署区域和安全审批。
 
 建议的项目配置：
 
@@ -425,7 +425,7 @@ PoC 先使用同一 model，不做过早的多模型路由：
 2. **No direct execution**：模型没有 DB、shell、Python、filesystem 或 HTTP arbitrary tool。
 3. **Closed tool schemas**：extra field、unknown enum、unknown ref 直接拒绝。
 4. **Least-data projection**：仅提供完成当前任务所需 ontology 与聚合 evidence。
-5. **Egress boundary**：synthetic ADT 可发外部 Qwen；真实 HKEX 内容默认禁止，直到部署区域/专有网络/私有化方案获批。
+5. **Egress boundary**：synthetic ADT 可发外部 Qwen；真实 customer 内容默认禁止，直到部署区域/专有网络/私有化方案获批。
 6. **Secret hygiene**：Key 仅 server secret；日志、trace、错误、浏览器和 evidence 全部脱敏。
 7. **No model authority**：模型不能签 gate、publish、activate、approve Decision 或 release answer。
 8. **Fail closed**：模型出错不触发 legacy/browser evaluator 或未经验证的自由回答。
@@ -486,12 +486,12 @@ Studio 不需要业务数据 dashboard。它需要治理/构建 dashboard：
 
 ### 12.3 允许变化与不允许变化
 
-允许：模型选择不同但都被批准的探索顺序、措辞或 follow-up。  
+允许：模型选择不同但都被批准的探索顺序、措辞或 follow-up。
 不允许：相同 active snapshot 和同一确定性 query 的数字、unit、direction、period、reconciliation 或 evidence identity 变化。
 
 ## 13. Delivery slices and ROM
 
-ROM 为同一位熟悉现有工程的工程师人日，不含真实 HKEX 安全审批和企业部署。
+ROM 为同一位熟悉现有工程的工程师人日，不含真实 customer 安全审批和企业部署。
 
 | Slice | 结果 | 验收 | ROM |
 |---|---|---|---:|
@@ -519,7 +519,7 @@ ROM 为同一位熟悉现有工程的工程师人日，不含真实 HKEX 安全�
 
 - 不让模型直接构建并发布 authoritative ontology；
 - 不让模型生成或执行任意 SQL/Python；
-- 不把外部 Qwen 用于未经批准的 HKEX 原始/转写材料；
+- 不把外部 Qwen 用于未经批准的 customer 原始/转写材料；
 - 不做跨场景通用 autonomous data scientist；
 - 不做 enterprise Knowledge Center 总体架构；
 - 不做 production IAM、private networking、SLA 或完整 audit platform；
@@ -532,7 +532,7 @@ ROM 为同一位熟悉现有工程的工程师人日，不含真实 HKEX 安全�
 
 1. LLM 是否真正增加开放分析能力，而不是换皮模板；
 2. 哪些 deterministic invariants 会被新 loop 破坏；
-3. 外部模型边界是否足够清楚，synthetic 与真实 HKEX 是否可能被混用；
+3. 外部模型边界是否足够清楚，synthetic 与真实 customer 是否可能被混用；
 4. L0–L6 是否形成最短可演示 tracer，ROM 是否可信；
 5. Studio/Agent 的共享能力是否不小心形成第三产品或跨域记忆；
 6. provider failure、model drift、prompt injection 和 unsupported claims 是否有可测试 fallback。

@@ -1133,7 +1133,7 @@ class StudioConstructionService:
                 else:
                     support_class = "DERIVED_DETERMINISTIC"
                 limitations = [
-                    "Typed proposal comes from a product-owned compiler profile plus the internally reviewed baseline; it is not a direct fact extracted from HKEX material.",
+                    "Typed proposal comes from a product-owned compiler profile plus the internally reviewed baseline; it is not a direct fact extracted from customer material.",
                     "Human review is mandatory before this proposal can modify Draft; review still does not publish or activate Agent runtime.",
                 ]
                 if item.decisions:

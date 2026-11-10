@@ -251,7 +251,7 @@ def test_packaged_reference_sources_install_idempotently_with_exact_physical_ide
 
     current = service.list_current("workspace.cash.reference")
     by_id = {item.source_id: item for item in current}
-    assert first.pack_id == "cash-trading.deloitte-hk.reference.20260820"
+    assert first.pack_id == "cash-trading.external-review.reference.20260820"
     assert first.physical_file_count == 4
     assert first.registered_source_count == 6
     assert second.subject_checksum == first.subject_checksum

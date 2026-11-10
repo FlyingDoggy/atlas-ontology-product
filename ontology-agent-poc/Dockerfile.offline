@@ -13,7 +13,7 @@ COPY wheelhouse /wheelhouse
 RUN python -m pip install \
       --no-index \
       --find-links=/wheelhouse \
-      hkex-ontology-agent-poc==0.3.0 \
+      atlas-ontology-agent-poc==0.3.0 \
     && rm -rf /wheelhouse
 
 COPY scripts ./scripts

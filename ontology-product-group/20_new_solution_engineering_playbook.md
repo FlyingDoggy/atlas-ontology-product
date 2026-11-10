@@ -1,7 +1,7 @@
 # 新 Ontology Solution 构建与交付 Playbook
 
-日期：2026-08-21  
-适用版本：Atlas Ontology Analytics `0.15.0`  
+日期：2026-08-21
+适用版本：Atlas Ontology Analytics `0.15.0`
 适用对象：Solution Builder、业务/指标 Reviewer、Data Reviewer、Release Manager、Agent Operator
 
 ## 1. 这套流程解决什么问题
@@ -134,7 +134,7 @@ List、Table 与 Graph 必须编辑同一个 Draft revision；Graph 是读写界
 - 业务口径、字段含义、公式方向、时间窗口和排除条件不能当作“拼写修正”；
 - synthetic sample/control 必须与客户事实分层存储和显示；
 - 客户确认返回后，新证据形成新 revision，不回写篡改旧决策记录；
-- 面向 Deloitte HK 的补充/确认清单持续维护，即使开发不等待回复。
+- 面向 External Review Team 的补充/确认清单持续维护，即使开发不等待回复。
 
 ## 5. 新案例需要多少定制开发
 
@@ -180,10 +180,10 @@ List、Table 与 Graph 必须编辑同一个 Draft revision；Graph 是读写界
 - prepare/certify/activate 失败不影响旧 Active；
 - Agent answer 只引用本次 active snapshot 的 claims/evidence；
 - 回滚、审计和变更请求可执行；
-- 对外声明准确，不把 synthetic demo 说成 HKEX 业务验证或生产就绪。
+- 对外声明准确，不把 synthetic demo 说成 customer 业务验证或生产就绪。
 
 ## 7. 当前版本的诚实边界
 
 `0.15.0` 已证明：ADT 与 Cash Trading 两个案例共用同一 Studio、Construction Engine、PostgreSQL/S3 持久层、Review、Graph、发布/激活骨架；模板创建的隔离新 Solution 可以完成来源驱动的自动构建和人工复核，而无需修改公共产品代码。
 
-它没有证明：任意客户文档都能零配置自动变成正确 Ontology；任意新业务都已有可执行 adapter；Semantica/LLM 输出可以越过人工和确定性验证；当前 Quick Tunnel 具备永久域名或 SLA；当前内容已经得到 HKEX 业务确认。
+它没有证明：任意客户文档都能零配置自动变成正确 Ontology；任意新业务都已有可执行 adapter；Semantica/LLM 输出可以越过人工和确定性验证；当前 Quick Tunnel 具备永久域名或 SLA；当前内容已经得到 customer 业务确认。

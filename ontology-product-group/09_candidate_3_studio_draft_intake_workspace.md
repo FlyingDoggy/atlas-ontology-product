@@ -1,12 +1,12 @@
 # Candidate 3 — Studio Draft + Intake Workspace
 
-状态：Implemented / Local Verified  
-日期：2026-08-19  
-范围：fixed ADT constructed-synthetic vertical slice；不是通用 ontology compiler、HKEX 业务确认或生产内容管理平台
+状态：Implemented / Local Verified
+日期：2026-08-19
+范围：fixed ADT constructed-synthetic vertical slice；不是通用 ontology compiler、customer 业务确认或生产内容管理平台
 
 ## 1. Outcome
 
-Ontology Studio 不再只是浏览器内模拟器。当前切片已经把“Deloitte HK 能提供的有限安全输入”接到一个真实、持久化、可 review 的 DraftWorkspace：
+Ontology Studio 不再只是浏览器内模拟器。当前切片已经把“External Review Team 能提供的有限安全输入”接到一个真实、持久化、可 review 的 DraftWorkspace：
 
 ```text
 需求与流程转写 ─┐
@@ -18,7 +18,7 @@ Ontology Studio 不再只是浏览器内模拟器。当前切片已经把“Delo
                          → immutable OntologyReleaseBundle
 ```
 
-这条路径直接回应了最初的现实约束：Deloitte HK 不需要填写 RDF、OWL、SHACL、AST 或内部 ontology schema；他们只转写需求与指标逻辑，并把 data model、data dictionary / metadata、SQL 作为文件整理。系统第一步登记材料，而不是假设他们能提供完整、机器可执行的业务真相。
+这条路径直接回应了最初的现实约束：External Review Team 不需要填写 RDF、OWL、SHACL、AST 或内部 ontology schema；他们只转写需求与指标逻辑，并把 data model、data dictionary / metadata、SQL 作为文件整理。系统第一步登记材料，而不是假设他们能提供完整、机器可执行的业务真相。
 
 ## 2. Intake contract
 
@@ -26,13 +26,13 @@ Reference submission 固定登记五类 asset：
 
 | Asset | 当前加工方式 | 不做的事 |
 |---|---|---|
-| 需求与端到端流程 | 从安全转写提取 eligibility 与 amount assertion | 不读取 HKEX 原始文档 |
+| 需求与端到端流程 | 从安全转写提取 eligibility 与 amount assertion | 不读取 customer 原始文档 |
 | 指标逻辑 | 从 M-03 提取定义与允许维度 | 不推断未写明口径 |
 | Data model | locator + checksum 登记 | 不假装已实现通用模型 parser |
 | Data dictionary | locator + checksum 登记 | 不自动把 sample/enum 当业务确认 |
 | Existing SQL | locator + checksum，`REGISTERED_NOT_PARSED` | 不宣称已有通用 SQL parser 或 SQL=truth |
 
-Submission 明确带 `CONSTRUCTED_SYNTHETIC_NOT_HKEX_VALIDATED` claim ceiling；真实 HKEX 定义未确认、SQL 未机器对账均作为 open gap 保留。
+Submission 明确带 `CONSTRUCTED_SYNTHETIC_NOT_CUSTOMER_VALIDATED` claim ceiling；真实 customer 定义未确认、SQL 未机器对账均作为 open gap 保留。
 
 ## 3. Draft surface
 
@@ -106,9 +106,9 @@ Console Studio 的 save、validate、publish 与 source register view 已切到�
 
 当前可声称：固定 ADT input 能形成 traced draft 与 portable release。当前不能声称：
 
-- 任意 Deloitte workbook / Word / SQL 都能自动解析；
+- 任意 External Reviewer workbook / Word / SQL 都能自动解析；
 - SQL 与文字冲突可以自动裁决；
-- extracted candidate 是 HKEX-confirmed truth；
+- extracted candidate 是 customer-confirmed truth；
 - 生产 IAM、审批、审计、object storage、多人分布式锁已完成；
 - 新 release 已被 Agent 绑定并激活。
 

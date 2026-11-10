@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the checked-in core@1.1 canonical and integrated conformance fixture.
 
-The frozen core@1 generator remains untouched. This revision reuses only its
+Public demo labels are generalized. This revision reuses only the core@1
 fixture-generation helpers; the verifier is independently implemented and does
 not import either generator.
 """
@@ -25,7 +25,7 @@ ANNEX_PROFILE = "shared-contract-technical-profile/0.1.1"
 FIXTURE_SCHEMA = "shared-contract-core-1.1-vectors/1"
 CONFORMANCE_MANIFEST = Path(__file__).with_name("core-profile-conformance-manifest-1.1.json")
 EXTERNAL_MANIFEST_SCHEMA = "external-leaf-manifest/1"
-PREDECESSOR_HELPER_SHA256 = "dcabbb415dd29308c17e8c7c775a43315591d6e7ba24a65da0abd48a06709485"
+PREDECESSOR_HELPER_SHA256 = "43ef298a470106e686ee16007970dcdc154e2fe2ae2c608dcd29bbaeafa3f723"
 
 EXTERNAL_ENTRIES: dict[str, dict[str, Any]] = {}
 
@@ -585,7 +585,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
     input_refs: dict[str, dict[str, Any]] = {}
     oracle_refs: dict[str, dict[str, Any]] = {}
     for label, case_id, origin in candidate_specs:
-        label_limitations = ["constructed-target-coupled", "non-hkex-validation"]
+        label_limitations = ["constructed-target-coupled", "non-customer-validation"]
         if label == "public":
             label_limitations.append("public-style-synthetic")
         proposal_ref = graph.add(
@@ -600,7 +600,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
             allowed_uses=["ontology_build", "synthetic_demo"],
             safe_content_ref=artifact(f"safe-content.adt.{label}"),
             opaque_source_locator_ref=opaque_locator(f"opaque-source.{label}"),
-            limitations=["non-hkex-validation"],
+            limitations=["non-customer-validation"],
         )
         input_authority_ref = add_authority(
             graph,
@@ -678,7 +678,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
             oracle_provenance_ref=oracle_refs[label],
             verification_criteria_ref=artifact(f"verification-criteria.adt.{label}"),
             limitations=v0.sorted_set(
-                ["non-hkex-validation", "synthetic-scope"]
+                ["non-customer-validation", "synthetic-scope"]
                 + (["public-style-synthetic"] if label == "public" else [])
             ),
             frozen_at="2026-08-19T00:00:00.000Z",
@@ -708,7 +708,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
         selected_candidate_ref=candidate_refs["synthetic"],
         selected_reference_case_id="adt.synthetic.v1",
         reselection_transition_ref=None,
-        limitations=["non-hkex-validation", "synthetic-scope"],
+        limitations=["non-customer-validation", "synthetic-scope"],
     )
     selection_authority_ref = add_selection_authority(
         graph, "selection_authority_predecessor", selection_proposal_ref
@@ -805,7 +805,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
         selected_candidate_ref=candidate_refs["synthetic"],
         selected_reference_case_id="adt.synthetic.v1",
         reselection_transition_ref=transition_ref,
-        limitations=["non-hkex-validation", "synthetic-scope"],
+        limitations=["non-customer-validation", "synthetic-scope"],
     )
     selection_authority_ref = add_selection_authority(
         graph,
@@ -871,7 +871,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
         selected_candidate_ref=candidate_refs["public"],
         selected_reference_case_id="adt.public-style-synthetic.v1",
         reselection_transition_ref=transition_ref,
-        limitations=["non-hkex-validation", "public-style-synthetic", "synthetic-scope"],
+        limitations=["non-customer-validation", "public-style-synthetic", "synthetic-scope"],
     )
     unselected_authority_ref = add_selection_authority(
         graph, "unselected_selection_authority", unselected_proposal_ref
@@ -903,7 +903,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
         semantic_schema_ref=artifact("semantic-schema.adt"),
         content_digest=v0.fake_digest("semantic-content.adt.public-style-uncommitted"),
         compiler_build_ref=artifact("semantic-compiler-build.adt"),
-        limitations=["non-hkex-validation", "public-style-synthetic", "synthetic-scope"],
+        limitations=["non-customer-validation", "public-style-synthetic", "synthetic-scope"],
         built_at="2026-08-19T00:01:00.000Z",
     )
 
@@ -918,7 +918,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
         semantic_schema_ref=artifact("semantic-schema.adt"),
         content_digest=v0.fake_digest("semantic-content.adt.synthetic-selected"),
         compiler_build_ref=artifact("semantic-compiler-build.adt"),
-        limitations=["non-hkex-validation", "synthetic-scope"],
+        limitations=["non-customer-validation", "synthetic-scope"],
         built_at="2026-08-19T00:01:00.000Z",
     )
 
@@ -1704,7 +1704,7 @@ def build_integrated_graph() -> tuple[Graph, dict[str, Any]]:
         "demo_label": {
             "reference_case_id": "adt.synthetic.v1",
             "reference_manifest_ref": reference_manifest_ref,
-            "limitations": ["constructed-target-coupled", "non-hkex-validation"],
+            "limitations": ["constructed-target-coupled", "non-customer-validation"],
         },
     }
     return graph, context
@@ -1746,7 +1746,7 @@ def isolated_positive_subjects(
         "canonical-test-subject/1", "canonical-test", "canonical.features", "1.0.0", "governance"
     )
     canonical.update(
-        chinese_nfc="港交所",
+        chinese_nfc="示例交易所",
         escaped='quote=" slash=/ backslash=\\ newline=\n',
         decimal_value={"coefficient": "1234500", "scale": 4},
         nullable=None,

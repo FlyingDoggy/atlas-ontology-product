@@ -9,7 +9,7 @@ from ontology_agent.intake import compile_tabular_xlsx
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Compile the exact Deloitte HK cash-trading XLSX packet"
+        description="Compile the exact External Review Team cash-trading XLSX packet"
     )
     project_root = Path(__file__).resolve().parents[1]
     workspace_root = project_root.parent
@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument(
         "--input-root",
         type=Path,
-        default=workspace_root / "HKEX DTT Input",
+        default=workspace_root / "private-inputs",
     )
     parser.add_argument(
         "--output-dir",
